@@ -1,6 +1,6 @@
 ---
 name: pear-pr-review-flow
-description: Pear PR workflow for adding reviewers/Copilot, handling review comments, watching Codex-authored PRs until accepted, and landing when green. Always use when the user mentions a PR, pull request, review request, PR creation, PR update, PR feedback loop, or PR landing in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, pear-dashboard, pear-dashboard-api, or any Pear repo with many commits, many collaborators, or multiple likely code owners/authors.
+description: Pear PR workflow for adding reviewers/Copilot, handling review comments, watching Codex-authored PRs with explicit auto-fix/auto-land preferences, and landing when approved. Always use when the user mentions a PR, pull request, review request, PR creation, PR update, PR feedback loop, or PR landing in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, pear-dashboard, pear-dashboard-api, or any Pear repo with many commits, many collaborators, or multiple likely code owners/authors.
 ---
 
 # Pear PR Review Flow
@@ -13,7 +13,7 @@ When asked to update this skill from any in-repository or locally installed copy
 
 ## Overview
 
-Use this skill whenever the user mentions a PR or asks to create, update, review, monitor, or land a PR. Before opening a Pear code PR, make sure `$pear-engineering-workflow` has run its cleanup/review-rules pass. Request the right PR reviewers without relying on broad teams, request GitHub Copilot in the way GitHub actually records, create the review-watch loop for Codex-authored PRs, and keep the PR review loop visible in Slack when the user wants that.
+Use this skill whenever the user mentions a PR or asks to create, update, review, monitor, or land a PR. Before opening a Pear code PR, make sure `$pear-engineering-workflow` has run its cleanup/review-rules pass. Request the right PR reviewers without relying on broad teams, request GitHub Copilot in the way GitHub actually records, ask which autonomous review-loop actions the user wants, create the review-watch loop for Codex-authored PRs, and keep the PR review loop visible in Slack when the user wants that.
 
 ## Codex Authorship Signature
 
@@ -137,7 +137,7 @@ For user-facing admin, offers, dashboard, or extension changes, add screenshots 
 
 ## Review Follow-Up Loop
 
-When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, update the PR branch against the latest base branch, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End Codex-authored replies and commit messages with the Codex authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request.
+When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, update the PR branch against the latest base branch, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End Codex-authored replies and commit messages with the Codex authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request. For recurring automations, only perform these fix-and-push actions automatically when the user has opted into auto-fixing comments.
 
 ## Branch Refresh On PR Updates
 
@@ -159,20 +159,30 @@ If no code change is needed but checks are stale, failed for likely transient re
 
 When working on a Codex-authored PR, create a recurring review loop instead of relying on a one-time pass. Also create it when the user asks Codex to keep watching, wait for acceptances, handle comments, or land when green. In the Codex app, use the automation tool when available and prefer a thread-attached heartbeat for short-interval checks. A typical cadence is every 5 minutes.
 
+Before creating or updating the recurring loop, ask which autonomous actions the user wants unless the current conversation already clearly grants them. Use a concise question such as:
+
+```text
+Do you want this PR watcher to auto-fix actionable review comments, auto-land once approved/green/up to date, both, or just report status?
+```
+
+Interpret explicit requests like "handle comments as they come in", "keep fixing feedback", or "auto-fix review comments" as approval for auto-fix. Interpret explicit requests like "land when green", "merge once approved", "close it when ready", or "auto-land" as approval for auto-land. If the user has not answered yet, make the watcher report-only for that category and ask for approval in the next thread update instead of editing code or merging. Record the selected mode in the automation prompt so future heartbeat passes do not guess.
+
 The recurring task should:
 
 - watch only explicitly named PRs, or open PRs related to the current thread that were authored or materially written by Codex
 - identify Codex-authored PRs by the PR body or Codex-authored comments ending with exactly `Thanks,\nCodex`
 - inspect every GitHub feedback source on each pass: all review threads whether unresolved, resolved, or outdated; flat PR review comments; top-level issue/PR comments; requested-changes reviews; reviewdog/github-actions bot comments; Copilot feedback; check annotations when available; timeline review requests; approvals; mergeability; branch status; and required checks
 - do not treat Copilot as the only reviewer. Actionable comments from any author, including `github-actions`, `reviewdog`, humans, and Codex self-review comments, must be evaluated and either addressed or explicitly answered
-- for every actionable comment that has not already been handled by a later Codex reply or code change, make the smallest clean code change in the correct repo/worktree, refresh the PR branch against the latest base branch, run focused checks, amend the existing branch commit, and force-push with lease
+- when auto-fix is approved, make the smallest clean code change for every actionable comment that has not already been handled by a later Codex reply or code change, refresh the PR branch against the latest base branch, run focused checks, amend the existing branch commit, and force-push with lease
+- when auto-fix is not approved, report actionable comments back to the thread and ask before changing code, pushing, or posting GitHub replies that imply a fix was made
 - reply to each addressed thread/comment with what changed and what was verified; do not resolve or close feedback conversations immediately after pushing a fix. Keep the back-and-forth visible, and only resolve/close a conversation after it has been quiet for at least 12 hours, when the user explicitly asks, or during landing/merging. Still address new feedback promptly.
 - reply with a concise technical reason when no code change is appropriate
 - end all Codex-authored GitHub replies and commit messages with the Codex authorship signature above
 - re-request GitHub Copilot review after each completed fix pass and verify the timeline shows the new request
 - avoid unrelated PRs and user-authored PRs that lack the Codex authorship signal
 - if a non-draft PR has been open and not landable for more than 24 hours, and human review or re-review is still useful, send a concise Slack nudge to `#engineering` with the PR link, current blocker, and requested review/re-review; do this at most once per PR every 48 hours, checking recent Slack/thread history for the PR URL before posting
-- land/merge the PR once it is open, not draft, refreshed against the latest base branch, required checks are green, review decision is accepted or there are no required reviewers, no blocking review threads or actionable comments remain, and the branch is mergeable under the repo's normal merge method. This is what closes the PR; do not close an unmerged PR unless the user explicitly asks to abandon it.
+- when auto-land is approved, land/merge the PR once it is open, not draft, refreshed against the latest base branch, required checks are green, review decision is accepted or there are no required reviewers, no blocking review threads or actionable comments remain, and the branch is mergeable under the repo's normal merge method. This is what closes the PR; do not close an unmerged PR unless the user explicitly asks to abandon it.
+- when auto-land is not approved, report that the PR is ready to merge and ask for approval instead of merging
 - do not land when the user explicitly says to keep the PR open, keep watching only, avoid merging, pause, or wait for a named reviewer beyond normal branch protection
 - after a successful merge, verify the PR is closed/merged, delete or stop the recurring watch automation for that PR when possible, and report the merge status back to the thread
 - if landing is blocked by branch protection, missing permissions, merge queue, conflicts, stale checks, or unavailable merge methods, report the blocker and keep watching instead of guessing
@@ -180,7 +190,7 @@ The recurring task should:
 
 ## Landing Green PRs
 
-Default to closing eligible Codex-authored PRs by merging them once the review loop proves they are ready. "Ready" means:
+Only close eligible Codex-authored PRs by merging them when the user has asked to land, merge, close when ready, or opted into auto-land for the watcher. Without that approval, stop after proving readiness and ask the user whether to merge. "Ready" means:
 
 - the PR is open, not draft, and still points to the expected branch
 - the branch includes the latest base branch or was updated through the repo's update-branch flow
@@ -201,7 +211,8 @@ Before sending the final response after creating or materially updating a Codex-
 - Copilot was requested and verified through the PR timeline, not only `gh pr view`
 - after any material PR update, the PR branch was refreshed against the latest base branch, or the final response states why it was unsafe or unnecessary
 - a recurring review-watch automation was created or updated for the PR; include the automation id/name, or state why no automation was created
-- if the PR is now ready under the landing rules, it was merged/closed or the exact landing blocker is stated
+- the user's auto-fix and auto-land preferences were captured for the recurring watcher; if not, the watcher is report-only for those actions and the final response asks for approval
+- if the PR is now ready under the landing rules, it was merged/closed, user approval to merge is needed, or the exact landing blocker is stated
 - the final response says whether Slack was posted, skipped by user instruction, or still needs user approval
 
 If any item is missing, do not paper over it in the final answer. Complete it first, or clearly call out the blocker and the exact next command/tool action needed.
