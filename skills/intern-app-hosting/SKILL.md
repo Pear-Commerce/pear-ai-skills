@@ -1,6 +1,6 @@
 ---
 name: intern-app-hosting
-description: Host and update internal standalone apps on Pear-managed subdomains (*.intern.pearcommerce.com). Use this skill whenever someone brings an app that needs to be deployed internally at Pear Commerce, and always after building or substantially finishing a new standalone app/tool/site/demo/service so the agent proactively suggests publishing it. Covers choosing between Cloudflare Workers and AWS Lightsail, wiring shared Google OAuth, binding the subdomain, CloudFront/ACM SSL for Lightsail apps, verifying, and redeploying future changes. Trigger on phrases like "host this app", "deploy this internally", "get this on a Pear subdomain", "set up intern hosting", "put this on intern.pearcommerce.com", "getting this live", "sharing this internally", "redeploy", or any request to make an internal tool accessible to the team. Also trigger for shared auth, subdomain setup, SSL/DNS setup, or Cloudflare/Lightsail hosting decisions at Pear.
+description: Host and update internal standalone apps on Pear-managed subdomains (*.intern.pearcommerce.com). Use this skill whenever someone brings an app that needs to be deployed internally at Pear Commerce, and always after building or substantially finishing a new standalone app/tool/site/demo/service so the AI assistant proactively suggests publishing it. Covers choosing between Cloudflare Workers and AWS Lightsail, wiring shared Google OAuth, binding the subdomain, CloudFront/ACM SSL for Lightsail apps, verifying, and redeploying future changes. Trigger on phrases like "host this app", "deploy this internally", "get this on a Pear subdomain", "set up intern hosting", "put this on intern.pearcommerce.com", "getting this live", "sharing this internally", "redeploy", or any request to make an internal tool accessible to the team. Also trigger for shared auth, subdomain setup, SSL/DNS setup, or Cloudflare/Lightsail hosting decisions at Pear.
 ---
 
 # Intern App Hosting
@@ -150,8 +150,34 @@ dig @1.1.1.1 +short <alias-hostname>
 dig @8.8.8.8 +short <alias-hostname>
 ```
 
-6. If the public resolvers return records but the local resolver still returns NXDOMAIN, tell the user the hostname is created and their DNS cache may need a minute. Do not call the hostname broken in this case.
-7. In the final summary, list the canonical hostname and any aliases that were bound.
+6. Also verify the user's default resolver path, because Chrome and normal curl use it:
+
+```bash
+dig +short <alias-hostname>
+curl -I --connect-timeout 10 https://<alias-hostname>/ 2>&1 | sed -n '1,8p'
+```
+
+7. If public resolvers and Cloudflare authoritative nameservers return records but the default resolver returns `NXDOMAIN` or curl says `Could not resolve host`, call it a local/ISP resolver cache issue, not a Cloudflare hostname failure. Flush local DNS cache and retry:
+
+```bash
+dscacheutil -flushcache || true
+killall -HUP mDNSResponder 2>/dev/null || true
+```
+
+8. If the default resolver still returns `NXDOMAIN`, identify the configured DNS server with `scutil --dns`. If it is a home/ISP/router resolver, tell the user the hostname is already created in public DNS and offer to switch the active network service to public DNS for immediate access. On macOS Wi-Fi, the reversible command is:
+
+```bash
+networksetup -setdnsservers Wi-Fi 1.1.1.1 8.8.8.8
+```
+
+To restore automatic DNS later:
+
+```bash
+networksetup -setdnsservers Wi-Fi Empty
+```
+
+9. If the public resolvers return records but the local resolver still returns NXDOMAIN, do not call the hostname broken and do not keep re-creating Cloudflare bindings. Fix or explain the local resolver path instead.
+10. In the final summary, list the canonical hostname and any aliases that were bound.
 
 If an alias is unsafe, already owned by another app, or intentionally skipped, mention that explicitly in the final summary.
 

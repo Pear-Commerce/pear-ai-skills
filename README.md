@@ -1,6 +1,6 @@
 # Pear AI Skills
 
-Canonical public home for Pear-authored Codex and Claude skills.
+Canonical public home for Pear-authored AI assistant skills, currently used with Codex-compatible clients and Claude Desktop.
 
 ## Skills
 
@@ -17,9 +17,9 @@ Canonical public home for Pear-authored Codex and Claude skills.
 
 ## Install the Bootstrap Skill and Preload Everything
 
-Most people should install `canonical-skills` once, then immediately import all canonical Pear skills so the agent is up and running quickly. After that, when they mention skills, the agent can pull this repo again, refresh every skill, and re-check whether any newly imported skill applies.
+Most people should install `canonical-skills` once, then immediately import all canonical Pear skills so their assistant is up and running quickly. After that, when they mention skills, the assistant can pull this repo again, refresh every skill, and re-check whether any newly imported skill applies.
 
-For Codex:
+Codex-compatible target:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
@@ -32,7 +32,7 @@ mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
 rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/canonical-skills"
 cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "${CODEX_HOME:-$HOME/.codex}/skills/"
 
-# Preload every canonical Pear skill so the agent is ready immediately.
+# Preload every canonical Pear skill so the assistant is ready immediately.
 for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
   [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
@@ -41,7 +41,7 @@ for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
 done
 ```
 
-For Claude:
+Claude Desktop target:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
@@ -54,7 +54,7 @@ mkdir -p "$HOME/.claude/skills"
 rm -rf "$HOME/.claude/skills/canonical-skills"
 cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "$HOME/.claude/skills/"
 
-# Preload every canonical Pear skill so Claude is ready after restart.
+# Preload every canonical Pear skill so the assistant is ready after restart.
 for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
   [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
@@ -65,14 +65,14 @@ done
 
 Claude may need a restart before it sees the newly installed skill.
 
-## Install All Skills for Codex
+## Install All Skills: Codex-Compatible Target
 
 ```bash
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
 cp -R skills/* "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
 
-## Install All Skills for Claude
+## Install All Skills: Claude Desktop Target
 
 ```bash
 mkdir -p "$HOME/.claude/skills"

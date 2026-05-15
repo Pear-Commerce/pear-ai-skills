@@ -7,9 +7,9 @@ This file records the initial source locations that were consolidated into this 
 | `canonical-skills` | `skills/canonical-skills/` | created in canonical repo |
 | `intern-app-hosting` | `skills/intern-app-hosting/` | `Pear-Commerce/intern-app-directory:skills/intern-app-hosting/` |
 | `pear-dashboard-module-author` | `skills/pear-dashboard-module-author/` | `Pear-Commerce/pear-dashboard-s3-modules:skills/pear-dashboard-module-author/` |
-| `pdf` | `skills/pdf/` | local Codex install: `~/.codex/skills/pdf/` |
-| `pear-engineering-workflow` | `skills/pear-engineering-workflow/` | local Codex install: `~/.codex/skills/pear-engineering-workflow/` |
-| `pear-pr-review-flow` | `skills/pear-pr-review-flow/` | local Codex install: `~/.codex/skills/pear-pr-review-flow/` |
+| `pdf` | `skills/pdf/` | initial local assistant install: `~/.codex/skills/pdf/` |
+| `pear-engineering-workflow` | `skills/pear-engineering-workflow/` | initial local assistant install: `~/.codex/skills/pear-engineering-workflow/` |
+| `pear-pr-review-flow` | `skills/pear-pr-review-flow/` | initial local assistant install: `~/.codex/skills/pear-pr-review-flow/` |
 
 | Doc | Canonical path | Source repo path |
 | --- | --- | --- |

@@ -5,7 +5,7 @@ description: Bootstrap Pear's canonical skill system. Use whenever the user ment
 
 # Canonical Skills
 
-This is the one Pear skill people should install manually. It teaches the agent where Pear skills live, imports all canonical Pear skills up front, and keeps future skill edits rooted in the canonical repo.
+This is the one Pear skill people should install manually in any AI assistant that supports local skills. It teaches the assistant where Pear skills live, imports all canonical Pear skills up front, and keeps future skill edits rooted in the canonical repo.
 
 ## Canonical Source
 
@@ -34,16 +34,27 @@ When the user mentions skills in any context, do this before deciding no skill a
      git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
    fi
    ```
-2. Import all canonical skills into the local agent install preemptively:
+2. Import all canonical skills into every available local skill target preemptively:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-   mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-   for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-     [ -d "$skill_dir" ] || continue
-     skill_name="$(basename "$skill_dir")"
-     rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
-     cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
-   done
+   if [ -n "${CODEX_HOME:-}" ] || [ -d "$HOME/.codex" ]; then
+     mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+     for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
+       [ -d "$skill_dir" ] || continue
+       skill_name="$(basename "$skill_dir")"
+       rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
+       cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
+     done
+   fi
+   if [ -d "$HOME/.claude" ]; then
+     mkdir -p "$HOME/.claude/skills"
+     for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
+       [ -d "$skill_dir" ] || continue
+       skill_name="$(basename "$skill_dir")"
+       rm -rf "$HOME/.claude/skills/$skill_name"
+       cp -R "$skill_dir" "$HOME/.claude/skills/"
+     done
+   fi
    ```
 3. List available canonical skills:
    ```bash
@@ -55,7 +66,22 @@ When the user mentions skills in any context, do this before deciding no skill a
    - In the same turn, read the imported or canonical `SKILL.md` directly and follow it as if it had been available at startup.
    - In future turns, the skill should appear in the normal installed skill list.
 
-If the user is using Claude Desktop instead of Codex, import all canonical skills to Claude as well:
+For a specific assistant target, use the matching install path.
+
+Codex-compatible target:
+
+```bash
+PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
+  cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
+done
+```
+
+Claude Desktop target:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
@@ -80,7 +106,7 @@ All Pear skill creation and edits start in the canonical repo.
    git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
    ```
 2. Create or edit `skills/<skill-name>/SKILL.md` in `$PEAR_AI_SKILLS_REPO`.
-3. Keep the skill concise, with clear YAML `name` and `description`. Add `agents/openai.yaml` when useful for UI metadata.
+3. Keep the skill concise, with clear YAML `name` and `description`. Add optional assistant metadata files, such as `agents/openai.yaml`, only when a target UI or assistant integration uses them.
 4. Commit and push `Pear-Commerce/pear-ai-skills`.
 5. Copy the changed skill into any repo-local or installed copies that must stay in sync.
 6. For app repos other than `api.pearcommerce.com`, commit and push those synced copies directly after verification.
@@ -90,7 +116,9 @@ Do not make a repo-local skill copy the source of truth. Repo-local copies are v
 
 ## Quick Install
 
-To install this bootstrap skill in Codex and immediately import every canonical Pear skill:
+To install this bootstrap skill and immediately import every canonical Pear skill, use the block for the assistant where the user wants the skills available.
+
+Codex-compatible target:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
@@ -110,4 +138,22 @@ for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
 done
 ```
 
-Then start a new chat and mention skills normally.
+Claude Desktop target:
+
+```bash
+PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
+if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
+  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
+else
+  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
+fi
+mkdir -p "$HOME/.claude/skills"
+for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  rm -rf "$HOME/.claude/skills/$skill_name"
+  cp -R "$skill_dir" "$HOME/.claude/skills/"
+done
+```
+
+Then start a new chat in that assistant and mention skills normally. Claude Desktop may need a restart before it sees newly imported skills.
