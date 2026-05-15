@@ -1,11 +1,11 @@
 ---
 name: canonical-skills
-description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, imports all canonical skills preemptively, re-checks whether a newly imported skill applies, and makes all skill edits in the canonical repo first.
+description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, syncs the canonical skill library preemptively, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
 ---
 
 # Canonical Skills
 
-This is the one Pear skill people should install manually in any AI assistant that supports local skills. It teaches the assistant where Pear skills live, imports all canonical Pear skills up front, and keeps future skill edits rooted in the canonical repo.
+This is the one Pear skill people should install manually in any AI assistant that supports local skills. It teaches the assistant where Pear skills live, syncs Pear's shared skill library up front, and keeps future skill edits rooted in the canonical repo.
 
 ## Canonical Source
 
@@ -34,7 +34,7 @@ When the user mentions skills in any context, do this before deciding no skill a
      git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
    fi
    ```
-2. Import all canonical skills into every available local skill target preemptively:
+2. Sync the canonical skill library into every available local skill target preemptively:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
    "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
@@ -87,7 +87,7 @@ Do not make a repo-local skill copy the source of truth. Repo-local copies are v
 
 ## Quick Install
 
-To install this bootstrap skill and immediately import every canonical Pear skill into both Codex-compatible and Claude Desktop targets, run:
+To install this bootstrap skill and immediately get set up with Pear's shared skills in both Codex-compatible and Claude Desktop targets, run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh | bash

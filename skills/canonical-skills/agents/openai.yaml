@@ -1,4 +1,4 @@
 interface:
   display_name: "Canonical Skills"
-  short_description: "Preload and update Pear skills from the canonical repo"
-  default_prompt: "Use $canonical-skills whenever skills are mentioned so you refresh and import every Pear skill from the canonical repo, then update the canonical repo first for any skill changes."
+  short_description: "Sync and update Pear skills from the canonical repo"
+  default_prompt: "Use $canonical-skills whenever skills are mentioned so you sync Pear's shared skills from the canonical repo, then update the canonical repo first for any skill changes."

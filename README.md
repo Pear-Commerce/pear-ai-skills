@@ -15,9 +15,9 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 
 - `docs/codex-pr-improvement-goal.md`: Pear PR cleanup and review-quality checklist used by `pear-engineering-workflow` and `pear-pr-review-flow`.
 
-## Install the Bootstrap Skill and Preload Everything
+## Get Set Up and Stay Synced
 
-Most people should run the installer once. It checks out this canonical repo, imports every Pear skill into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
+Most people should run the installer once. It checks out this canonical repo, syncs Pear's shared skills into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
 
 Paste this into Terminal:
 
@@ -28,8 +28,8 @@ curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/s
 What it does:
 
 - Clones or updates the repo at `$HOME/pear-ai-skills`.
-- Imports all skills into `${CODEX_HOME:-$HOME/.codex}/skills`.
-- Imports all skills into `$HOME/.claude/skills`.
+- Syncs Pear's shared skills into `${CODEX_HOME:-$HOME/.codex}/skills`.
+- Syncs Pear's shared skills into `$HOME/.claude/skills`.
 - Preserves local repo changes instead of overwriting them.
 
 If you already have the repo checked out, run:
