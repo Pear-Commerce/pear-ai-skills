@@ -128,6 +128,35 @@ Read `references/lightsail-ops.md` for Lightsail provisioning steps.
 
 ---
 
+## Step 3.25: Preempt Hostname Drift and Natural Aliases
+
+Do this before final verification and before giving the user a URL. This prevents the recurring failure where the app is live at one slug but the user naturally tries a repo-name or app-name variant that returns `DNS_PROBE_FINISHED_NXDOMAIN`.
+
+1. Collect likely hostnames:
+   - The explicit user-requested hostname, if any.
+   - The display-name slug, e.g. `Pear AI Skills` -> `pear-ai-skills.intern.pearcommerce.com`.
+   - The GitHub repo slug, e.g. `pear-ai-skills-app` -> `pear-ai-skills-app.intern.pearcommerce.com`.
+   - The Worker/service/process slug, if different.
+   - The same slugs with a trailing `-app` removed or added when that variant is natural and unclaimed.
+2. Pick one canonical hostname for the directory card and primary handoff.
+3. For every other likely hostname that is safe and unclaimed, bind it as an alias to the same app:
+   - Workers: add another `[[routes]]` custom domain or equivalent Cloudflare custom-domain binding, then redeploy.
+   - Lightsail/CloudFront: add the alias to CloudFront and certificate coverage, or create a redirect host if that is lower risk.
+4. For alias hostnames, add or update S3 manifests with `excludeFromDirectory: true` and an `excludeReason` like `Alias for <canonical-host>; hidden to avoid duplicate directory cards.`
+5. Verify DNS with public resolvers, not only the local resolver:
+
+```bash
+dig @1.1.1.1 +short <alias-hostname>
+dig @8.8.8.8 +short <alias-hostname>
+```
+
+6. If the public resolvers return records but the local resolver still returns NXDOMAIN, tell the user the hostname is created and their DNS cache may need a minute. Do not call the hostname broken in this case.
+7. In the final summary, list the canonical hostname and any aliases that were bound.
+
+If an alias is unsafe, already owned by another app, or intentionally skipped, mention that explicitly in the final summary.
+
+---
+
 ## Step 3.5: Check for WAF Score Degradation Before Verifying
 
 **Do this before verification.** Heavy curl probing and API calls during a deploy can degrade the Cloudflare WAF attack scores (`cf.waf.score.sqli`, `cf.waf.score.rce`) for the operator's IP. The Pear zone has a custom rule called **"Block known bad attacks"** (Security → Security rules, order 2) that fires when these scores drop to ≤ 20. When triggered it returns Cloudflare's branded 403 block page (~4577 bytes) — which looks like a Worker or code error but is happening entirely at the WAF layer before the Worker runs.
@@ -332,6 +361,7 @@ Always produce this summary at the end:
 ## Hosting Summary: <app-name>
 
 **Hostname:** https://<app-name>.intern.pearcommerce.com
+**Aliases:** <other verified hostnames bound to the same app, or "none">
 **Hosting target:** Cloudflare Workers | AWS Lightsail
 **Reason for choice:** <one sentence>
 **GitHub source:** <repo URL and pushed commit SHA, or "not changed">
