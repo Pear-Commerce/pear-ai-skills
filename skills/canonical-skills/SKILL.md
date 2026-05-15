@@ -1,6 +1,6 @@
 ---
 name: canonical-skills
-description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, syncs the canonical skill library preemptively, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
+description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, directly invokes a skill-like name such as "use check-partner-upc ...", install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, syncs the canonical skill library preemptively, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
 ---
 
 # Canonical Skills
@@ -23,7 +23,17 @@ $HOME/pear-ai-skills
 
 ## When Any Skill Is Mentioned
 
-When the user mentions skills in any context, do this before deciding no skill applies:
+When the user mentions skills in any context, do this before deciding no skill applies.
+Treat these as skill mentions even if the word "skill" is absent:
+
+- Direct invocations such as `use check-partner-upc`, `run pear-pr-review-flow`, or `check-partner-upc 012345678905`.
+- Hyphenated, slash-prefixed, or dollar-prefixed names that look like installed or canonical skill names.
+- Requests to use, run, apply, install, import, update, create, modify, list, or inspect any named assistant workflow.
+- References to repo-local or installed skill paths.
+
+If a named skill is not in the current startup skill list, do not stop after local discovery. Sync and list the canonical repo first, then re-check the request against the freshly synced skills.
+
+Workflow:
 
 1. Make sure the canonical repo exists locally.
    ```bash
