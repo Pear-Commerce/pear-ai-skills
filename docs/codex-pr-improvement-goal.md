@@ -987,6 +987,7 @@ Pattern examples:
 ### PR Scope And Review Shape
 
 - Keep PRs focused on one behavior change when possible.
+- Make the PR easy to review by keeping most new behavior in its own purpose-owned module. Touch existing code only where essential: shared utility updates, small hooks into existing registries, dependency wiring, thin call-site handoffs, and other minimal integration points.
 - If a helper belongs somewhere else but moving it would widen scope too much, leave a follow-up only when the current PR remains correct and understandable.
 - Remove dead or contradictory code touched by the PR.
 - Do not add broad external configuration for scrapers/parsers if it makes debugging require both code version and remote config.
@@ -2059,6 +2060,7 @@ Pear Commerce PR preferences cluster around a few principles:
 - Prefer small named surfaces. A precise helper, named record, stream grouping key, protected hook, or service method is better than a long method full of incidental branching.
 - Treat production tools as part of correctness. Metrics, Sentry/Scalyr stack traces, app config kill switches, bounded pools, and reset endpoints are not afterthoughts.
 - Keep PRs reviewable. A focused diff with tests and clear dataflow beats a clever refactor that makes reviewers reconstruct the entire system.
+- Minimize existing-code surface area. Prefer new or clearly owned modules for most behavior, with only the essential hooks into shared utilities, registries, and call sites.
 - Let lint and local style carry the boring parts. Fix Error Prone/ESLint issues early so review energy goes to behavior.
 - Preserve compile-time help. Typed records, final template methods, annotations, Spring injection, DTOs,
   and explicit catches are valuable when they make illegal states harder to express.

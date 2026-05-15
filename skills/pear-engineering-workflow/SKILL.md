@@ -39,7 +39,7 @@ If the active repo does not have the guide, check the sibling API checkout:
 sed -n '1,240p' ../api.pearcommerce.com/docs/codex-pr-improvement-goal.md
 ```
 
-Apply the guide as a checklist: keep ownership boundaries clear, prefer existing helpers, make async and failure behavior explicit, keep observability useful, add focused deterministic tests, and keep the diff reviewable.
+Apply the guide as a checklist: keep ownership boundaries clear, prefer existing helpers, make async and failure behavior explicit, keep observability useful, add focused deterministic tests, and keep the diff reviewable. To make review easy, keep all but the essentials in their own purpose-owned modules; existing-code touchpoints should be minimal and limited to things like shared utility updates, small registry hooks, dependency wiring, and thin call-site handoffs.
 
 ## Concurrent Repo Work
 
