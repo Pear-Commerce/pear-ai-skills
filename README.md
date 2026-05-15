@@ -11,6 +11,7 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 - `pear-dashboard-module-author`: create, edit, publish, and review standalone Pear dashboard S3 modules.
 - `pear-engineering-workflow`: Pear engineering workflow for code edits, real data checks, worktrees, and end-to-end verification.
 - `pear-pr-review-flow`: Pear pull-request workflow for review requests, Copilot, review loops, and landing.
+- `sstore-store-extractor`: extract retailer store lists into `Store.SStore`-style JSON for `api.pearcommerce.com`.
 
 ## Shared Docs
 
