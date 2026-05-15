@@ -357,6 +357,29 @@ Each pattern below should be read not just as a scraping technique, but as a hin
   - `WebContent/META-INF/superc/current.json`
   - `test/com/pear/retailerFeasibility/ca/metro/MetroPlan.java`
 
+## Pattern 19: Browser Directory Coverage With Best-Effort Detail Enrichment
+
+- Signal:
+  - alphabetical store-directory pages render the full chain in a real browser
+  - direct HTTP fetches are Cloudflare-blocked
+  - some detail pages expose useful `Store` schema, but longer automated runs start returning challenge HTML
+- Technique:
+  - treat the rendered directory tabs as the canonical coverage source
+  - parse each directory card for store URL, name, and visible address
+  - derive a stable store id from the full `/magasin/...` path
+  - best-effort fetch detail pages only to enrich phone and geo fields
+- Completeness trap:
+  - if you rely on detail pages as the primary source, you can silently lose most of the chain once challenge pages start appearing
+  - if nested paths like `/magasin/<slug>/drive` exist, the last path segment alone is not a unique store id
+- Best reference:
+  - `WebContent/META-INF/carrefourfr/current.json`
+  - `WebContent/META-INF/carrefourfr/EXTRACTION.md`
+- Java shape to preserve:
+  - browser-page loop over directory tabs
+  - rendered card parser
+  - full-path store-id helper
+  - optional detail-page schema enrichment with graceful fallback
+
 ## Chrome Session Lessons From Metro
 
 - Live fetches may be blocked by Cloudflare while the browser page still works.
