@@ -8,9 +8,13 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 - `check-partner-upc`: check Pinterest partner UPC status, retailers, and availability.
 - `intern-app-hosting`: host and update internal standalone apps on `*.intern.pearcommerce.com`.
 - `pdf`: read, create, render, and visually verify PDF files.
+- `pear-concurrency`: `Parallel` utility, thread pool patterns, KeyedLock eviction, AtomicVelocityCounter, and timeout anti-patterns for `api.pearcommerce.com`.
 - `pear-dashboard-module-author`: create, edit, publish, and review standalone Pear dashboard S3 modules.
 - `pear-engineering-workflow`: Pear engineering workflow for code edits, real data checks, worktrees, and end-to-end verification.
+- `pear-jobs`: Quartz job structure (`PearScheduledJob`/`PearSimpleIntervalJob`), AtomicBoolean guards, `Parallel.getAll()` timeouts, and AppConfig toggles for `api.pearcommerce.com`.
+- `pear-orm`: PearSimpleORM load/save/query/async-batch patterns and anti-patterns for `api.pearcommerce.com` (not Hibernate/JPA).
 - `pear-pr-review-flow`: Pear pull-request workflow for review requests, Copilot, review loops, and landing.
+- `pear-proxy`: `JurlProxyFallback` Type ordering, ZenRows RENDER/SCRAPE, Vavr Try error handling, circuit breakers, and virtual-thread pinning avoidance for `api.pearcommerce.com`.
 - `retailer-store-import-feasibility`: discover, implement, verify, and preserve retailer store-import routes and `Store.SStore` JSON artifacts.
 
 ## Skill References
