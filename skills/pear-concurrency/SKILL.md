@@ -1,0 +1,132 @@
+---
+name: pear-concurrency
+description: Parallel utility, thread pool patterns, KeyedLock, AtomicVelocityCounter, virtual vs platform threads, and timeout anti-patterns. Use when writing or reviewing any concurrent or async code.
+---
+
+## The Central Rule
+
+**Always use `Parallel.getAll()` with a timeout. Never use `CompletableFuture.allOf().join()` or bare `future.get()` without a timeout parameter.**
+
+```java
+import com.pear.concurrency.Parallel;
+
+List<Future<Result>> futures = tasks.stream()
+    .map(task -> pool.submit(() -> processTask(task)))
+    .toList();
+
+// Correct
+List<Result> results = Parallel.getAll(futures, TimeUnit.MINUTES.toMillis(5), true);
+
+// Wrong — hangs forever
+CompletableFuture.allOf(futures).join();
+for (var f : futures) f.get();  // also wrong
+```
+
+`Parallel.java` is at `src/com/pear/concurrency/Parallel.java`.
+
+## Thread Pool Creation
+
+```java
+// Bounded platform thread pool (CPU/I/O bound jobs)
+PearThreadPoolExecutor pool = Parallel.createBoundedPlatformThreadPool(
+    50, "my-pool", 6, true, false);
+
+// Platform + virtual overflow (high-concurrency scraping)
+PearThreadPoolExecutor pool = Parallel.createBoundedPoolWithOverflowExecutor(
+    256, 1_000, "hybrid-pool", false, Thread.NORM_PRIORITY, true);
+
+// Ad-hoc pool — always shut down in finally
+PearThreadPoolExecutor pool = new PearThreadPoolExecutor(20, "task-pool");
+try {
+    ...
+    Parallel.getAll(futures, timeout, true);
+} finally {
+    pool.shutdown();
+}
+
+// Reuse global background pool instead of creating a new one for single tasks
+ExecutorService pool = Pools.global().getLowPriBackgroundPlatformExecutor();
+```
+
+## Submit Helpers
+
+```java
+Parallel.submit(() -> doWork());                          // default pool
+Parallel.submitAll(pool, callables);
+Parallel.submitAndBlockWhileQueued(pool, callable);       // backpressure
+Parallel.submitAllAndBlockWhileQueuedCF(pool, callables); // returns CFs
+
+// Get first matching result, cancel others
+T result = Parallel.submitAndGetAny(pool, callables,
+    r -> r.isValid(), TimeUnit.SECONDS.toMillis(30), true);
+```
+
+## Virtual Thread Pinning — Avoid
+
+Pinning causes: `synchronized` blocks, native methods, some blocking socket I/O.
+
+```java
+if (Thread.currentThread().isVirtual()) {
+    return Parallel.virtual_AwaitOnPlatform(platformPool, () -> blockingOp(), timeout);
+} else {
+    return blockingOp();
+}
+```
+
+## Keyed Locking
+
+```java
+import com.pear.concurrency.Locks;
+
+Locks.GET_RESOURCE_LOCK.lock(key);
+try {
+    processUser(userId);
+} finally {
+    Locks.GET_RESOURCE_LOCK.unlockQuietly(key);
+}
+```
+
+**KeyedLock is Caffeine-backed with time-based eviction.** If a lock entry is evicted between `lock()` and `unlockQuietly()`, the unlock silently operates on a different lock instance — broken mutual exclusion. Flag this risk when lock hold time could exceed the cache expiry.
+
+## Request Deduplication
+
+```java
+KeyedLockedReference<String, Result> cache = new KeyedLockedReference<>(1000);
+Result result = cache.compute(key, () -> expensiveOperation(itemId));
+// Concurrent callers with the same key wait for the first to complete
+```
+
+## Cross-Server Distributed Lock
+
+```java
+CrossServerKeyedLock lock = new CrossServerKeyedLock();
+if (lock.tryLock("global-task", Duration.ofMinutes(5))) {
+    try { performGlobalTask(); } finally { lock.unlock("global-task"); }
+}
+```
+
+## Progress Tracking
+
+```java
+AtomicVelocityCounter counter = new AtomicVelocityCounter();
+counter.updateTarget(total);
+// inside task:
+if (counter.tick() % 1000 == 0)
+    logger.info(STR."\{counter.getTicks()}/\{counter.getTarget()} ETA: \{counter.remainingTimeDisplay()}");
+```
+
+## Pool Sizing Guidelines
+
+- CPU-bound: `availableProcessors() + 1`
+- I/O-bound: `availableProcessors() * 10`
+- Virtual threads: thousands (let the JVM schedule)
+
+## Red Flags
+
+- ❌ `CompletableFuture.allOf().join()` without timeout
+- ❌ `future.get()` with no timeout parameter
+- ❌ Thread pool created without `shutdown()` in finally
+- ❌ `synchronized` block on a virtual thread
+- ❌ Plain `boolean` for shared state (use `AtomicBoolean`)
+- ❌ Unbounded pool with no backpressure
+- ❌ Assuming `KeyedLock` entry survives for the full lock hold time
