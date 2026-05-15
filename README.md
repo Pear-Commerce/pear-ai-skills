@@ -5,7 +5,14 @@ Canonical public home for Pear-authored Codex and Claude skills.
 ## Skills
 
 - `intern-app-hosting`: host and update internal standalone apps on `*.intern.pearcommerce.com`.
+- `pdf`: read, create, render, and visually verify PDF files.
 - `pear-dashboard-module-author`: create, edit, publish, and review standalone Pear dashboard S3 modules.
+- `pear-engineering-workflow`: Pear engineering workflow for code edits, real data checks, worktrees, and end-to-end verification.
+- `pear-pr-review-flow`: Pear pull-request workflow for review requests, Copilot, review loops, and landing.
+
+## Shared Docs
+
+- `docs/codex-pr-improvement-goal.md`: Pear PR cleanup and review-quality checklist used by `pear-engineering-workflow` and `pear-pr-review-flow`.
 
 ## Install for Codex
 

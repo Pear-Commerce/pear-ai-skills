@@ -1,0 +1,175 @@
+---
+name: pear-pr-review-flow
+description: Pear PR workflow for adding reviewers/Copilot, handling review comments, watching Codex-authored PRs until accepted, and landing when green. Always use when the user mentions a PR, pull request, review request, PR creation, PR update, PR feedback loop, or PR landing in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, pear-dashboard, pear-dashboard-api, or any Pear repo with many commits, many collaborators, or multiple likely code owners/authors.
+---
+
+# Pear PR Review Flow
+
+## Canonical Skill Source
+
+The canonical Pear skills repository is `https://github.com/Pear-Commerce/pear-ai-skills`.
+
+When asked to update this skill from any in-repository or locally installed copy, first read the canonical copy at `skills/pear-pr-review-flow/SKILL.md`, make the canonical repo change, and push it. Then update any vendored or installed copy that should stay in sync. For app repos other than `api.pearcommerce.com`, commit and push directly after verification. For `api.pearcommerce.com`, use a `codex/` branch and open a pull request instead of pushing directly to `master`.
+
+## Overview
+
+Use this skill whenever the user mentions a PR or asks to create, update, review, monitor, or land a PR. Before opening a Pear code PR, make sure `$pear-engineering-workflow` has run its cleanup/review-rules pass. Request the right PR reviewers without relying on broad teams, request GitHub Copilot in the way GitHub actually records, create the review-watch loop for Codex-authored PRs, and keep the PR review loop visible in Slack when the user wants that.
+
+## Codex Authorship Signature
+
+When Codex authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by:
+
+```text
+Thanks,
+Codex
+```
+
+Do not duplicate the signoff if it is already present. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
+
+## Concurrent Worktrees
+
+When creating or updating a PR while the user's main checkout or another Codex thread may be active in the same repo, use a sibling git worktree instead of sharing the working directory:
+
+```bash
+git fetch origin master --prune
+git worktree add -b codex/<short-task-name> ../<repo-name>-<short-task-name> origin/master
+```
+
+Commit, push, and open the PR from that worktree. Do not stash, reset, rebase, or clean the user's main checkout to prepare PR work. If the branch already exists, choose a unique `codex/` branch name or add the worktree for the existing branch in a distinct sibling directory.
+
+## Pre-PR Cleanup Gate
+
+Before creating a PR for Pear code changes, load `$pear-engineering-workflow` and complete its Review Rules cleanup pass. In practice:
+
+- read the PR-improvement guide from the canonical repo, preferably `/Users/alexwyler/pear-ai-skills/docs/codex-pr-improvement-goal.md` or `https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/docs/codex-pr-improvement-goal.md`
+- apply it as a final cleanup checklist before calling implementation done or opening the PR
+- run the relevant focused checks after cleanup
+- mention in the PR summary or final response that the Pear engineering cleanup pass was completed, or state plainly if the guide/checks could not be run
+
+For an existing PR, repeat this gate before marking the PR ready for review or re-requesting reviewers when Codex has materially changed code.
+
+## Reviewer Workflow
+
+1. Identify the PR and repo.
+   - Prefer `gh pr view --json number,url,author,headRefName,baseRefName`.
+   - Resolve the repo with `gh repo view --json nameWithOwner --jq .nameWithOwner`.
+
+2. Identify individual engineering reviewers.
+   - Do not default to `Pear-Commerce/tech` or other broad teams when the user asks for engineers by name.
+   - When the user asks for "all engineers" or broadly wants engineering review, request the current known Pear engineering reviewer set: `SarahYiskah`, `ericmartell`, `ksader`, `peteyfb-pear`, `AthulyaRaj7`, `justin-pear`, and `isaacanderson33`, excluding the PR author and anyone who is not a collaborator on the current repo.
+   - Start with current repo collaborators:
+     ```bash
+     gh api repos/OWNER/REPO/collaborators --paginate --jq '.[] | {login,type,permissions} | @json'
+     ```
+   - Use commit history as context clues:
+     ```bash
+     git log --since='18 months ago' --format='%an <%ae>' --all | sort | uniq -c | sort -nr | head -80
+     ```
+   - For Pear mono-repo context, also check nearby repos when useful, especially `api.pearcommerce.com`, `admin.pearcommerce.com`, `offers.pearcommerce.com`, `pear-dashboard`, and `pear-dashboard-api`.
+   - If Slack is available, search user profiles for engineering titles to distinguish engineers from product/ops/design:
+     `slack_search_users` queries such as `engineering`, `software`, `backend`, `frontend`.
+   - Exclude the PR author, bots, deactivated users, non-collaborators, and people who clearly are not engineers. `arjun-karunakaran` is not an engineering reviewer; do not include him in "all engineers" requests unless the user explicitly names him. If unsure, prefer fewer reviewers and explain the inference.
+
+3. Add reviewers by login using the helper script or the same REST API shape.
+   - Preferred helper:
+     ```bash
+     /Users/alexwyler/.codex/skills/pear-pr-review-flow/scripts/request-reviewers.sh --pr PR_NUMBER --reviewers login1,login2 --copilot
+     ```
+   - Direct API equivalent:
+     ```bash
+     printf '%s' '{"reviewers":["login1","login2"]}' \
+       | gh api -X POST repos/OWNER/REPO/pulls/PR_NUMBER/requested_reviewers --input -
+     ```
+
+4. Request Copilot separately and verify with the PR timeline.
+   - Prefer GitHub CLI `v2.88.0` or newer. If `gh --version` is older, upgrade it before trying to request Copilot.
+   - Use `@copilot`, not `copilot`, `github-copilot`, or `copilot-pull-request-reviewer`.
+   - Preferred command:
+     ```bash
+     gh pr edit PR_NUMBER --add-reviewer @copilot
+     ```
+   - REST fallback:
+     ```bash
+     printf '%s' '{"reviewers":["@copilot"]}' \
+       | gh api -X POST repos/OWNER/REPO/pulls/PR_NUMBER/requested_reviewers --input -
+     ```
+   - Verify with:
+     ```bash
+     gh api repos/OWNER/REPO/issues/PR_NUMBER/timeline --paginate \
+       --jq '.[] | select(.event=="review_requested" and .requested_reviewer.login=="Copilot")'
+     ```
+   - Note: `gh pr view --json reviewRequests` and the REST requested-reviewers endpoint may omit the special Copilot reviewer even when the PR timeline shows `Copilot`.
+
+5. Remove accidental broad team requests if needed.
+   ```bash
+   printf '%s' '{"reviewers":[],"team_reviewers":["tech"]}' \
+     | gh api -X DELETE repos/OWNER/REPO/pulls/PR_NUMBER/requested_reviewers --input -
+   ```
+
+## Slack Review Ask
+
+After reviewers and Copilot are requested, ask the user whether to post in `#engineering` unless they already asked you to post.
+
+Suggested question:
+
+> Want me to post in `#engineering` asking for reviews?
+
+If the user says yes or already requested a Slack post, use the Slack tool to send a short message to `#engineering`:
+
+```text
+PR is ready for review: [repo #PR](PR_URL)
+
+- <one-line summary>
+- Reviewers and Copilot requested
+
+Could I get reviews when you have a minute?
+
+Thanks,
+Codex
+```
+
+If the PR is urgent, a hotfix, or already landed, say that plainly and include the deploy or merge status if known.
+
+## Screenshot Evidence
+
+For user-facing admin, offers, dashboard, or extension changes, add screenshots or short videos to the PR when feasible. Cover each relevant state the reviewer needs to trust: loading, empty, success, error, disabled/no-extension, persisted/refreshed, and any manual override or warning state introduced by the PR. Prefer using the Chrome connector to drive the real local app/profile and capture screenshots manually from the browser flow. If Chrome is unavailable or live data is unstable, use a small local harness that renders the changed UI faithfully and say so in the PR. Host images somewhere reviewers can open, such as S3, and include concise captions in the PR body.
+
+## Review Follow-Up Loop
+
+When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End Codex-authored replies and commit messages with the Codex authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request.
+
+## Watch And Land Loop
+
+When working on a Codex-authored PR, create a recurring review loop instead of relying on a one-time pass. Also create it when the user asks Codex to keep watching, wait for acceptances, handle comments, or land when green. In the Codex app, use the automation tool when available and prefer a thread-attached heartbeat for short-interval checks. A typical cadence is every 5 minutes.
+
+The recurring task should:
+
+- watch only explicitly named PRs, or open PRs related to the current thread that were authored or materially written by Codex
+- identify Codex-authored PRs by the PR body or Codex-authored comments ending with exactly `Thanks,\nCodex`
+- inspect every GitHub feedback source on each pass: all review threads whether unresolved, resolved, or outdated; flat PR review comments; top-level issue/PR comments; requested-changes reviews; reviewdog/github-actions bot comments; Copilot feedback; check annotations when available; timeline review requests; approvals; mergeability; branch status; and required checks
+- do not treat Copilot as the only reviewer. Actionable comments from any author, including `github-actions`, `reviewdog`, humans, and Codex self-review comments, must be evaluated and either addressed or explicitly answered
+- for every actionable comment that has not already been handled by a later Codex reply or code change, make the smallest clean code change in the correct repo/worktree, run focused checks, amend the existing branch commit, and force-push with lease
+- reply to each addressed thread/comment with what changed and what was verified; do not resolve or close feedback conversations immediately after pushing a fix. Keep the back-and-forth visible, and only resolve/close a conversation after it has been quiet for at least 12 hours, when the user explicitly asks, or during landing/merging. Still address new feedback promptly.
+- reply with a concise technical reason when no code change is appropriate
+- end all Codex-authored GitHub replies and commit messages with the Codex authorship signature above
+- re-request GitHub Copilot review after each completed fix pass and verify the timeline shows the new request
+- avoid unrelated PRs and user-authored PRs that lack the Codex authorship signal
+- if a non-draft PR has been open and not landable for more than 24 hours, and human review or re-review is still useful, send a concise Slack nudge to `#engineering` with the PR link, current blocker, and requested review/re-review; do this at most once per PR every 48 hours, checking recent Slack/thread history for the PR URL before posting
+- land the PR only when requested by the user, the PR is open and not draft, required checks are green, reviews are accepted or no blocking review threads remain, and the branch is mergeable under the repo's normal merge method
+- summarize each pass back in the thread, including checks run, comments handled, landing status, and blockers
+
+## Common Pear Reviewer Clues
+
+Use current repo evidence first. These names have recently appeared as engineering reviewers/authors in Pear admin/API work, but do not add them blindly if they are not collaborators on the current repo:
+
+- `ericmartell`
+- `SarahYiskah`
+- `ksader`
+- `peteyfb-pear`
+- `AthulyaRaj7`
+- `justin-pear`
+- `isaacanderson33`
+
+## Final Response
+
+Summarize exactly who was requested, whether Copilot was verified through the PR timeline, whether a Slack message was posted or still needs user approval, and whether any requested watch/land loop was created or completed.

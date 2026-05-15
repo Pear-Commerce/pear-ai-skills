@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pear PR Review Flow"
+  short_description: "Use PR worktrees, reviewers, Copilot, and watch/land loops"
+  default_prompt: "Always use $pear-pr-review-flow when a PR is mentioned: run the Pear engineering cleanup gate before opening code PRs, isolate PR work, add reviewers/Copilot, handle feedback, and watch Codex-authored PRs until green when asked."
