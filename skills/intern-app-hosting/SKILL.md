@@ -214,6 +214,25 @@ Read `references/shared-auth-contract.md` for the full contract. The key points:
 - **Callback**: shared auth service completes Google OAuth and redirects back to the app's callback URL with `state` and a signed `session_token`
 - **Validation**: app validates `state`, validates `session_token` using `AUTH_SHARED_SECRET`, checks nonce and `hosted_domain`, then creates a local session
 
+**Important: do not rotate or reinterpret `AUTH_SHARED_SECRET`.** The auth service and every hosted app must use the exact same byte string. When fixing one app, update only that app's secret unless the user explicitly asks for a shared rotation.
+
+At Pear, the safe source for Worker secret setup is the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1`. Do not JSON-parse it, pick an inner field, trim quotes from it, or substitute a stale KV value. If stores disagree, treat the currently deployed auth service as the source of truth and verify candidate values against a fresh `session_token` before setting the app secret.
+
+Set a Worker app's shared secret like this:
+
+```bash
+AUTH_SHARED_SECRET="$(
+  aws secretsmanager get-secret-value \
+    --secret-id intern-app-hosting-auth-shared-secret \
+    --region us-east-1 \
+    --query SecretString \
+    --output text
+)"
+printf '%s' "$AUTH_SHARED_SECRET" | npx wrangler secret put AUTH_SHARED_SECRET --name <worker-name>
+```
+
+If the user reports `Bad shared auth token signature`, do not touch `auth-intern` or other apps. Update only the affected app's `AUTH_SHARED_SECRET`, then retry the callback. A stale pasted callback may then say `Shared auth token expired`; that is progress and means the signature now verifies.
+
 **Required env vars for the hosted app:**
 ```
 AUTH_BASE_URL=https://auth.intern.pearcommerce.com

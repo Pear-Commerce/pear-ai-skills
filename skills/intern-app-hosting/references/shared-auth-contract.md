@@ -67,6 +67,8 @@ AUTH_SHARED_SECRET=<retrieve from Pear secrets store>
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 ```
 
+Use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared auth service while fixing a single app. If a callback reports `Bad shared auth token signature`, update only the affected app's Worker secret first.
+
 For Lightsail/Node apps, also add:
 
 ```bash
