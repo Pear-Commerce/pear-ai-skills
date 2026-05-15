@@ -38,7 +38,7 @@ If you already have the repo checked out, run:
 ./scripts/install-all-skills.sh
 ```
 
-Claude Desktop may need a restart before it sees newly installed skills.
+Claude Desktop may need a restart before it sees newly synced skills.
 
 ## Install All Skills: Codex-Compatible Target
 
@@ -55,5 +55,7 @@ Claude Desktop may need a restart before it sees newly installed skills.
 ## Updating Skills
 
 This repository is the source of truth. If a skill is also vendored inside an app repository, update this repository first, push it, then copy the changed skill back to the app repository that needs the local copy.
+
+Do not create or require skill icons. Skill metadata should focus on the information assistants actually use: name, description, instructions, and any target-specific prompts.
 
 For app repositories other than `api.pearcommerce.com`, commit and push the app-repo copy directly after verification. For `api.pearcommerce.com`, make the change on a `codex/` branch and open a pull request.

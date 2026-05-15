@@ -65,7 +65,7 @@ PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
 "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --claude-only --no-color
 ```
 
-Tell the user Claude may need a restart before it sees newly imported skills.
+Tell the user Claude may need a restart before it sees newly synced skills.
 
 ## Creating or Updating Skills
 
@@ -77,7 +77,7 @@ All Pear skill creation and edits start in the canonical repo.
    git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
    ```
 2. Create or edit `skills/<skill-name>/SKILL.md` in `$PEAR_AI_SKILLS_REPO`.
-3. Keep the skill concise, with clear YAML `name` and `description`. Add optional assistant metadata files, such as `agents/openai.yaml`, only when a target UI or assistant integration uses them.
+3. Keep the skill concise, with clear YAML `name` and `description`. Add optional assistant metadata files, such as `agents/openai.yaml`, only when a target UI or assistant integration uses them. Do not create, require, or default skill icons; skill metadata should focus on names, descriptions, instructions, and target-specific prompts.
 4. Commit and push `Pear-Commerce/pear-ai-skills`.
 5. Copy the changed skill into any repo-local or installed copies that must stay in sync.
 6. For app repos other than `api.pearcommerce.com`, commit and push those synced copies directly after verification.
@@ -100,4 +100,4 @@ PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
 "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
 ```
 
-Then start a new chat in that assistant and mention skills normally. Claude Desktop may need a restart before it sees newly imported skills.
+Then start a new chat in that assistant and mention skills normally. Claude Desktop may need a restart before it sees newly synced skills.

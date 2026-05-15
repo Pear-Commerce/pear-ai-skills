@@ -257,7 +257,7 @@ main() {
 
   step "3. Next steps"
   info "Start a fresh chat in the assistant you use."
-  info "Claude Desktop may need a restart before it sees newly imported skills."
+  info "Claude Desktop may need a restart before it sees newly synced skills."
   info "You can safely rerun this installer whenever Pear skills change."
   say ""
   ok "Done."
