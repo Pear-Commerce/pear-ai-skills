@@ -4,6 +4,7 @@ This file records the initial source locations that were consolidated into this 
 
 | Skill | Canonical path | Source repo path |
 | --- | --- | --- |
+| `canonical-skills` | `skills/canonical-skills/` | created in canonical repo |
 | `intern-app-hosting` | `skills/intern-app-hosting/` | `Pear-Commerce/intern-app-directory:skills/intern-app-hosting/` |
 | `pear-dashboard-module-author` | `skills/pear-dashboard-module-author/` | `Pear-Commerce/pear-dashboard-s3-modules:skills/pear-dashboard-module-author/` |
 | `pdf` | `skills/pdf/` | local Codex install: `~/.codex/skills/pdf/` |

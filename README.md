@@ -4,6 +4,7 @@ Canonical public home for Pear-authored Codex and Claude skills.
 
 ## Skills
 
+- `canonical-skills`: one-time bootstrap skill that imports and updates Pear skills from this canonical repo.
 - `intern-app-hosting`: host and update internal standalone apps on `*.intern.pearcommerce.com`.
 - `pdf`: read, create, render, and visually verify PDF files.
 - `pear-dashboard-module-author`: create, edit, publish, and review standalone Pear dashboard S3 modules.
@@ -14,14 +15,64 @@ Canonical public home for Pear-authored Codex and Claude skills.
 
 - `docs/codex-pr-improvement-goal.md`: Pear PR cleanup and review-quality checklist used by `pear-engineering-workflow` and `pear-pr-review-flow`.
 
-## Install for Codex
+## Install the Bootstrap Skill and Preload Everything
+
+Most people should install `canonical-skills` once, then immediately import all canonical Pear skills so the agent is up and running quickly. After that, when they mention skills, the agent can pull this repo again, refresh every skill, and re-check whether any newly imported skill applies.
+
+For Codex:
+
+```bash
+PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
+if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
+  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
+else
+  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
+fi
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/canonical-skills"
+cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "${CODEX_HOME:-$HOME/.codex}/skills/"
+
+# Preload every canonical Pear skill so the agent is ready immediately.
+for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
+  cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
+done
+```
+
+For Claude:
+
+```bash
+PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
+if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
+  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
+else
+  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
+fi
+mkdir -p "$HOME/.claude/skills"
+rm -rf "$HOME/.claude/skills/canonical-skills"
+cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "$HOME/.claude/skills/"
+
+# Preload every canonical Pear skill so Claude is ready after restart.
+for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  rm -rf "$HOME/.claude/skills/$skill_name"
+  cp -R "$skill_dir" "$HOME/.claude/skills/"
+done
+```
+
+Claude may need a restart before it sees the newly installed skill.
+
+## Install All Skills for Codex
 
 ```bash
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
 cp -R skills/* "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
 
-## Install for Claude
+## Install All Skills for Claude
 
 ```bash
 mkdir -p "$HOME/.claude/skills"
