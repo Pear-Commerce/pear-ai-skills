@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intern App Hosting"
+  short_description: "Publish Pear intern apps safely"
+  default_prompt: "Use $intern-app-hosting to publish this standalone app internally."
