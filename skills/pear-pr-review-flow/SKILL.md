@@ -172,8 +172,24 @@ The recurring task should:
 - re-request GitHub Copilot review after each completed fix pass and verify the timeline shows the new request
 - avoid unrelated PRs and user-authored PRs that lack the Codex authorship signal
 - if a non-draft PR has been open and not landable for more than 24 hours, and human review or re-review is still useful, send a concise Slack nudge to `#engineering` with the PR link, current blocker, and requested review/re-review; do this at most once per PR every 48 hours, checking recent Slack/thread history for the PR URL before posting
-- land the PR only when requested by the user, the PR is open and not draft, required checks are green, reviews are accepted or no blocking review threads remain, and the branch is mergeable under the repo's normal merge method
-- summarize each pass back in the thread, including checks run, comments handled, landing status, and blockers
+- land/merge the PR once it is open, not draft, refreshed against the latest base branch, required checks are green, review decision is accepted or there are no required reviewers, no blocking review threads or actionable comments remain, and the branch is mergeable under the repo's normal merge method. This is what closes the PR; do not close an unmerged PR unless the user explicitly asks to abandon it.
+- do not land when the user explicitly says to keep the PR open, keep watching only, avoid merging, pause, or wait for a named reviewer beyond normal branch protection
+- after a successful merge, verify the PR is closed/merged, delete or stop the recurring watch automation for that PR when possible, and report the merge status back to the thread
+- if landing is blocked by branch protection, missing permissions, merge queue, conflicts, stale checks, or unavailable merge methods, report the blocker and keep watching instead of guessing
+- summarize each pass back in the thread, including checks run, comments handled, branch-refresh status, landing/merge status, and blockers
+
+## Landing Green PRs
+
+Default to closing eligible Codex-authored PRs by merging them once the review loop proves they are ready. "Ready" means:
+
+- the PR is open, not draft, and still points to the expected branch
+- the branch includes the latest base branch or was updated through the repo's update-branch flow
+- all required checks are complete and successful, ignoring only intentionally skipped non-required jobs
+- reviewer requirements are satisfied, requested-changes reviews are cleared, and Copilot has reviewed or been explicitly unavailable
+- review threads, flat review comments, top-level comments, bot comments, and check annotations have no unresolved actionable feedback
+- `gh pr view` or the GitHub API reports the PR as mergeable/clean, or the repo's merge queue accepts it
+
+Use the repo's normal merge path. Prefer a standard `gh pr merge PR_NUMBER` flow that respects branch protection and merge queues; if GitHub requires a merge queue or auto-merge, enable that instead of trying to bypass it. If the branch should be deleted by repo convention, use the repo's normal branch-deletion behavior after merge.
 
 ## New PR Completion Gate
 
@@ -185,6 +201,7 @@ Before sending the final response after creating or materially updating a Codex-
 - Copilot was requested and verified through the PR timeline, not only `gh pr view`
 - after any material PR update, the PR branch was refreshed against the latest base branch, or the final response states why it was unsafe or unnecessary
 - a recurring review-watch automation was created or updated for the PR; include the automation id/name, or state why no automation was created
+- if the PR is now ready under the landing rules, it was merged/closed or the exact landing blocker is stated
 - the final response says whether Slack was posted, skipped by user instruction, or still needs user approval
 
 If any item is missing, do not paper over it in the final answer. Complete it first, or clearly call out the blocker and the exact next command/tool action needed.
@@ -203,4 +220,4 @@ Use current repo evidence first. These names have recently appeared as engineeri
 
 ## Final Response
 
-Summarize exactly who was requested, whether Copilot was verified through the PR timeline, whether a Slack message was posted or still needs user approval, and whether any requested watch/land loop was created or completed.
+Summarize exactly who was requested, whether Copilot was verified through the PR timeline, whether a Slack message was posted or still needs user approval, whether any requested watch/land loop was created or completed, and whether the PR was merged/closed or why landing is still blocked.
