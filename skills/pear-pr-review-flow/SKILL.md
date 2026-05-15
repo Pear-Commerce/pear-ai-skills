@@ -137,7 +137,23 @@ For user-facing admin, offers, dashboard, or extension changes, add screenshots 
 
 ## Review Follow-Up Loop
 
-When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End Codex-authored replies and commit messages with the Codex authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request.
+When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, update the PR branch against the latest base branch, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End Codex-authored replies and commit messages with the Codex authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request.
+
+## Branch Refresh On PR Updates
+
+Whenever Codex materially updates an existing PR branch, refresh it against the latest base branch before the final push and review re-request. This gives required checks, including flaky or previously failed unit tests, another run on current code.
+
+Preferred local flow for Codex-authored branches:
+
+```bash
+BASE="$(gh pr view PR_NUMBER --json baseRefName --jq .baseRefName)"
+git fetch origin "$BASE" --prune
+git rebase "origin/$BASE"
+```
+
+Then run focused checks, amend the existing commit if needed, and push with `git push --force-with-lease`. If the PR branch is user-authored, shared, or unsafe to rewrite, prefer the repo's normal update-branch mechanism such as `gh pr update-branch PR_NUMBER`; if conflicts appear, stop and report the blocker instead of guessing.
+
+If no code change is needed but checks are stale, failed for likely transient reasons, or the branch is behind the base branch, update the PR branch to latest anyway so CI gets a clean fresh attempt.
 
 ## Watch And Land Loop
 
@@ -149,7 +165,7 @@ The recurring task should:
 - identify Codex-authored PRs by the PR body or Codex-authored comments ending with exactly `Thanks,\nCodex`
 - inspect every GitHub feedback source on each pass: all review threads whether unresolved, resolved, or outdated; flat PR review comments; top-level issue/PR comments; requested-changes reviews; reviewdog/github-actions bot comments; Copilot feedback; check annotations when available; timeline review requests; approvals; mergeability; branch status; and required checks
 - do not treat Copilot as the only reviewer. Actionable comments from any author, including `github-actions`, `reviewdog`, humans, and Codex self-review comments, must be evaluated and either addressed or explicitly answered
-- for every actionable comment that has not already been handled by a later Codex reply or code change, make the smallest clean code change in the correct repo/worktree, run focused checks, amend the existing branch commit, and force-push with lease
+- for every actionable comment that has not already been handled by a later Codex reply or code change, make the smallest clean code change in the correct repo/worktree, refresh the PR branch against the latest base branch, run focused checks, amend the existing branch commit, and force-push with lease
 - reply to each addressed thread/comment with what changed and what was verified; do not resolve or close feedback conversations immediately after pushing a fix. Keep the back-and-forth visible, and only resolve/close a conversation after it has been quiet for at least 12 hours, when the user explicitly asks, or during landing/merging. Still address new feedback promptly.
 - reply with a concise technical reason when no code change is appropriate
 - end all Codex-authored GitHub replies and commit messages with the Codex authorship signature above
@@ -167,6 +183,7 @@ Before sending the final response after creating or materially updating a Codex-
 - the Pear engineering cleanup pass was run or the reason it was skipped is stated
 - the intended engineering reviewers are requested; for new non-draft Codex PRs in Pear engineering repos, this means the known Pear engineering reviewer set unless the user asked for a narrower set
 - Copilot was requested and verified through the PR timeline, not only `gh pr view`
+- after any material PR update, the PR branch was refreshed against the latest base branch, or the final response states why it was unsafe or unnecessary
 - a recurring review-watch automation was created or updated for the PR; include the automation id/name, or state why no automation was created
 - the final response says whether Slack was posted, skipped by user instruction, or still needs user approval
 
