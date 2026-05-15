@@ -5,6 +5,7 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 ## Skills
 
 - `canonical-skills`: one-time bootstrap skill that imports and updates Pear skills from this canonical repo.
+- `check-partner-upc`: check Pinterest partner UPC status, retailers, and availability.
 - `intern-app-hosting`: host and update internal standalone apps on `*.intern.pearcommerce.com`.
 - `pdf`: read, create, render, and visually verify PDF files.
 - `pear-dashboard-module-author`: create, edit, publish, and review standalone Pear dashboard S3 modules.
@@ -18,6 +19,20 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 ## Get Set Up and Stay Synced
 
 Most people should run the installer once. It checks out this canonical repo, syncs Pear's shared skills into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
+
+## Fast Path: Ask Your Assistant
+
+In Codex or Claude, start with this short prompt:
+
+```text
+Find Pear-Commerce/pear-ai-skills and add all Pear skills to this assistant. If the repo is not checked out, clone or update it, run its installer, and then list the installed skills.
+```
+
+If that works, start a fresh chat and mention skills normally. Claude Desktop may need a restart before it sees newly synced skills.
+
+If the assistant cannot find or run the installer, use the manual fallback below.
+
+## Manual Fallback
 
 Paste this into Terminal:
 
