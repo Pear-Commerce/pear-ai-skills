@@ -56,6 +56,7 @@ For an existing PR, repeat this gate before marking the PR ready for review or r
 
 2. Identify individual engineering reviewers.
    - Do not default to `Pear-Commerce/tech` or other broad teams when the user asks for engineers by name.
+   - For a new non-draft Codex-authored PR in a Pear engineering repo, default to the current known Pear engineering reviewer set unless the user explicitly names a narrower reviewer set, asks to keep the PR quiet/draft, or says not to request reviewers.
    - When the user asks for "all engineers" or broadly wants engineering review, request the current known Pear engineering reviewer set: `SarahYiskah`, `ericmartell`, `ksader`, `peteyfb-pear`, `AthulyaRaj7`, `justin-pear`, and `isaacanderson33`, excluding the PR author and anyone who is not a collaborator on the current repo.
    - Start with current repo collaborators:
      ```bash
@@ -157,6 +158,19 @@ The recurring task should:
 - if a non-draft PR has been open and not landable for more than 24 hours, and human review or re-review is still useful, send a concise Slack nudge to `#engineering` with the PR link, current blocker, and requested review/re-review; do this at most once per PR every 48 hours, checking recent Slack/thread history for the PR URL before posting
 - land the PR only when requested by the user, the PR is open and not draft, required checks are green, reviews are accepted or no blocking review threads remain, and the branch is mergeable under the repo's normal merge method
 - summarize each pass back in the thread, including checks run, comments handled, landing status, and blockers
+
+## New PR Completion Gate
+
+Before sending the final response after creating or materially updating a Codex-authored PR, explicitly verify and, if missing, fix these items:
+
+- the PR exists, is on the intended branch, and the final response includes the PR URL
+- the Pear engineering cleanup pass was run or the reason it was skipped is stated
+- the intended engineering reviewers are requested; for new non-draft Codex PRs in Pear engineering repos, this means the known Pear engineering reviewer set unless the user asked for a narrower set
+- Copilot was requested and verified through the PR timeline, not only `gh pr view`
+- a recurring review-watch automation was created or updated for the PR; include the automation id/name, or state why no automation was created
+- the final response says whether Slack was posted, skipped by user instruction, or still needs user approval
+
+If any item is missing, do not paper over it in the final answer. Complete it first, or clearly call out the blocker and the exact next command/tool action needed.
 
 ## Common Pear Reviewer Clues
 
