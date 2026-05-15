@@ -17,66 +17,39 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 
 ## Install the Bootstrap Skill and Preload Everything
 
-Most people should install `canonical-skills` once, then immediately import all canonical Pear skills so their assistant is up and running quickly. After that, when they mention skills, the assistant can pull this repo again, refresh every skill, and re-check whether any newly imported skill applies.
+Most people should run the installer once. It checks out this canonical repo, imports every Pear skill into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
 
-Codex-compatible target:
-
-```bash
-PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
-  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
-else
-  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
-fi
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/canonical-skills"
-cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "${CODEX_HOME:-$HOME/.codex}/skills/"
-
-# Preload every canonical Pear skill so the assistant is ready immediately.
-for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
-  cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
-done
-```
-
-Claude Desktop target:
+Paste this into Terminal:
 
 ```bash
-PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
-  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
-else
-  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
-fi
-mkdir -p "$HOME/.claude/skills"
-rm -rf "$HOME/.claude/skills/canonical-skills"
-cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "$HOME/.claude/skills/"
-
-# Preload every canonical Pear skill so the assistant is ready after restart.
-for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  rm -rf "$HOME/.claude/skills/$skill_name"
-  cp -R "$skill_dir" "$HOME/.claude/skills/"
-done
+curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh | bash
 ```
 
-Claude may need a restart before it sees the newly installed skill.
+What it does:
+
+- Clones or updates the repo at `$HOME/pear-ai-skills`.
+- Imports all skills into `${CODEX_HOME:-$HOME/.codex}/skills`.
+- Imports all skills into `$HOME/.claude/skills`.
+- Preserves local repo changes instead of overwriting them.
+
+If you already have the repo checked out, run:
+
+```bash
+./scripts/install-all-skills.sh
+```
+
+Claude Desktop may need a restart before it sees newly installed skills.
 
 ## Install All Skills: Codex-Compatible Target
 
 ```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R skills/* "${CODEX_HOME:-$HOME/.codex}/skills/"
+./scripts/install-all-skills.sh --codex-only
 ```
 
 ## Install All Skills: Claude Desktop Target
 
 ```bash
-mkdir -p "$HOME/.claude/skills"
-cp -R skills/* "$HOME/.claude/skills/"
+./scripts/install-all-skills.sh --claude-only
 ```
 
 ## Updating Skills

@@ -37,24 +37,7 @@ When the user mentions skills in any context, do this before deciding no skill a
 2. Import all canonical skills into every available local skill target preemptively:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-   if [ -n "${CODEX_HOME:-}" ] || [ -d "$HOME/.codex" ]; then
-     mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-     for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-       [ -d "$skill_dir" ] || continue
-       skill_name="$(basename "$skill_dir")"
-       rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
-       cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
-     done
-   fi
-   if [ -d "$HOME/.claude" ]; then
-     mkdir -p "$HOME/.claude/skills"
-     for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-       [ -d "$skill_dir" ] || continue
-       skill_name="$(basename "$skill_dir")"
-       rm -rf "$HOME/.claude/skills/$skill_name"
-       cp -R "$skill_dir" "$HOME/.claude/skills/"
-     done
-   fi
+   "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
    ```
 3. List available canonical skills:
    ```bash
@@ -72,26 +55,14 @@ Codex-compatible target:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
-  cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
-done
+"$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --codex-only --no-color
 ```
 
 Claude Desktop target:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-mkdir -p "$HOME/.claude/skills"
-for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  rm -rf "$HOME/.claude/skills/$skill_name"
-  cp -R "$skill_dir" "$HOME/.claude/skills/"
-done
+"$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --claude-only --no-color
 ```
 
 Tell the user Claude may need a restart before it sees newly imported skills.
@@ -116,44 +87,17 @@ Do not make a repo-local skill copy the source of truth. Repo-local copies are v
 
 ## Quick Install
 
-To install this bootstrap skill and immediately import every canonical Pear skill, use the block for the assistant where the user wants the skills available.
-
-Codex-compatible target:
+To install this bootstrap skill and immediately import every canonical Pear skill into both Codex-compatible and Claude Desktop targets, run:
 
 ```bash
-PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
-  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
-else
-  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
-fi
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/canonical-skills"
-cp -R "$PEAR_AI_SKILLS_REPO/skills/canonical-skills" "${CODEX_HOME:-$HOME/.codex}/skills/"
-for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/$skill_name"
-  cp -R "$skill_dir" "${CODEX_HOME:-$HOME/.codex}/skills/"
-done
+curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh | bash
 ```
 
-Claude Desktop target:
+If the repo is already checked out locally:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
-  git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
-else
-  git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
-fi
-mkdir -p "$HOME/.claude/skills"
-for skill_dir in "$PEAR_AI_SKILLS_REPO"/skills/*; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  rm -rf "$HOME/.claude/skills/$skill_name"
-  cp -R "$skill_dir" "$HOME/.claude/skills/"
-done
+"$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
 ```
 
 Then start a new chat in that assistant and mention skills normally. Claude Desktop may need a restart before it sees newly imported skills.
