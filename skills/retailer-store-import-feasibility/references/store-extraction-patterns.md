@@ -1,6 +1,6 @@
 # Store Extraction Patterns
 
-This file is the north star for extracting `SStore`-style retailer store lists in `api.pearcommerce.com`.
+This file supports `retailer-store-import-feasibility` when extracting full-estate `Store.SStore`-style retailer store lists in `api.pearcommerce.com`.
 
 Use it for two things:
 

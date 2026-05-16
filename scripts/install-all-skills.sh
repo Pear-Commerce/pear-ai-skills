@@ -9,6 +9,7 @@ CLAUDE_SKILLS_DIR="${CLAUDE_SKILLS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/skills}"
 INSTALL_CODEX=1
 INSTALL_CLAUDE=1
 COLOR_MODE="${COLOR:-auto}"
+RETIRED_SKILLS="sstore-store-extractor"
 
 usage() {
   cat <<EOF
@@ -222,10 +223,24 @@ copy_skill_dir() {
   mv "$tmp_target" "$target_dir"
 }
 
+remove_retired_skills_from_target() {
+  target_name="$1"
+  target_parent="$2"
+
+  for skill_name in $RETIRED_SKILLS; do
+    target_dir="$target_parent/$skill_name"
+    if [ -d "$target_dir" ]; then
+      rm -rf "$target_dir"
+      info "Removed retired skill from $target_name: $skill_name"
+    fi
+  done
+}
+
 import_to_target() {
   target_name="$1"
   target_parent="$2"
   mkdir -p "$target_parent"
+  remove_retired_skills_from_target "$target_name" "$target_parent"
 
   count=0
   for skill_dir in "$REPO_DIR"/skills/*; do
