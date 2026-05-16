@@ -386,6 +386,12 @@ Use `--exclude-from-directory true` and `--exclude-reason "<why hidden>"` for su
 
 If that repo is unavailable, update the two S3 JSON objects directly with AWS CLI and `jq`, preserving `public-read` object ACLs. Never include secrets or private user data in a manifest. Use blank `author` when unsure.
 
+Directory visibility handoff:
+
+- User-facing intern apps are visible in `apps.intern.pearcommerce.com` by default unless the user asks for the app to be hidden.
+- When an app is visible, explain in the final handoff that the user can ask Codex or Claude to hide it from the intern apps directory later. Hiding should set `excludeFromDirectory: true` and a clear `excludeReason`, while keeping the app reachable by direct URL.
+- When an app is hidden, explicitly say it is hidden from the directory and remains reachable by direct URL.
+
 Verify the favicon and manifest before finalizing:
 
 ```bash
@@ -411,7 +417,10 @@ Always produce this summary at the end:
 **Reason for choice:** <one sentence>
 **GitHub source:** <repo URL and pushed commit SHA, or "not changed">
 **Directory manifest:** s3://public-pearcommerce/intern-app-manifests/manifests/<app-hostname>.json (updated | not updated because <reason>)
+**Directory visibility:** visible in apps.intern.pearcommerce.com | hidden from directory but reachable by direct URL
 **Browser favicon:** <manifest.iconUrl> (wired in app HTML | not updated because <reason>)
+
+If the app is visible, add: "You can ask Codex or Claude to hide this from the intern apps directory later; the app will still be reachable by direct URL."
 
 **Auth mode:** Shared Google OAuth via auth.intern.pearcommerce.com
 **Auth callback registered in Google Cloud:** https://auth.intern.pearcommerce.com/auth/google/callback (no app-specific URI needed)
