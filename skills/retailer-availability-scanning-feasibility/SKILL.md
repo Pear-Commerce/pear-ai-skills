@@ -130,6 +130,8 @@ Use `useJurlCache(...)` for script validation when repeatedly proving the same s
 
 For Azure/APIM-style APIs, public long-lived subscription keys from browser bundles may be accepted as either `Ocp-Apim-Subscription-Key` or a `subscription-key` query parameter. If a copied API works locally but proxied Java returns a "missing subscription key" 401, retry with the traced key in both locations before pruning the proxy. Keep the successful final script to the proxy types that actually work.
 
+If a search index such as Algolia exposes only global online stock fields like `StockOverrideMessage`, use it as diagnostic evidence but do not count it as store-level availability. A passing availability probe still needs the store id plus item id/UPC to affect the response, or a separate store-context/cart/fulfillment route that returns current pickup/in-store status and price.
+
 ## Proxy Ladder
 
 Try and document the first working option, but do not stop at this short list if it fails:

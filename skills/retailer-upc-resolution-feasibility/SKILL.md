@@ -125,6 +125,8 @@ Use `useJurlCache(...)` for search/PDP documents during script validation so kno
 
 For retailer search or PDP APIs behind Azure/APIM, public long-lived subscription keys traced from browser bundles may need to be sent both as `Ocp-Apim-Subscription-Key` and as a `subscription-key` query parameter. If proxied Java sees a "missing subscription key" response while local Chrome/curl works, try the query-param form before abandoning that proxy route.
 
+For IBM/WCS storefronts or other legacy ecommerce sites using Algolia autocomplete, a blocked PDP/search page may still expose a header or header-fragment endpoint with a public `algoliaConfig` object. Look for `appID`, `APIKey`, product index names, default filters, and `siteRoot` in rendered HTML, header fragments, and autocomplete bundles. If the Algolia hit contains UPC/GTIN plus a stable product object id and PDP action URL, it is a valid live UPC-resolution route; treat the public search key as long-lived config and comment where it came from. Still verify the target UPC from the live Algolia response, not from a cached PDP or search snippet.
+
 ## Proxy Ladder
 
 Try and document the first working option, but do not stop at this short list if it fails:

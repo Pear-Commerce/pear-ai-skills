@@ -113,6 +113,8 @@ If `STATIC` is the correct store route but has intermittent transient failures, 
 
 For Azure/APIM-style APIs, public long-lived subscription keys sometimes work either as the `Ocp-Apim-Subscription-Key` header or as a `subscription-key` query parameter. If a route works in Chrome/curl but proxied Java returns an APIM "missing subscription key" response, try sending the traced key both ways, comment where it came from, and bump the cache key before declaring the proxy blocked.
 
+For IBM/WCS storefronts, the visible store-locator page may be blocked by Incapsula/Distil while underlying AJAX views still work. Inspect rendered HTML and JS assets for `wc.service.declare(...)`, `StoreLocator`, `AjaxStoreLocatorSearch`, `EStoreStoreLocatorResultsView`, and similar route names. Try those endpoints directly with the same `storeId`, `catalogId`, and `langId` constants from the page, then add the postcode/city parameters seen in JavaScript such as `storeAddressSearch_zipCode` or `storeAddressSearch_city`. If the AJAX endpoint returns JSON wrapped in a JavaScript comment, strip `/* ... */`, parse the `searchResults` string, and use a production proxy list proven on that endpoint. Do not discard the route just because the human HTML document is blocked.
+
 ## Proxy Ladder
 
 Try and document the first working option:
