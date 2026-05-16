@@ -157,7 +157,9 @@ If no code change is needed but checks are stale, failed for likely transient re
 
 ## Watch And Land Loop
 
-When working on a Codex-authored PR, create a recurring review loop instead of relying on a one-time pass. Also create it when the user asks Codex to keep watching, wait for acceptances, handle comments, or land when green. In the Codex app, use the automation tool when available and prefer a thread-attached heartbeat for short-interval checks. A typical cadence is every 10 minutes.
+When working on a Codex-authored PR, create a recurring review loop instead of relying on a one-time pass. Also create it when the user asks Codex to keep watching, wait for acceptances, handle comments, or land when green. In the Codex app, use the automation tool when available and prefer a thread-attached heartbeat for short-interval checks. A typical active-feedback cadence is every 5 to 10 minutes.
+
+After a watcher verifies that the latest Copilot review produced no new comments, there are no unanswered actionable comments from any source, and required checks are green or only intentionally skipped/non-actionable, relax the cadence during weekends and off-hours instead of continuing a tight polling loop. Hourly checks are usually enough while the PR is quiet. If new actionable feedback, requested changes, failing checks, or mergeability problems appear, handle or report them promptly and tighten the cadence again while fixes or check reruns are active.
 
 Before creating or updating the recurring loop, ask which autonomous actions the user wants unless the current conversation already clearly grants them. Use a concise question such as:
 
