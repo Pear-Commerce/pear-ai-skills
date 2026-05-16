@@ -123,6 +123,8 @@ Keep only response validation and parsing inside `goThen`. Do matching, candidat
 
 Use `useJurlCache(...)` for search/PDP documents during script validation so known-good routes are not re-scraped on every suite run. If you are changing only proxy type, headers, render settings, or another transport detail to prove production viability, bump `extraCacheKey(...)` for that experiment; otherwise a cached response from the old route can make the new route look successful. Once a proxy list is proven, keep the stable extra cache key and do not include exhaustive proxy sweeps in the passing resolver path.
 
+For retailer search or PDP APIs behind Azure/APIM, public long-lived subscription keys traced from browser bundles may need to be sent both as `Ocp-Apim-Subscription-Key` and as a `subscription-key` query parameter. If proxied Java sees a "missing subscription key" response while local Chrome/curl works, try the query-param form before abandoning that proxy route.
+
 ## Proxy Ladder
 
 Try and document the first working option, but do not stop at this short list if it fails:

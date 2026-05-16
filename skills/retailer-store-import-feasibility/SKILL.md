@@ -111,6 +111,8 @@ For one-off store imports that fetch many independent store detail pages, run pa
 
 If `STATIC` is the correct store route but has intermittent transient failures, it is acceptable to try `STATIC` up to about 10 times and count that as one cheap production-ready proxy option before falling through to a small known-good fallback. Keep exhaustive proxy sweeps planning-only; the final store script should use the proven list plus cache rather than rediscovering every proxy on each run.
 
+For Azure/APIM-style APIs, public long-lived subscription keys sometimes work either as the `Ocp-Apim-Subscription-Key` header or as a `subscription-key` query parameter. If a route works in Chrome/curl but proxied Java returns an APIM "missing subscription key" response, try sending the traced key both ways, comment where it came from, and bump the cache key before declaring the proxy blocked.
+
 ## Proxy Ladder
 
 Try and document the first working option:
@@ -153,7 +155,7 @@ Populate fields only when known:
 - `category`
 - `countryCode`
 
-Use the retailer's stable store number/id over transient UUIDs unless the UUID is clearly the only id accepted by availability APIs. Deduplicate by the id that availability scanning will use.
+Use the retailer's stable store number/id over transient UUIDs unless the UUID is clearly the only id accepted by availability APIs. Deduplicate by the id that availability scanning will use. If the site has multiple locator surfaces, such as a marketing/Yext locator plus an ecommerce fulfillment locator, prefer the id accepted by the availability route even when the prettier locator has a slightly different count. Document the mismatch and sample ids in the `@Script` summary.
 
 ## Script Probes
 

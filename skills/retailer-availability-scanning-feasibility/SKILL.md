@@ -128,6 +128,8 @@ Keep only response validation and parsing inside `goThen`. Build UPC/URZA object
 
 Use `useJurlCache(...)` for script validation when repeatedly proving the same store/item route, especially after a live response has established the proxy/header/body shape. Keep TTLs short for volatile availability and price responses. When testing a changed proxy type, header set, render option, or request body provenance, bump `extraCacheKey(...)` so stale cached responses do not mask whether the new route works. Once the working proxy list is known, cache that list with a stable key and avoid exhaustive proxy checks in the real-time updater path.
 
+For Azure/APIM-style APIs, public long-lived subscription keys from browser bundles may be accepted as either `Ocp-Apim-Subscription-Key` or a `subscription-key` query parameter. If a copied API works locally but proxied Java returns a "missing subscription key" 401, retry with the traced key in both locations before pruning the proxy. Keep the successful final script to the proxy types that actually work.
+
 ## Proxy Ladder
 
 Try and document the first working option, but do not stop at this short list if it fails:
@@ -148,6 +150,8 @@ Get creative if you have to: when the direct inventory endpoint is blocked, sess
 When app decompilation or APK string extraction reveals API base URLs, route fragments, DTO names, or parameter names for product availability, basket, store status, or fulfillment, reconstruct the most likely retailer-owned requests and test them through Java/proxies. Treat those strings as a map, not proof: the passing availability probe still needs a live store-specific response with status and price, and any required app headers, tokens, cookies, store context, or device identifiers must be reproducible from production boxes.
 
 When a new tactic is useful, or a creative route fails in a reusable way, update this skill or `references/repo-tactics.md` in the canonical skills repo before wrapping up, then sync/reinstall the skill. Capture the store-context setup, request body/header shape, proxy type, status/price mapping, cache key implication, and how the `@Script` probe distinguishes unavailable from blocked.
+
+When store ids differ between locator surfaces, validate the id against the availability endpoint before committing to the store import. A marketing locator id may be stable for maps but unusable for fulfillment; in that case use the ecommerce/fulfillment UUID or code in `Store.SStore.storeId` and note any small count difference from the marketing locator.
 
 For GraphQL routes copied from browser bundles, keep the operation and fragments browser-shaped until the probe is stable. A proxy response that reaches GraphQL validation, even with errors like unused/missing fragments, is useful evidence that the proxy/header/key path reached the retailer API; fix the query shape and retest that proxy before discarding it.
 
