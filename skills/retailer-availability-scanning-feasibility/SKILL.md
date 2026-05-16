@@ -19,6 +19,10 @@ Check these first:
 
 If the store id or item id is not known yet, use `$retailer-store-import-feasibility` and `$retailer-upc-resolution-feasibility` first.
 
+## Repo Tactics
+
+Read `references/repo-tactics.md` when choosing a static updater vs batch updater, deciding cache keys/TTLs, handling store context, or diagnosing status writeback. It summarizes patterns and gotchas mined from current availability updater and batch availability updater code.
+
 ## Discovery Order
 
 Explore in local Chrome before coding:

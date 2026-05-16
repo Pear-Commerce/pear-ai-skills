@@ -17,6 +17,10 @@ Check these first:
 - `test/com/pear/retailerFeasibility/us/dollargeneral/DollarGeneralPlan.java` for proxy-backed rendered scraping
 - `$sstore-store-extractor` when the user wants a full JSON export under `WebContent/META-INF`
 
+## Repo Tactics
+
+Read `references/repo-tactics.md` when deciding how to productionize a store import, choose `getAllStores` vs `getStoresForZip`, set cache TTLs, or diagnose stale/missing store ids. It summarizes patterns and gotchas mined from current API store import code.
+
 ## Discovery Order
 
 Explore in local Chrome before coding:

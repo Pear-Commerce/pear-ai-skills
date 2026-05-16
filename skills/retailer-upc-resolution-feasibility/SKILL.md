@@ -18,6 +18,10 @@ Check these first:
 - `test/com/pear/retailerFeasibility/**` for existing `searchProductsByName`, `fetchProductDetails`, and `fetchProductByUpc` patterns
 - `src/com/pear/onboarding/alexwyler/AlsBodegaItemIdResolver.java` and `test/com/pear/onboarding/alexwyler/AlsBodegaTest.java` for a small resolver example
 
+## Repo Tactics
+
+Read `references/repo-tactics.md` when choosing direct resolution vs candidate generation, integrating with graph search, validating UPC evidence, or tuning caches and proxies. It summarizes patterns and gotchas mined from current resolver and graph-search code.
+
 ## Discovery Order
 
 Explore in local Chrome before coding:
