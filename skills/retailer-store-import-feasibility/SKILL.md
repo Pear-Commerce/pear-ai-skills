@@ -13,6 +13,7 @@ Check these first:
 
 - `src/com/pear/entities/inventory/Store.java` for `Store.SStore`
 - `test/com/pear/retailerFeasibility/**` for prior `Plan` and `StoreUpdater` examples
+- `WebContent/META-INF/<retailer>/current.json` when a PR or previous extraction already contains expected `Store.SStore` output
 - `test/com/pear/retailerFeasibility/us/tops/TopsStoreUpdater.java` for HTML traversal
 - `test/com/pear/retailerFeasibility/us/dollargeneral/DollarGeneralPlan.java` for proxy-backed rendered scraping
 - `$sstore-store-extractor` when the user wants a full JSON export under `WebContent/META-INF`
@@ -114,6 +115,8 @@ Add tests that assert:
 - no duplicate store ids exist after normalization
 - a known sample store from Chrome appears
 - count matches the site total when the site exposes a total
+
+When the task is to reproduce a prior PR, load the checked-in `WebContent/META-INF/<retailer>/current.json` with `JSON.get().parseList(..., Store.SStore.class)` and compare the live normalized output field-by-field after sorting by `storeId`. Do not rely only on `Store.SStore.equals`; compare `storeId`, `name`, `address`, `geoAddress`, coordinates, `phone`, `category`, `countryCode`, and formatted zip so normalization drift is obvious.
 
 Use `@Script` for live retailer tests. If a route fails, keep the method and test but disable the test:
 

@@ -74,6 +74,7 @@ Public/API locator:
 - Albertsons/Safeway uses a local locator by lat/lng with `staticUnblocker`, seven day cache, and parses store ids from returned ids/deeplinks.
 - Freshop uses `api.freshop.com/1/stores` and keeps a backup JSON file.
 - Walgreens fetches all store ids and details with a rate limiter and long store-detail caching.
+- Storefront Gateway banners often expose `https://storefrontgateway.<banner>.com/api/stores` with a top-level `{total, items}` payload. Mirror Chrome headers such as `origin`, `referer`, and `x-site-host`; parse `items`; validate `total == items.size()`; prefer `retailerStoreId` over the UUID `id` as `storeId`; normalize `country: Canada` to `CA`; strip phone punctuation; and build `address`/`geoAddress` from address lines, city, province/state, and postal code. If a shared base plan exists, reuse DTOs where they fit, but verify the response wrapper before assuming older `availablePickupStores`/`availablePlanningStores` shapes.
 
 Rendered/page-backed:
 
@@ -105,6 +106,7 @@ Rendered/page-backed:
 Build tests that exercise the same code shape production will use:
 
 - Unit-style parser tests for fixture/static JSON.
+- PR reproduction tests that load `WebContent/META-INF/<retailer>/current.json`, sort both live and expected stores by `storeId`, and assert every normalized `Store.SStore` field that the artifact contains.
 - Live `@Script` tests for `getStoresForZip` with one dense zip and one sparse zip.
 - A completeness assertion when the site exposes total stores or state counts.
 - A dedupe assertion for `storeId`.
