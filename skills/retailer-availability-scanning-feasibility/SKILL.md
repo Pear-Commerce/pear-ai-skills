@@ -15,7 +15,7 @@ A passing availability probe must fetch current status and price live at script 
 
 During planning/discovery, before declaring a live route blocked, enumerate the currently available `JurlProxyFallback.Type` values from `src/com/pear/http/JurlProxyFallback.java` and run a bounded one-off probe across every relevant non-local, non-deprecated proxy type. Include static, ISP/residential, geo variants, BrightData unblockers, ZenRows scrape/render, Scrapfly scrape/render/ASP, and provider-specific static pools. Skip only types that are explicitly local, deprecated/invalid, retailer-specific for another retailer, or documented as requiring a browser profile incompatible with Java. Record the tested type list and the response signal in the disabled probe/comment.
 
-Do not put exhaustive proxy sweeps in the final real-time availability `@Script` or production updater path. Once discovery identifies the proxy type(s) that work, the runnable script should use a small ordered list of those known-good types, with a modest retry count and cache strategy appropriate for production. If no proxy works, disable the live probe with the exhaustive planning results instead of making every test run burn through all proxies again.
+Do not put exhaustive proxy sweeps in the final real-time availability `@Script` or production updater path. Once discovery identifies the proxy type(s) that work, the runnable script should use a small ordered list of those known-good types, with a modest retry count and cache strategy appropriate for production. If `STATIC` is the right path but has intermittent transient failures, it is acceptable to try `STATIC` up to about 10 times and count that as one cheap production-ready proxy option before falling through to the next known-good proxy. If a script repeatedly reaches a late proxy before succeeding, treat the earlier failures as pruning evidence and move/remove those proxies unless logs show they sometimes return valid store-specific status/price evidence. If no proxy works, disable the live probe with the exhaustive planning results instead of making every test run burn through all proxies again.
 
 ## Repo Anchors
 
@@ -60,6 +60,8 @@ test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>PlanTest.java
 Use `*Plan.java` for reusable availability exploration code: store-context setup, item/PDP request methods, parsers, DTOs, status/price mapping, proxy lists, and helpers that may later move into a `UPCRetailerZipAvailabilityRecomputer`. Use `*PlanTest.java` for the JUnit `@Script` entrypoints, sample store/item inputs, assertions, logging, `@Disabled` failure comments, and production-wiring checks. A single `*PlanTest.java` is acceptable for a tiny one-off, but prefer the split when helper logic is non-trivial or shared with UPC resolution.
 
 When this skill runs by itself, first search for an existing retailer `*Plan.java` / `*PlanTest.java` pair. If stores or UPC resolution already created it, update that same pair with availability helpers and availability `@Script` methods while preserving existing probes and comments. If it does not exist, create the pair using the standard names so the orchestrator or other focused skills can append to it later.
+
+When the user scopes a feasibility pass to only `<Retailer>Plan.java` and `<Retailer>PlanTest.java`, treat that as a hard file-boundary instruction. Keep helper DTOs, store-context setup probes, header/body/token tracing notes, captured long-lived public config, parsers, and disabled/passing `@Script` probes nested in those two files. Do not create production availability updaters, recomputer classes, imports, or wiring in that mode; the proven code can be pulled out later. This file-boundary allowance does not relax the production-runnable requirement: a passing availability probe still must fetch current retailer-owned store-specific status and price at runtime, not rely on embedded/demo data.
 
 For feasibility, a plan method may be enough:
 
@@ -116,12 +118,15 @@ Tuple2<Status, BigDecimal> result = new JurlProxyFallback(
         .throwOnNon200(false)
 )
     .attempts(5)
+    .extraCacheKey("retailer-availability-static-v1")
     .useJurlCache(true, TimeUnit.HOURS.toMillis(6))
     .goThen(jurl -> parseStatusAndPrice(jurl))
     .get();
 ```
 
 Keep only response validation and parsing inside `goThen`. Build UPC/URZA objects, status semantics, and fallback endpoint choices outside it.
+
+Use `useJurlCache(...)` for script validation when repeatedly proving the same store/item route, especially after a live response has established the proxy/header/body shape. Keep TTLs short for volatile availability and price responses. When testing a changed proxy type, header set, render option, or request body provenance, bump `extraCacheKey(...)` so stale cached responses do not mask whether the new route works. Once the working proxy list is known, cache that list with a stable key and avoid exhaustive proxy checks in the real-time updater path.
 
 ## Proxy Ladder
 
@@ -143,6 +148,8 @@ Get creative if you have to: when the direct inventory endpoint is blocked, sess
 When app decompilation or APK string extraction reveals API base URLs, route fragments, DTO names, or parameter names for product availability, basket, store status, or fulfillment, reconstruct the most likely retailer-owned requests and test them through Java/proxies. Treat those strings as a map, not proof: the passing availability probe still needs a live store-specific response with status and price, and any required app headers, tokens, cookies, store context, or device identifiers must be reproducible from production boxes.
 
 When a new tactic is useful, or a creative route fails in a reusable way, update this skill or `references/repo-tactics.md` in the canonical skills repo before wrapping up, then sync/reinstall the skill. Capture the store-context setup, request body/header shape, proxy type, status/price mapping, cache key implication, and how the `@Script` probe distinguishes unavailable from blocked.
+
+For GraphQL routes copied from browser bundles, keep the operation and fragments browser-shaped until the probe is stable. A proxy response that reaches GraphQL validation, even with errors like unused/missing fragments, is useful evidence that the proxy/header/key path reached the retailer API; fix the query shape and retest that proxy before discarding it.
 
 ## Script Probes
 

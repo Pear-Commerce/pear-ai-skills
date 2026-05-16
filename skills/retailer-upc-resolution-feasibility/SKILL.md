@@ -15,7 +15,7 @@ A passing UPC resolution probe must fetch the item id and UPC evidence live from
 
 During planning/discovery, before declaring a live route blocked, enumerate the currently available `JurlProxyFallback.Type` values from `src/com/pear/http/JurlProxyFallback.java` and run a bounded one-off probe across every relevant non-local, non-deprecated proxy type. Include static, ISP/residential, geo variants, BrightData unblockers, ZenRows scrape/render, Scrapfly scrape/render/ASP, and provider-specific static pools. Skip only types that are explicitly local, deprecated/invalid, retailer-specific for another retailer, or documented as requiring a browser profile incompatible with Java. Record the tested type list and the response signal in the disabled probe/comment.
 
-Do not put exhaustive proxy sweeps in the final real-time UPC resolution `@Script` or production resolver path. Once discovery identifies the proxy type(s) that work, the runnable script should use a small ordered list of those known-good types, with a modest retry count and cache strategy appropriate for production. If no proxy works, disable the live probe with the exhaustive planning results instead of making every test run burn through all proxies again.
+Do not put exhaustive proxy sweeps in the final real-time UPC resolution `@Script` or production resolver path. Once discovery identifies the proxy type(s) that work, the runnable script should use a small ordered list of those known-good types, with a modest retry count and cache strategy appropriate for production. If `STATIC` is the right path but has intermittent transient failures, it is acceptable to try `STATIC` up to about 10 times and count that as one cheap production-ready proxy option before falling through to the next known-good proxy. If a script repeatedly reaches a late proxy before succeeding, treat the earlier failures as pruning evidence and move/remove those proxies unless logs show they sometimes return valid UPC/item-id evidence. If no proxy works, disable the live probe with the exhaustive planning results instead of making every test run burn through all proxies again.
 
 ## Repo Anchors
 
@@ -56,6 +56,8 @@ test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>PlanTest.java
 Use `*Plan.java` for reusable resolver exploration code: search/detail request methods, parsers, DTOs, UPC matching helpers, proxy lists, and candidate ranking that may later move into an `ItemIdInfoResolver`. Use `*PlanTest.java` for the JUnit `@Script` entrypoints, sample UPC/name inputs, assertions, logging, `@Disabled` failure comments, and comparison notes. A single `*PlanTest.java` is acceptable for a tiny one-off, but prefer the split when helper logic is non-trivial or shared with availability.
 
 When this skill runs by itself, first search for an existing retailer `*Plan.java` / `*PlanTest.java` pair. If stores or another surface already created it, update that same pair with UPC resolver helpers and UPC `@Script` methods while preserving existing probes and comments. If it does not exist, create the pair using the standard names so the orchestrator or availability skill can append to it later.
+
+When the user scopes a feasibility pass to only `<Retailer>Plan.java` and `<Retailer>PlanTest.java`, treat that as a hard file-boundary instruction. Keep helper DTOs, parsers, proxy experiments, route notes, captured long-lived public config, and disabled/passing `@Script` probes nested in those two files. Do not create production resolver classes or registration/wiring in that mode; the proven code can be pulled out later. This file-boundary allowance does not relax the production-runnable requirement: a passing UPC resolution probe still must fetch live retailer-owned UPC evidence at runtime, not rely on embedded/demo data.
 
 For feasibility, create methods such as:
 
@@ -111,12 +113,15 @@ return new JurlProxyFallback(
         .throwOnNon200(false)
 )
     .attempts(5)
+    .extraCacheKey("retailer-upc-static-v1")
     .useJurlCache(true, TimeUnit.DAYS.toMillis(30))
     .goThen(jurl -> parseCandidates(jurl.getDocument()))
     .get();
 ```
 
 Keep only response validation and parsing inside `goThen`. Do matching, candidate ranking, and fallback search-term loops outside it unless the parsing result itself determines retry/failure.
+
+Use `useJurlCache(...)` for search/PDP documents during script validation so known-good routes are not re-scraped on every suite run. If you are changing only proxy type, headers, render settings, or another transport detail to prove production viability, bump `extraCacheKey(...)` for that experiment; otherwise a cached response from the old route can make the new route look successful. Once a proxy list is proven, keep the stable extra cache key and do not include exhaustive proxy sweeps in the passing resolver path.
 
 ## Proxy Ladder
 

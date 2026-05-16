@@ -47,6 +47,8 @@ test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>PlanTest.java
 
 Use `*Plan.java` for the reusable store-loading implementation: HTTP/browser-assisted extraction helpers, parsers, DTOs, normalization, dedupe, JSON artifact writing, and comparison helpers. Use `*PlanTest.java` for the JUnit `@Script` entrypoints, assertions, sample stores, logging, `@Disabled` failure comments, and PR/reference comparisons. A single `*PlanTest.java` is fine for a tiny one-off, but prefer the split once helper code is non-trivial or may be reused by UPC/availability work.
 
+When the user scopes a feasibility pass to only `<Retailer>Plan.java` and `<Retailer>PlanTest.java`, treat that as a hard file-boundary instruction. Keep helper DTOs, parser code, extracted JSON constants, known-dead URL notes, and `@Script` validation nested in those two files. Do not create production classes, `WebContent` artifacts, or extra docs in that mode; the code can be pulled out later during full implementation.
+
 When this skill runs by itself, first search for an existing retailer `*Plan.java` / `*PlanTest.java` pair. If it exists, update that pair with the store loader and store `@Script` methods instead of creating a separate store-only test class. If it does not exist, create the pair using the standard names so later UPC and availability skills can append their probes to the same files.
 
 Expose a method such as:
@@ -59,7 +61,7 @@ or use `List<Store>` when the code is already close to a production `StoreUpdate
 
 ## Store JSON Artifacts
 
-When a store import probe successfully produces a normalized `List<Store.SStore>`, also write the stores to JSON artifacts under:
+When a store import probe successfully produces a normalized `List<Store.SStore>`, also write the stores to JSON artifacts under, unless the user explicitly limited the task to the two plan files:
 
 ```text
 WebContent/META-INF/<retailer>/<yyyy-MM-dd>.json
@@ -89,6 +91,7 @@ return new JurlProxyFallback(
         .throwOnNon200(false)
 )
     .attempts(5)
+    .extraCacheKey("retailer-store-static-v1")
     .useJurlCache(true, TimeUnit.DAYS.toMillis(30))
     .goThen(jurl -> parseStores(jurl.getDocument()))
     .get();
@@ -101,6 +104,12 @@ For rendered pages, add the render-capable proxy types and a `waitFor` selector 
 ```
 
 Keep only response validation and parsing inside `goThen`; normalize, dedupe, geocode, and save outside it when possible so logic errors do not burn every proxy attempt.
+
+Use `useJurlCache(...)` for store sitemaps, directory pages, and store detail documents once the route is known to work; store pages rarely need to be refetched on every script run. When changing only proxy type, headers, render settings, or another transport detail during testing, bump `extraCacheKey(...)` so an older cached success does not hide the new experiment. After identifying the working proxy list, keep a stable extra cache key for that list so repeated suite runs reuse the proven responses.
+
+For one-off store imports that fetch many independent store detail pages, run pages in parallel by default, usually 5-10 at a time. Use a bounded Pear pool and `Parallel.getAll(..., timeout, true)` so slow or blocked pages do not hang the entire script. Keep the concurrency modest enough to avoid hammering the retailer and rely on Jurl cache to make reruns cheap.
+
+If `STATIC` is the correct store route but has intermittent transient failures, it is acceptable to try `STATIC` up to about 10 times and count that as one cheap production-ready proxy option before falling through to a small known-good fallback. Keep exhaustive proxy sweeps planning-only; the final store script should use the proven list plus cache rather than rediscovering every proxy on each run.
 
 ## Proxy Ladder
 
@@ -122,6 +131,8 @@ Do not stop after the first visible page of stores. Check hidden pagination, laz
 Leadformance-style store locators may expose full country or region directories as paginated HTML with one `LocalBusiness` `application/ld+json` block per store. Crawl the directory pages, follow `rel=next` or stable `?page=N` pagination until no stores remain, and sanitize raw control characters such as literal carriage returns before parsing JSON-LD. This can be more durable than a blocked locator API, and the resulting normalized `Store.SStore` list should still be written to both `current.json` and a dated JSON artifact.
 
 For store imports, a valid feasibility path is a one-off JavaScript snippet run in a local browser session when bot detection blocks Java/proxy HTTP but the site loads normally in Chrome. Use the snippet to read retailer-owned page state, embedded JSON, map markers, fetch/XHR responses already present in the page, or rendered DOM store cards, then normalize the result into `Store.SStore` JSON artifacts under `WebContent/META-INF/<retailer>/`. Keep the snippet in the plan/test comment or nearby notes, document that it is a browser-assisted one-off extraction, and still include an `@Script` probe that validates the saved artifact shape, dedupe, required fields, and comparison target. Do not use this browser one-off tactic as proof for real-time UPC resolution or availability scanning.
+
+If Java/proxy store detail fetching gets bogged down and the user permits a one-off browser extraction, it is acceptable to skip the Java live fetch for the store importer and commit the browser-rerunnable snippet plus the extracted store list with the plan. This is store-import-only guidance because stores are effectively one-off reference data; do not apply it to real-time UPC resolution or availability scanning. The snippet should be durable enough that someone can rerun it a year later: include the start URL, extraction date, endpoint/source shape, normalization rules, concurrency limit, known dead links, and what console output to copy. If the user specifically scopes the change to only `<Retailer>Plan.java` and `<Retailer>PlanTest.java`, keep all helper DTOs, constants, extracted JSON, dead-link notes, and validation nested inside those two files rather than creating production classes or `WebContent` artifacts. Because large JSON text blocks can exceed Java's constant-pool string limit, split embedded JSON into multiple chunks and join at runtime. The `@Script` should validate the embedded list count, duplicate store ids, required address/zip/coordinate fields, known sample stores, and documented dead/redirecting sitemap URLs. Keep the browser snippet bounded at 5-10 concurrent detail fetches.
 
 When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture the source shape, required headers/proxies, id choice, normalization gotcha, and how the `@Script` probe proves completeness.
 

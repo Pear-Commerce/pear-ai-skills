@@ -44,6 +44,8 @@ When creating the PR for a retailer feasibility pass, use a simple title:
 
 Keep the title focused on the retailer and feasibility outcome even when the branch includes production wiring for the proven route.
 
+When a PR is created for a solvable retailer from the feasibility spreadsheet, update the spreadsheet row promptly. Mark Alex as owner, set difficulty to `Easy` when all three surfaces are production-ready, fill the columns you understand, link the PR, and add concise notes on routes, store count, proxy requirements, and caveats. Use Chrome to edit the sheet when the Google Sheets connector cannot write, and do this for every PR before moving on to the next retailer.
+
 Every combined `@Script` probe class should start with a compact comment like:
 
 ```java
@@ -58,9 +60,9 @@ Every combined `@Script` probe class should start with a compact comment like:
 ## Operating Loop
 
 1. Load Pear context before editing Java: use `$pear-engineering-workflow` and `$pear-proxy`, then search with `rg` for existing retailer/platform patterns.
-2. Explore the retailer in local Chrome. Use DevTools Network, Sources, rendered DOM, cookies/local storage, request payloads, and copied cURL as evidence. Do not treat browser success as proof until Java can replay it.
+2. Explore the retailer in local Chrome. Use DevTools Network, Sources, rendered DOM, cookies/local storage, request payloads, and copied cURL as evidence. Do not treat browser success as proof until Java can replay it. When a needed header, cookie, token, version string, parameter, or body value appears in DevTools, trace where it comes from and reproduce that source in Java when practical. If the value is public and long-lived, such as a stable app id, version, API key, or functionally permanent token, it is acceptable to capture it with a comment explaining why it is safe to reuse.
 3. Translate the best route into a small Java method that uses `LoggedJurl` plus `JurlProxyFallback`.
-4. Try the proxy ladder in Java: static/datacenter first, then `UNBLOCKER`, then ZenRows scrape/render, then Scrapfly render/ASP render when the page needs JavaScript or bot handling.
+4. Try the proxy ladder in Java: static/datacenter first, then `UNBLOCKER`, then ZenRows scrape/render, then Scrapfly render/ASP render when the page needs JavaScript or bot handling. If `STATIC` works but flakes intermittently, retry `STATIC` up to about 10 times and count that as one cheap proxy option before falling through to the next known-good proxy.
 5. Run the focused `@Script` probe. If it fails, return to Chrome and find another route: different endpoint, document HTML, embedded app data, rendered page, cart API, or city/state traversal.
 6. Repeat until the surface passes or the failing route is clearly documented and disabled.
 
