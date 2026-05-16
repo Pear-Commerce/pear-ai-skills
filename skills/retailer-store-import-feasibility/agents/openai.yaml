@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retailer Store Import Feasibility"
+  short_description: "Probe and verify retailer store import paths"
+  default_prompt: "Use $retailer-store-import-feasibility to discover and verify a retailer store importer that returns Store.SStore-compatible data."

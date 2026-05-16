@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retailer Availability Scanning Feasibility"
+  short_description: "Probe store-level price and inventory checks"
+  default_prompt: "Use $retailer-availability-scanning-feasibility to discover and verify a retailer AvailabilityUpdater for store, item ID, price, and stock status."

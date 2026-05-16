@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retailer UPC Resolution Feasibility"
+  short_description: "Probe UPC to retailer item ID resolution"
+  default_prompt: "Use $retailer-upc-resolution-feasibility to discover and verify a retailer UPC/item ID resolver for a product UPC and name."
