@@ -37,14 +37,14 @@ For hydrated/computed/UI-only/response-only data, prefer explicit response DTOs.
 
 ## Concurrent Repo Work
 
-If the user or another Codex thread may be using the checkout, work in a sibling worktree on a `codex/` branch:
+Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for small changes. Treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.
 
 ```bash
 git fetch origin master --prune
 git worktree add -b codex/<short-task-name> ../<repo-name>-<short-task-name> origin/master
 ```
 
-Edit, test, commit, push, and open the PR from that worktree. Do not stash, reset, rebase, or clean the user's main checkout to make room. Use unique task names; remove only worktrees you no longer need.
+Edit, test, commit, push, and open the PR from that worktree. Do not stash, reset, rebase, or clean the user's main checkout to make room. Only edit the current checkout directly when it is clean and clearly dedicated to this task. Use unique task names; remove only worktrees you no longer need.
 
 ## Real Data
 
