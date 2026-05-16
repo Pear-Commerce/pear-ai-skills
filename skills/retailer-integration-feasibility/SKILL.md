@@ -36,6 +36,14 @@ Before creating a new feasibility file, search for an existing retailer `*Plan.j
 
 When the user asks for production wiring, graduate the proven code into the existing owner area, usually `src/com/pear/itemurlupdater`, `src/com/pear/upcresolution`, `src/com/pear/jobs/retailer`, or a retailer-specific package already used by similar code.
 
+When creating the PR for a retailer feasibility pass, use a simple title:
+
+```text
+[codex] <retailer> feasibility
+```
+
+Keep the title focused on the retailer and feasibility outcome even when the branch includes production wiring for the proven route.
+
 Every combined `@Script` probe class should start with a compact comment like:
 
 ```java
