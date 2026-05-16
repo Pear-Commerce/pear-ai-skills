@@ -63,6 +63,7 @@ Static file backed:
 
 - `StoreLoaders` loads retailer CSV/JSON from `assets.pearcommerce.com` or `retailer-store-locations` and handles header mapping, country normalization, lat/lng scaling, and generated hash fallback ids.
 - CVS, Petco, HEB, Ace, Sams, and Walmart Canada patterns read JSON from `WEB-INF/classes`, normalize stores, then group by `Zipcode.of(store.getFormattedZip())`.
+- Feasibility store exports should also leave repo artifacts at `WebContent/META-INF/<retailer>/<yyyy-MM-dd>.json` and `WebContent/META-INF/<retailer>/current.json`, using a plain `Store.SStore` JSON array. The dated file preserves the run output; `current.json` is the comparison target for future `@Script` probes.
 - Use `Lazy.memoize` or a synchronized `initialized` guard plus a concurrent map to avoid reparsing large files.
 - For file import tests, assert fixture size, sampled store ids, no duplicate ids, and expected zip grouping.
 
@@ -122,6 +123,7 @@ If a source is incomplete or blocked, keep the probe code and disable the failin
 - `getAllStores` is implemented when the source is full-estate.
 - `getStoresForZip` is implemented when the source is zip/lat/lng dependent.
 - `storeImportCountryCodes` is set for non-US/multi-country retailers.
+- `WebContent/META-INF/<retailer>/<yyyy-MM-dd>.json` and `current.json` contain the normalized `Store.SStore` output when the probe can produce stores.
 - Jurl cache keys include zip/body/parser version as needed.
 - Store fixture/API result includes stable `storeId`, zip, address, and country.
 - `@Script` probes document the first working proxy type and disabled failures document all attempted routes.
