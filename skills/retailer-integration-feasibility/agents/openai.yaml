@@ -1,4 +1,4 @@
 interface:
   display_name: "Retailer Integration Feasibility"
   short_description: "Probe store, item, and availability integrations"
-  default_prompt: "Use $retailer-integration-feasibility to evaluate a retailer URL and build the Pear store importer, item ID resolver, and availability updater feasibility tests."
+  default_prompt: "Use $retailer-integration-feasibility to evaluate a retailer URL and build the Pear store importer, item ID resolver, and availability updater @Script feasibility probes."

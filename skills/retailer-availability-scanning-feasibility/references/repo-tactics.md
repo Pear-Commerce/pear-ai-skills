@@ -170,12 +170,12 @@ For static updaters:
 
 For batch updaters:
 
-- Test `fetchBatchAvailabilityInfo(Store, UPC)` directly for a known store/item.
-- Use `withStoreIds(...)` and `setUpcs(...)` to constrain live tests.
+- Probe `fetchBatchAvailabilityInfo(Store, UPC)` directly for a known store/item.
+- Use `withStoreIds(...)` and `setUpcs(...)` to constrain live `@Script` probes.
 - Assert emitted `BatchAvailability.itemId`, `storeId`, `retailerEnum`, `result`, and price.
-- Avoid full `batchUpdateAvailabilities()` in normal tests unless intentionally testing writeback; it can create/update many URZAs.
+- Avoid full `batchUpdateAvailabilities()` in normal CI tests; if intentionally testing writeback, keep it as an explicit `@Script` probe because it can create/update many URZAs.
 
-Use `@Script` and `@Flaky` consistently for live retailer/proxy tests. Disabled feasibility failures should include store id, zip, UPC/item id, endpoint/PDP URL, request body shape, proxy ladder, response signal, and next route.
+Use `@Script` and `@Flaky` consistently for live retailer/proxy probes. Disabled feasibility failures should include store id, zip, UPC/item id, endpoint/PDP URL, request body shape, proxy ladder, response signal, and next route.
 
 ## Productionization Checklist
 

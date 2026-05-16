@@ -101,13 +101,13 @@ Rendered/page-backed:
 - If the API works in Chrome but not AWS/proxy, try the full document, app bootstrap JSON, rendered route, state/city route, or mobile/app API before declaring infeasible.
 - For non-US retailers, override `storeImportCountryCodes`; otherwise the importer will iterate US zipcodes.
 
-## Test Tactics
+## Script Probe Tactics
 
-Build tests that exercise the same code shape production will use:
+Build JUnit `@Script` probes that exercise the same code shape production will use while staying out of CI:
 
-- Unit-style parser tests for fixture/static JSON.
-- PR reproduction tests that load `WebContent/META-INF/<retailer>/current.json`, sort both live and expected stores by `storeId`, and assert every normalized `Store.SStore` field that the artifact contains.
-- Live `@Script` tests for `getStoresForZip` with one dense zip and one sparse zip.
+- Parser probes for fixture/static JSON.
+- PR reproduction probes that load `WebContent/META-INF/<retailer>/current.json`, sort both live and expected stores by `storeId`, and assert every normalized `Store.SStore` field that the artifact contains.
+- Live probes for `getStoresForZip` with one dense zip and one sparse zip.
 - A completeness assertion when the site exposes total stores or state counts.
 - A dedupe assertion for `storeId`.
 - A sample assertion for a store found manually in Chrome.
@@ -124,4 +124,4 @@ If a source is incomplete or blocked, keep the probe code and disable the failin
 - `storeImportCountryCodes` is set for non-US/multi-country retailers.
 - Jurl cache keys include zip/body/parser version as needed.
 - Store fixture/API result includes stable `storeId`, zip, address, and country.
-- Tests document the first working proxy type and disabled failures document all attempted routes.
+- `@Script` probes document the first working proxy type and disabled failures document all attempted routes.

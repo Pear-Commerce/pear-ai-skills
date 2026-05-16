@@ -1,6 +1,6 @@
 ---
 name: retailer-store-import-feasibility
-description: Discover, implement, and verify Pear retailer store import feasibility in api.pearcommerce.com. Use when asked to scrape a retailer store locator, find store IDs, create a store importer, produce Store.SStore-compatible data, save retailer store JSON, or build Java tests that prove store loading works through JurlProxyFallback and production-like proxies.
+description: Discover, implement, and verify Pear retailer store import feasibility in api.pearcommerce.com. Use when asked to scrape a retailer store locator, find store IDs, create a store importer, produce Store.SStore-compatible data, save retailer store JSON, or build Java @Script probes that prove store loading works through JurlProxyFallback and production-like proxies without running in CI.
 ---
 
 # Retailer Store Import Feasibility
@@ -105,9 +105,9 @@ Populate fields only when known:
 
 Use the retailer's stable store number/id over transient UUIDs unless the UUID is clearly the only id accepted by availability APIs. Deduplicate by the id that availability scanning will use.
 
-## Tests
+## Script Probes
 
-Add tests that assert:
+Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Assert:
 
 - `loadStores()` is non-empty
 - every sampled store has `storeId` and address
@@ -118,7 +118,7 @@ Add tests that assert:
 
 When the task is to reproduce a prior PR, load the checked-in `WebContent/META-INF/<retailer>/current.json` with `JSON.get().parseList(..., Store.SStore.class)` and compare the live normalized output field-by-field after sorting by `storeId`. Do not rely only on `Store.SStore.equals`; compare `storeId`, `name`, `address`, `geoAddress`, coordinates, `phone`, `category`, `countryCode`, and formatted zip so normalization drift is obvious.
 
-Use `@Script` for live retailer tests. If a route fails, keep the method and test but disable the test:
+If a route fails, keep the method and probe but disable it:
 
 ```java
 @Disabled("FEASIBILITY FAILING: store API 403s through STATIC, UNBLOCKER, and ZENROWS_RENDER")

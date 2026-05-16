@@ -1,6 +1,6 @@
 ---
 name: retailer-availability-scanning-feasibility
-description: Discover, implement, and verify Pear retailer availability scanning feasibility in api.pearcommerce.com. Use when asked to build or assess an AvailabilityUpdater, UPCRetailerZipAvailabilityRecomputer, store-level inventory check, price scraper, in-store/ship-to-home status scanner, or Java tests that take store IDs and item IDs/UPCs and validate availability through JurlProxyFallback and proxies.
+description: Discover, implement, and verify Pear retailer availability scanning feasibility in api.pearcommerce.com. Use when asked to build or assess an AvailabilityUpdater, UPCRetailerZipAvailabilityRecomputer, store-level inventory check, price scraper, in-store/ship-to-home status scanner, or Java @Script probes that take store IDs and item IDs/UPCs and validate availability through JurlProxyFallback and proxies without running in CI.
 ---
 
 # Retailer Availability Scanning Feasibility
@@ -111,9 +111,9 @@ Try and document the first working option:
 
 If the inventory API is blocked through all proxies, try the rendered PDP document, add-to-cart validation, cart availability endpoint, or store-selection request sequence.
 
-## Tests
+## Script Probes
 
-Add tests that prove:
+Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Prove:
 
 - a known store id plus item id/UPC returns a non-null status
 - a known available item returns `AVAILABLE` when the sample is stable enough
@@ -123,7 +123,7 @@ Add tests that prove:
 
 For production recomputers, construct a `UPC`, set retailer data item id, construct `UPCRetailerZipAvailability` with `retailerId`, `upcId`, `storeId`, `zip` when needed, and call the updater method directly as existing tests do.
 
-Use `@Script` for live retailer tests. For bot-blocking checks, a repeated test with a small cycle count is useful only when it proves the route is not intermittently blocked.
+For bot-blocking checks, a repeated `@Script` probe with a small cycle count is useful only when it proves the route is not intermittently blocked.
 
 If the route is not feasible yet, keep the failing probe and disable it:
 

@@ -106,14 +106,14 @@ For variant-heavy retailers, store the product group id in `itemId` only if avai
 - If search results depend on store or zip, pass store/zip through method parameters and include them in cache keys.
 - Resolver-provided `_getStoreIdsToZips` can populate `RetailerZipStoreId` and associated store/zip records, but it does not replace the store import playbook unless it returns complete store objects.
 
-## Test Tactics
+## Script Probe Tactics
 
-- For pure parsing, test fixture HTML/JSON separately from live network.
-- For live routes, use `@Script` and assert `itemId`, `url`, and UPC match.
+- For pure parsing, use `@Script` fixture probes while code lives in retailer feasibility packages.
+- For live routes, use `@Script` probes and assert `itemId`, `url`, and UPC match.
 - For graph integration, prefer `UPCResolutionUtilities.testMultiRunUPCResolution(...)` when a production resolver is added.
 - Test one direct UPC path and one name/PDP hydration path when both exist.
 - Include a negative or mismatched UPC case when the site is known to return unrelated products.
-- Disabled failing tests should name the sample UPC/name, endpoint or PDP, proxy ladder tried, response signal, and next route.
+- Disabled failing probes should name the sample UPC/name, endpoint or PDP, proxy ladder tried, response signal, and next route.
 
 ## Productionization Checklist
 
@@ -123,4 +123,4 @@ For variant-heavy retailers, store the product group id in `itemId` only if avai
 - Direct resolver returns only UPC-proven results.
 - Candidate resolver returns rich `SRetailerItemData`, not just ids.
 - Cache keys distinguish zip/store/body/parser version where needed.
-- Unit/live tests verify item id, URL, UPC evidence, and first working proxy type.
+- `@Script` probes verify item id, URL, UPC evidence, and first working proxy type.

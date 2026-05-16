@@ -1,6 +1,6 @@
 ---
 name: retailer-upc-resolution-feasibility
-description: Discover, implement, and verify Pear UPC-to-retailer-item-ID resolution feasibility in api.pearcommerce.com. Use when asked to resolve UPCs or product names to retailer item IDs, PDP URLs, SRetailerItemData candidates, ItemIdInfoResolver classes, or Java feasibility tests that search retailer sites and validate UPC evidence through JurlProxyFallback and proxies.
+description: Discover, implement, and verify Pear UPC-to-retailer-item-ID resolution feasibility in api.pearcommerce.com. Use when asked to resolve UPCs or product names to retailer item IDs, PDP URLs, SRetailerItemData candidates, ItemIdInfoResolver classes, or Java @Script feasibility probes that search retailer sites and validate UPC evidence through JurlProxyFallback and proxies without running in CI.
 ---
 
 # Retailer UPC Resolution Feasibility
@@ -108,9 +108,9 @@ Try and document the first working option:
 
 If an API returns 403/429/blocked through the ladder, try the PDP document route, embedded app JSON, search HTML, or a different query path.
 
-## Tests
+## Script Probes
 
-Add focused tests that prove the route:
+Add focused JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Prove the route:
 
 - search by name returns candidates with item ids and URLs
 - PDP/detail fetch exposes UPC evidence
@@ -121,7 +121,7 @@ When using the production resolver, prefer `UPCResolutionUtilities.testMultiRunU
 
 Assertions should include the expected item id when known and always verify the returned UPC against the target UPC when the site exposes UPC data.
 
-Use `@Script` for live retailer tests. If the route is not feasible yet, keep the code and disable the failing test:
+If the route is not feasible yet, keep the code and disable the failing probe:
 
 ```java
 @Disabled("FEASIBILITY FAILING: PDP exposes item id but no UPC evidence after STATIC/UNBLOCKER/ZENROWS")
