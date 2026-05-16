@@ -88,6 +88,12 @@ Try and document the first working option:
 
 If an API works in Chrome but fails from Java through this ladder, try the full document/rendered page or a state/city HTML route before giving up.
 
+## Creative Recovery
+
+Get creative when the locator API is partial, blocked, or missing stable ids. Try state/province and city directory pages, map marker payloads, embedded app bootstrap JSON, `application/ld+json`, sitemap/store-detail URLs, search-index dumps, platform-sibling banners, previous `WebContent/META-INF/<retailer>` artifacts, or rendered DOM traversal with a `waitFor` selector.
+
+When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture the source shape, required headers/proxies, id choice, normalization gotcha, and how the `@Script` probe proves completeness.
+
 ## Normalization
 
 Populate fields only when known:

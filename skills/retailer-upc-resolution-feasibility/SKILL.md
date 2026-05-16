@@ -108,6 +108,12 @@ Try and document the first working option:
 
 If an API returns 403/429/blocked through the ladder, try the PDP document route, embedded app JSON, search HTML, or a different query path.
 
+## Creative Recovery
+
+Get creative when UPC search, name search, or PDP parsing does not expose enough evidence. Try brand/size query variants, canonical PDP URL patterns, embedded product JSON, structured data, search autocomplete APIs, category/search result hydration calls, sitemap or search-engine `site:` discovery, mobile/app-adjacent APIs, platform-sibling banners, and cached retailer metadata before declaring resolution infeasible.
+
+When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture how the route finds item ids, where UPC evidence lives, which proxy/header shape works, and how the `@Script` probe verifies the UPC match.
+
 ## Script Probes
 
 Add focused JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Prove the route:

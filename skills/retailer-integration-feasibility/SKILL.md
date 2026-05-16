@@ -52,6 +52,12 @@ Every combined `@Script` probe class should start with a compact comment like:
 5. Run the focused `@Script` probe. If it fails, return to Chrome and find another route: different endpoint, document HTML, embedded app data, rendered page, cart API, or city/state traversal.
 6. Repeat until the surface passes or the failing route is clearly documented and disabled.
 
+## Creative Recovery
+
+Get creative when the obvious browser route, copied API, or first proxy ladder fails. Try alternate store modes, full documents instead of APIs, embedded app state, sitemap/search-index data, mobile or app-adjacent endpoints, cart/PDP side doors, platform-sibling banners, checked-in PR artifacts, and rendered DOM traversal before declaring a surface infeasible.
+
+When a creative tactic works, or fails in a reusable way, update the focused skill's `SKILL.md` or `references/repo-tactics.md` in the canonical skills repo before finishing. Keep the note short, name the route/platform/proxy signal, validate the skill, and sync it into the local skill target.
+
 ## Test Rules
 
 - Mark every generated feasibility check with `@Script` so it stays out of CI unless intentionally run. Do this even when the class name ends in `Test` and even when the check uses a fixture or PR artifact.

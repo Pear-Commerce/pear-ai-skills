@@ -111,6 +111,12 @@ Try and document the first working option:
 
 If the inventory API is blocked through all proxies, try the rendered PDP document, add-to-cart validation, cart availability endpoint, or store-selection request sequence.
 
+## Creative Recovery
+
+Get creative when the direct inventory endpoint is blocked, session-bound, or too opaque. Try PDP documents after setting store context, product-detail APIs with pickup/delivery mode parameters, cart/add-to-cart validation, fulfillment or substitutions endpoints, GraphQL operation variants, local-storage/session bootstrap requests, rendered DOM extraction, mobile/app-adjacent APIs, and platform-sibling banners before declaring scanning infeasible.
+
+When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture the store-context setup, request body/header shape, proxy type, status/price mapping, cache key implication, and how the `@Script` probe distinguishes unavailable from blocked.
+
 ## Script Probes
 
 Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Prove:
