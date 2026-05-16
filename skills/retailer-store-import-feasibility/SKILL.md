@@ -43,6 +43,10 @@ test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>Plan.java
 test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>PlanTest.java
 ```
 
+Use `*Plan.java` for the reusable store-loading implementation: HTTP/browser-assisted extraction helpers, parsers, DTOs, normalization, dedupe, JSON artifact writing, and comparison helpers. Use `*PlanTest.java` for the JUnit `@Script` entrypoints, assertions, sample stores, logging, `@Disabled` failure comments, and PR/reference comparisons. A single `*PlanTest.java` is fine for a tiny one-off, but prefer the split once helper code is non-trivial or may be reused by UPC/availability work.
+
+When this skill runs by itself, first search for an existing retailer `*Plan.java` / `*PlanTest.java` pair. If it exists, update that pair with the store loader and store `@Script` methods instead of creating a separate store-only test class. If it does not exist, create the pair using the standard names so later UPC and availability skills can append their probes to the same files.
+
 Expose a method such as:
 
 ```java
@@ -102,6 +106,10 @@ If an API works in Chrome but fails from Java through this ladder, try the full 
 ## Creative Recovery
 
 Get creative when the locator API is partial, blocked, or missing stable ids. Try state/province and city directory pages, map marker payloads, embedded app bootstrap JSON, `application/ld+json`, sitemap/store-detail URLs, search-index dumps, platform-sibling banners, previous `WebContent/META-INF/<retailer>` artifacts, or rendered DOM traversal with a `waitFor` selector.
+
+Leadformance-style store locators may expose full country or region directories as paginated HTML with one `LocalBusiness` `application/ld+json` block per store. Crawl the directory pages, follow `rel=next` or stable `?page=N` pagination until no stores remain, and sanitize raw control characters such as literal carriage returns before parsing JSON-LD. This can be more durable than a blocked locator API, and the resulting normalized `Store.SStore` list should still be written to both `current.json` and a dated JSON artifact.
+
+For store imports, a valid feasibility path is a one-off JavaScript snippet run in a local browser session when bot detection blocks Java/proxy HTTP but the site loads normally in Chrome. Use the snippet to read retailer-owned page state, embedded JSON, map markers, fetch/XHR responses already present in the page, or rendered DOM store cards, then normalize the result into `Store.SStore` JSON artifacts under `WebContent/META-INF/<retailer>/`. Keep the snippet in the plan/test comment or nearby notes, document that it is a browser-assisted one-off extraction, and still include an `@Script` probe that validates the saved artifact shape, dedupe, required fields, and comparison target. Do not use this browser one-off tactic as proof for real-time UPC resolution or availability scanning.
 
 When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture the source shape, required headers/proxies, id choice, normalization gotcha, and how the `@Script` probe proves completeness.
 

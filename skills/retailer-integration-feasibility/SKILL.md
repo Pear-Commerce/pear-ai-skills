@@ -30,6 +30,10 @@ test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>Plan.java
 test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>PlanTest.java
 ```
 
+This follows the repo's feasibility naming pattern. `*Plan.java` is the reusable scratch implementation: static route probes, parsers, DTOs, normalization helpers, proxy lists, artifact writers, and code that may later graduate into production classes. `*PlanTest.java` is the JUnit `@Script` harness: sample inputs, assertions, logging, `@Disabled` failure notes, and PR/reference comparisons. Use both when the work has more than a tiny one-off assertion or when code may be reused by store, UPC, and availability probes. For a very small throwaway check, a single `*PlanTest.java` can be acceptable, but do not put production-style helper logic directly into the script harness when it will grow.
+
+Before creating a new feasibility file, search for an existing retailer `*Plan.java` / `*PlanTest.java` pair and update it when present. Focused skills must compose with this same pair: if stores already created `DartyPlanTest.java`, the UPC and availability skills should add their `@Script` methods to that existing class instead of creating parallel files. The result should be runnable from either the orchestrator skill or any individual focused skill without losing prior probes or comments.
+
 When the user asks for production wiring, graduate the proven code into the existing owner area, usually `src/com/pear/itemurlupdater`, `src/com/pear/upcresolution`, `src/com/pear/jobs/retailer`, or a retailer-specific package already used by similar code.
 
 Every combined `@Script` probe class should start with a compact comment like:

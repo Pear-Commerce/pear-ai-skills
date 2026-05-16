@@ -7,6 +7,16 @@ description: Discover, implement, and verify Pear UPC-to-retailer-item-ID resolu
 
 Use this skill to prove that Pear can take a UPC and product name, find the retailer's item id and PDP URL, and verify the result belongs to the target UPC.
 
+## Production-Runnable Requirement
+
+The route is feasible only when the Java code can replay it from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome success is discovery evidence, not proof. Search-engine snippets, cached pages, indexed PDP text, copied DevTools payloads, hardcoded fixtures, screenshots, or demo snapshots may help diagnose a route, but they must not make a passing resolver `@Script`.
+
+A passing UPC resolution probe must fetch the item id and UPC evidence live from the retailer or an approved retailer-owned API at script runtime. If all live routes are blocked or incomplete, keep the code, disable the probe, and document the blocker instead of substituting canned product data. Before giving up, iterate through alternative retailer-owned routes: search APIs, PDP documents, embedded app JSON, mobile/app-adjacent APIs, sitemap-discovered PDPs, canonical URL patterns, category/search hydration calls, and rendered document routes across the proxy ladder.
+
+During planning/discovery, before declaring a live route blocked, enumerate the currently available `JurlProxyFallback.Type` values from `src/com/pear/http/JurlProxyFallback.java` and run a bounded one-off probe across every relevant non-local, non-deprecated proxy type. Include static, ISP/residential, geo variants, BrightData unblockers, ZenRows scrape/render, Scrapfly scrape/render/ASP, and provider-specific static pools. Skip only types that are explicitly local, deprecated/invalid, retailer-specific for another retailer, or documented as requiring a browser profile incompatible with Java. Record the tested type list and the response signal in the disabled probe/comment.
+
+Do not put exhaustive proxy sweeps in the final real-time UPC resolution `@Script` or production resolver path. Once discovery identifies the proxy type(s) that work, the runnable script should use a small ordered list of those known-good types, with a modest retry count and cache strategy appropriate for production. If no proxy works, disable the live probe with the exhaustive planning results instead of making every test run burn through all proxies again.
+
 ## Repo Anchors
 
 Check these first:
@@ -30,11 +40,22 @@ Explore in local Chrome before coding:
 2. If UPC search fails, search by product name, brand, and distinctive size words.
 3. Open likely PDPs and find UPC/GTIN evidence in visible text, `application/ld+json`, `__NEXT_DATA__`, `__NUXT__`, product detail JSON, script variables, data attributes, or PDP API responses.
 4. Inspect search and PDP Network requests for stable item ids, product ids, SKUs, canonical URLs, and UPC fields.
-5. If on-site search is poor, try a deterministic PDP URL pattern or a Google `site:` search only after checking retailer-owned routes.
+5. If on-site search is poor, use search-engine `site:` discovery only to find candidate retailer URLs. The resolver still must fetch a retailer-owned live page/API and verify UPC evidence there.
 
 Never accept a name-only match as resolved. The Java test must confirm the target UPC with `UPC.isAUPCMatch(...)` or equivalent UPC normalization, or clearly mark the route incomplete.
 
 ## Java Probe Shape
+
+Follow the repo's feasibility naming pattern when creating files:
+
+```text
+test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>Plan.java
+test/com/pear/retailerFeasibility/<country>/<retailer>/<Retailer>PlanTest.java
+```
+
+Use `*Plan.java` for reusable resolver exploration code: search/detail request methods, parsers, DTOs, UPC matching helpers, proxy lists, and candidate ranking that may later move into an `ItemIdInfoResolver`. Use `*PlanTest.java` for the JUnit `@Script` entrypoints, sample UPC/name inputs, assertions, logging, `@Disabled` failure comments, and comparison notes. A single `*PlanTest.java` is acceptable for a tiny one-off, but prefer the split when helper logic is non-trivial or shared with availability.
+
+When this skill runs by itself, first search for an existing retailer `*Plan.java` / `*PlanTest.java` pair. If stores or another surface already created it, update that same pair with UPC resolver helpers and UPC `@Script` methods while preserving existing probes and comments. If it does not exist, create the pair using the standard names so the orchestrator or availability skill can append to it later.
 
 For feasibility, create methods such as:
 
@@ -99,7 +120,7 @@ Keep only response validation and parsing inside `goThen`. Do matching, candidat
 
 ## Proxy Ladder
 
-Try and document the first working option:
+Try and document the first working option, but do not stop at this short list if it fails:
 
 - static/datacenter first
 - `UNBLOCKER`, `UNBLOCKER_GEO`, or `UNBLOCKER_STATE`
@@ -108,11 +129,15 @@ Try and document the first working option:
 
 If an API returns 403/429/blocked through the ladder, try the PDP document route, embedded app JSON, search HTML, or a different query path.
 
+When the common ladder fails during discovery, expand to all currently available `JurlProxyFallback.Type` entries that can run on production Java. Prefer a planning-only helper that logs each type, response code, final URL, body-block signal, and whether the page contains the UPC/item-id evidence. Keep that helper separate from the passing real-time script path.
+
 ## Creative Recovery
 
-Get creative when UPC search, name search, or PDP parsing does not expose enough evidence. Try brand/size query variants, canonical PDP URL patterns, embedded product JSON, structured data, search autocomplete APIs, category/search result hydration calls, sitemap or search-engine `site:` discovery, mobile/app-adjacent APIs, platform-sibling banners, and cached retailer metadata before declaring resolution infeasible.
+Get creative if you have to: when UPC search, name search, or PDP parsing does not expose enough evidence, keep trying plausible retailer-owned routes before declaring resolution infeasible. Try brand/size query variants, canonical PDP URL patterns, embedded product JSON, structured data, search autocomplete APIs, category/search result hydration calls, sitemap or search-engine `site:` discovery for candidate URLs, mobile/app-adjacent APIs, platform-sibling banners, app decompilation when appropriate, and cached retailer metadata before declaring resolution infeasible.
 
-When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture how the route finds item ids, where UPC evidence lives, which proxy/header shape works, and how the `@Script` probe verifies the UPC match.
+When app decompilation or APK string extraction reveals API base URLs, route fragments, DTO names, or parameter names, reconstruct the most likely retailer-owned requests and test them through Java/proxies. Treat those strings as a map, not proof: the passing resolver still needs a live response that contains item id plus UPC evidence, and any required app headers, tokens, cookies, or device identifiers must be reproducible from production boxes.
+
+When a new tactic is useful, or a creative route fails in a reusable way, update this skill or `references/repo-tactics.md` in the canonical skills repo before wrapping up, then sync/reinstall the skill. Capture how the route finds item ids, where UPC evidence lives, which proxy/header shape works, and how the `@Script` probe verifies the UPC match.
 
 ## Script Probes
 
@@ -126,6 +151,8 @@ Add focused JUnit methods annotated with both `@Test` and `@Script`; these are f
 When using the production resolver, prefer `UPCResolutionUtilities.testMultiRunUPCResolution(...)` for an end-to-end check, as in `AlsBodegaTest`.
 
 Assertions should include the expected item id when known and always verify the returned UPC against the target UPC when the site exposes UPC data.
+
+Never make this probe pass by parsing hardcoded/indexed/cached PDP text. If the only available UPC evidence is from a search result, archive, fixture, or manually copied page, treat it as diagnostic evidence and leave the live probe disabled.
 
 If the route is not feasible yet, keep the code and disable the failing probe:
 
