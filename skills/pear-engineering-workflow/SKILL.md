@@ -41,6 +41,14 @@ sed -n '1,240p' ../api.pearcommerce.com/docs/codex-pr-improvement-goal.md
 
 Apply the guide as a checklist: keep ownership boundaries clear, prefer existing helpers, make async and failure behavior explicit, keep observability useful, add focused deterministic tests, and keep the diff reviewable. To make review easy, keep all but the essentials in their own purpose-owned modules; existing-code touchpoints should be minimal and limited to things like shared utility updates, small registry hooks, dependency wiring, and thin call-site handoffs.
 
+## Pear Entity Serialization
+
+Be careful with response-only fields on `PearEntity` classes. Production API paths may serialize ORM entities through Pear's SimpleORM serializer, which only includes `id` and fields marked with `@SimpleORMField`; plain public fields, `transient` fields, and `@JsonProperty` annotations that pass a local `ObjectMapper` test may still be omitted from real API responses.
+
+When adding hydrated, computed, UI-only, or response-only data, prefer an explicit response DTO that copies the persisted entity fields plus the extra fields needed by the client. Only add `@SimpleORMField` when the value truly belongs in the database schema and the migration/storage impact is intentional.
+
+Tests for these paths should exercise the actual endpoint response shape, response DTO, or production serializer used by the controller. Avoid tests that serialize the entity with `new ObjectMapper()` unless the real call path also uses that serializer directly.
+
 ## Concurrent Repo Work
 
 When the user or another Codex thread may already be working in the repo checkout, avoid sharing that working directory. Prefer a sibling git worktree on a new `codex/` branch:
