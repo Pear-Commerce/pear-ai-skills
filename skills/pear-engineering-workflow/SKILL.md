@@ -62,7 +62,22 @@ Use read-only queries unless the user explicitly asks for a mutation. Summarize 
 
 Always consider a browser end-to-end pass for user-facing admin, offers, or API-backed flows. Do it when the change affects UI state, auth, extension behavior, API wiring, server/client errors, or data shown to users.
 
-For local Pear dashboard work, inspect the repo’s IntelliJ run configurations before starting services. In `api.pearcommerce.com`, the API run configuration has historically been `SpringBootTomcat`; use it to mirror local JVM/env setup. In `admin.pearcommerce.com`, use the repo’s existing npm/gulp/browser-sync workflow rather than inventing a new server command.
+For local Pear dashboard work, inspect the repo’s IntelliJ run configurations before starting services. In `api.pearcommerce.com`, the API run configuration has historically been `SpringBootTomcat`; use it to mirror local JVM/env setup and always start the API against the shared dev database unless the user explicitly asks for a disposable local database. For Gradle startup, this means `ENV=LOCAL` plus the `SpringBootTomcat` dev database environment, for example:
+
+```bash
+ENV=LOCAL \
+LOCAL_IP_ZIPCODE_OVERRIDE=55408 \
+MYSQL_CREDENTIALS_SECRET=prod-db-10-2025 \
+MYSQL_HOST=analytics-database.pearcommerce.com \
+MYSQL_HOST_READ=analytics-database.pearcommerce.com \
+MYSQL_HOST_WRITE=analytics-database.pearcommerce.com \
+SECRETS_MANAGER_AUTH0_CLIENT_SECRET=AUTH0_CLIENT_SECRET \
+SECRETS_MANAGER_AUTH0_MANAGEMENT_SECRET=AUTH0_MANAGEMENT_SECRET \
+SNOWFLAKE_CREDENTIALS_SECRET=snowflake-2025-12-01 \
+./gradlew :bootRun
+```
+
+Do not start the API against an empty/local MySQL just because `:bootRun` defaults to `ENV=LOCAL`; dashboard feature work should normally exercise real dev data. In `admin.pearcommerce.com`, use the repo’s existing npm/gulp/browser-sync workflow rather than inventing a new server command.
 
 When delegating browser or startup work to a subagent, include these same local startup expectations in the subagent prompt so it does not guess at the API/admin commands.
 
