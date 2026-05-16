@@ -35,6 +35,10 @@ Production API paths may serialize `PearEntity` objects through SimpleORM, which
 
 For hydrated/computed/UI-only/response-only data, prefer explicit response DTOs. Add `@SimpleORMField` only for intentional DB schema/storage. Tests should exercise the endpoint response, DTO, or production serializer; avoid `new ObjectMapper()` entity tests unless that is the real call path.
 
+## Spring Tests
+
+In `api.pearcommerce.com`, any JUnit test that needs Spring-managed beans, method-parameter `@Autowired`, `awsAppConfigUtil`, `Persistence`, `Resources`, or the Pear app test context should extend `BasePearScript`. Keep pure unit tests plain, but do not add ad hoc Spring annotations or manual context setup when `BasePearScript` is the repo pattern. Make Spring-backed tests deterministic by creating required SimpleORM rows in the test instead of assuming CI seed data contains them.
+
 ## Concurrent Repo Work
 
 Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for small changes. Treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.

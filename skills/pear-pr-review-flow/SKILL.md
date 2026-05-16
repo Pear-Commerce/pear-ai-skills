@@ -145,6 +145,8 @@ Whenever Codex materially updates an existing PR branch, refresh it against the 
 
 When unit tests or required checks are failing on an existing PR, first check whether the branch is behind the latest base branch before debugging the PR's code. If the branch is out of date, or if a known master/base fix for shared test failures has recently merged, update the PR branch from the latest base branch and rerun the relevant checks before making code changes. Only continue debugging PR-specific code after the failures reproduce on the refreshed branch.
 
+For `api.pearcommerce.com` test failures involving Spring beans, method-parameter `@Autowired`, `awsAppConfigUtil`, `Persistence`, `Resources`, or other Pear app resources, verify the test extends `BasePearScript`. If it already does, debug deterministic test data/setup next; do not assume shared CI seed rows exist when the test can create the needed SimpleORM rows itself.
+
 Preferred local flow for Codex-authored branches:
 
 ```bash
