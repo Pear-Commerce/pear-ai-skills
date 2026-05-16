@@ -1,6 +1,6 @@
 # Codex Goal: Improve a Pear Commerce PR
 
-Canonical location: `https://github.com/Pear-Commerce/pear-ai-skills/blob/main/docs/codex-pr-improvement-goal.md`
+Canonical location: `https://github.com/Pear-Commerce/pear-ai-skills/blob/main/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md`
 
 Use this when asked to edit a PR, branch, or review follow-up. Do not stop at notes when safe edits are possible: inspect the PR, make targeted improvements, run relevant checks, and summarize the result. This is a repair goal, not a style pass. Correctness, data semantics, observability, production load, and reviewability matter most.
 

@@ -41,7 +41,7 @@ Commit, push, and open the PR from that worktree. Do not stash, reset, rebase, o
 
 Before creating a PR for Pear code changes, load `$pear-engineering-workflow` and complete its Review Rules cleanup pass. In practice:
 
-- read the PR-improvement guide from the canonical repo, preferably `/Users/alexwyler/pear-ai-skills/docs/codex-pr-improvement-goal.md` or `https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/docs/codex-pr-improvement-goal.md`
+- read the PR-improvement guide from the engineering workflow skill, preferably `/Users/alexwyler/pear-ai-skills/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md` or `https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md`
 - apply it as a final cleanup checklist before calling implementation done or opening the PR
 - run the relevant focused checks after cleanup
 - mention in the PR summary or final response that the Pear engineering cleanup pass was completed, or state plainly if the guide/checks could not be run

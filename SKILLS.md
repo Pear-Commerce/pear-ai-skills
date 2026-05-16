@@ -15,7 +15,7 @@ This file records the initial source locations that were consolidated into this 
 
 | Doc | Canonical path | Source repo path |
 | --- | --- | --- |
-| Pear PR improvement guide | `docs/codex-pr-improvement-goal.md` | `Pear-Commerce/api.pearcommerce.com:docs/codex-pr-improvement-goal.md` |
+| Pear PR improvement guide | `skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md` | `Pear-Commerce/api.pearcommerce.com:docs/codex-pr-improvement-goal.md` |
 
 Duplicate source copies found during the initial import:
 

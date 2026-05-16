@@ -13,9 +13,9 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 - `pear-pr-review-flow`: Pear pull-request workflow for review requests, Copilot, review loops, and landing.
 - `sstore-store-extractor`: extract retailer store lists into `Store.SStore`-style JSON for `api.pearcommerce.com`.
 
-## Shared Docs
+## Skill References
 
-- `docs/codex-pr-improvement-goal.md`: Pear PR cleanup and review-quality checklist used by `pear-engineering-workflow` and `pear-pr-review-flow`.
+- `skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md`: Pear PR cleanup and review-quality checklist used by `pear-engineering-workflow` and `pear-pr-review-flow`.
 
 ## Get Set Up and Stay Synced
 

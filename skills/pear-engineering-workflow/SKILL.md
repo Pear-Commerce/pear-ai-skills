@@ -16,15 +16,15 @@ Canonical repo: `https://github.com/Pear-Commerce/pear-ai-skills`. For skill edi
 Before calling code changes done, read the PR-improvement guide. Prefer:
 
 ```bash
-sed -n '1,240p' /Users/alexwyler/pear-ai-skills/docs/codex-pr-improvement-goal.md
+sed -n '1,240p' /Users/alexwyler/pear-ai-skills/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md
 ```
 
 Fallbacks:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/docs/codex-pr-improvement-goal.md | sed -n '1,240p'
-sed -n '1,240p' docs/codex-pr-improvement-goal.md
-sed -n '1,240p' ../api.pearcommerce.com/docs/codex-pr-improvement-goal.md
+sed -n '1,240p' skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md
+curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md | sed -n '1,240p'
+sed -n '1,240p' /Users/alexwyler/.codex/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md
 ```
 
 Apply it as a checklist: clear ownership, existing helpers first, explicit async/failure behavior, useful observability, focused deterministic tests, reviewable diff. Keep most new behavior in purpose-owned modules; existing-code touchpoints should stay minimal, e.g. shared utility updates, registry hooks, dependency wiring, or thin call-site handoffs.
