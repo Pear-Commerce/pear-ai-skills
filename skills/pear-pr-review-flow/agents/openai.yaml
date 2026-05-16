@@ -1,4 +1,4 @@
 interface:
   display_name: "Pear PR Review Flow"
   short_description: "Use PR worktrees, reviewers, Copilot, refreshes, and green-PR landing"
-  default_prompt: "Always use $pear-pr-review-flow when a PR is mentioned: run the Pear engineering cleanup gate before opening code PRs, isolate PR work, add reviewers/Copilot, handle feedback, refresh updated branches against latest base, and watch Codex-authored PRs until they are green, approved, mergeable, and merged/closed."
+  default_prompt: "Always use $pear-pr-review-flow when a PR is mentioned: run the Pear engineering cleanup gate before opening code PRs, isolate PR work, add reviewers/Copilot, handle feedback, refresh updated or out-of-date branches against latest base before debugging failed unit tests, and watch Codex-authored PRs until they are green, approved, mergeable, and merged/closed."

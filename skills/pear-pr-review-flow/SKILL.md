@@ -143,6 +143,8 @@ When the user asks to handle PR feedback, inspect every GitHub feedback surface 
 
 Whenever Codex materially updates an existing PR branch, refresh it against the latest base branch before the final push and review re-request. This gives required checks, including flaky or previously failed unit tests, another run on current code.
 
+When unit tests or required checks are failing on an existing PR, first check whether the branch is behind the latest base branch before debugging the PR's code. If the branch is out of date, or if a known master/base fix for shared test failures has recently merged, update the PR branch from the latest base branch and rerun the relevant checks before making code changes. Only continue debugging PR-specific code after the failures reproduce on the refreshed branch.
+
 Preferred local flow for Codex-authored branches:
 
 ```bash
