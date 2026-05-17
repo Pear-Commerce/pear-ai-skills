@@ -26,6 +26,12 @@ Codex
 
 Do not duplicate the signoff if it is already present. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
 
+## Review Reply Tone
+
+When replying to PR comments, be appreciative, understanding, and humble. Assume the commenter is trying to improve the work, acknowledge the useful intent, and keep the response concise and grounded in evidence.
+
+Do not accept every suggestion by default. If a comment conflicts with `$pear-engineering-workflow` guidance or with explicit design decisions from the author/user, stand firm graciously: cite the relevant guidance or decision, explain the technical tradeoff, and offer a narrow alternative when useful. Avoid dismissive language, but do not apologize for preserving the correct engineering direction.
+
 ## Concurrent Worktrees
 
 When creating or updating a PR while the user's main checkout or another Codex thread may be active in the same repo, use a sibling git worktree instead of sharing the working directory:
