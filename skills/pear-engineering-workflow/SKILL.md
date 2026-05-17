@@ -31,7 +31,7 @@ Apply it as a checklist: clear ownership, existing helpers first, explicit async
 
 Before adding utility-like code, search for the existing home and use or extend it. Environment names belong in `ServerEnv`; AppConfig parsing/default shaping belongs in `AWSAppConfigUtil`; queue/concurrency helpers should follow `pear-concurrency`/`pear-jobs`; SimpleORM data access should follow `pear-orm`. Do not duplicate normalization, parsing, retry, locking, or config code in a feature module when a shared utility exists.
 
-New feature/domain helpers should default to Spring services with constructor injection. Avoid static registries/helpers for behavior, whitelists, or feature-owned state unless the code is a pure, reusable value utility with no collaborators and no expected test injection. Prefer small `@Service` classes wired into owned modules over global static calls.
+New feature/domain helpers must default to Spring services with explicit constructor injection. Put `@Autowired` on non-empty constructors in new/changed Spring classes, including services and controllers, so dependency wiring is obvious in review. Avoid field injection, manual `new`, static registries/helpers for behavior, and feature-owned state hidden behind global calls unless the code is a pure reusable value utility with no collaborators and no expected test injection. Before finalizing, scan touched packages for `@Autowired`, `Resources.global`, `ManagedResourcesConfig.getBean`, `static`, and `new <feature class>` and move collaborators into small injected `@Service` modules where practical.
 
 ## Pear Entity Serialization
 
