@@ -29,6 +29,10 @@ sed -n '1,240p' /Users/alexwyler/.codex/skills/pear-engineering-workflow/referen
 
 Apply it as a checklist: clear ownership, existing helpers first, explicit async/failure behavior, useful observability, focused deterministic tests, reviewable diff. Keep most new behavior in purpose-owned modules; existing-code touchpoints should stay minimal, e.g. shared utility updates, registry hooks, dependency wiring, or thin call-site handoffs.
 
+Before adding utility-like code, search for the existing home and use or extend it. Environment names belong in `ServerEnv`; AppConfig parsing/default shaping belongs in `AWSAppConfigUtil`; queue/concurrency helpers should follow `pear-concurrency`/`pear-jobs`; SimpleORM data access should follow `pear-orm`. Do not duplicate normalization, parsing, retry, locking, or config code in a feature module when a shared utility exists.
+
+New feature/domain helpers should default to Spring services with constructor injection. Avoid static registries/helpers for behavior, whitelists, or feature-owned state unless the code is a pure, reusable value utility with no collaborators and no expected test injection. Prefer small `@Service` classes wired into owned modules over global static calls.
+
 ## Pear Entity Serialization
 
 Production API paths may serialize `PearEntity` objects through SimpleORM, which emits only `id` and `@SimpleORMField` fields. Plain public fields, `transient`, and `@JsonProperty` can pass local `ObjectMapper` tests yet disappear from real responses.
@@ -41,7 +45,7 @@ In `api.pearcommerce.com`, any JUnit test that needs Spring-managed beans, metho
 
 ## Concurrent Repo Work
 
-Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for small changes. Treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.
+Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for docs or tiny changes. This is mandatory: treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.
 
 ```bash
 git fetch origin master --prune
