@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pear UPC Resolution Verification"
+  short_description: "Run UPC devdb verification."
+  default_prompt: "Use pear-upc-resolution-verification to verify UPC resolution changes against the local devdb sample."
