@@ -165,6 +165,8 @@ Populate fields only when known:
 
 Use the retailer's stable store number/id over transient UUIDs unless the UUID is clearly the only id accepted by availability APIs. Deduplicate by the id that availability scanning will use. If the site has multiple locator surfaces, such as a marketing/Yext locator plus an ecommerce fulfillment locator, prefer the id accepted by the availability route even when the prettier locator has a slightly different count. Document the mismatch and sample ids in the `@Script` summary.
 
+If a locator or checked-in store artifact has only a marketing id, phone-derived id, or display address, do not guess the fulfillment code from phone suffixes or list order. Try selecting that store in the PDP/store-switch UI, then inspect visible pickup copy, selected-store headers, hydration payloads, or inventory calls for strings like `In Stock at <code> - <name>`, `storeCode`, `locationCode`, or `deliveryPointOfService`. If only a sample fulfillment code is found, keep the store artifact intact, document the mismatch, and mark full store-id productionization as incomplete unless the availability route can still derive codes at runtime.
+
 ## Script Probes
 
 Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Assert:
