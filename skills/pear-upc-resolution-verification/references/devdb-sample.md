@@ -156,7 +156,19 @@ Live UPC feasibility coverage:
 
 ## Known Master-Failing Exclusions
 
-Disable or continue excluding these sampled tests unless they are refreshed and proven passing on master/base:
+Exclude these sampled tests from the default known-good command unless they are refreshed and proven passing on master/base. In `api.pearcommerce.com`, known master-failing UPC-resolution devdb probes should use `LocalDevdbDrift.assumeKnownMasterFailingProbeEnabled(...)` rather than permanent `@Disabled`, so they remain skipped by default but can still be re-run during refreshes.
+
+To force one of these probes while refreshing the baseline, set either:
+
+```bash
+RUN_KNOWN_MASTER_FAILING_UPC_RESOLUTION_DEVDB=true
+```
+
+or pass:
+
+```bash
+-Dpear.upcresolution.runKnownMasterFailingDevdb=true
+```
 
 - `UPCResoGraphTest.smokeTest`: null graph root on master/devdb.
 - `UPCResoGraphTest.testWalmart`: null graph root on master/devdb.
