@@ -117,6 +117,8 @@ For an existing PR, repeat this gate before marking the PR ready for review or r
 
 After reviewers and Copilot are requested, ask the user whether to post in `#engineering` unless they already asked you to post.
 
+Exception: for retailer feasibility PRs, such as `[codex] <retailer> feasibility` branches created from the retailer feasibility spreadsheet queue, do not ask for or post Slack review notifications by default. These PRs are intentionally high-volume, so keep Slack quiet unless the user explicitly overrides the retailer-feasibility Slack suppression for a specific PR.
+
 Suggested question:
 
 > Want me to post in `#engineering` asking for reviews?
@@ -192,6 +194,7 @@ The recurring task should:
 - end all Codex-authored GitHub replies and commit messages with the Codex authorship signature above
 - re-request GitHub Copilot review after each completed fix pass and verify the timeline shows the new request
 - avoid unrelated PRs and user-authored PRs that lack the Codex authorship signal
+- for retailer feasibility PRs, explicitly disable Slack review notifications and automated `#engineering` nudges in the watcher prompt unless the user explicitly overrides this for a specific PR
 - if a non-draft PR has been open and not landable for more than 24 hours, and human review or re-review is still useful, send a concise Slack nudge to `#engineering` with the PR link, current blocker, and requested review/re-review; do this at most once per PR every 48 hours, checking recent Slack/thread history for the PR URL before posting. Keep the same 24-hour eligibility and 48-hour repeat limit, but never send these review nudge Slack messages on Saturdays or Sundays in the user's locale. If the nudge first becomes eligible on a weekend, defer it until the next Monday; for example, a PR made ready on Saturday should not nudge on Sunday, and should nudge Monday if reviews are still missing.
 - when auto-land is approved, land/merge the PR once it is open, not draft, rebased against the latest base branch, required checks are green, review decision is accepted or there are no required reviewers, no blocking review threads or actionable comments remain, and the branch is mergeable under the repo's normal merge method. This is what closes the PR; do not close an unmerged PR unless the user explicitly asks to abandon it.
 - when auto-land is not approved, report that the PR is ready to merge and ask for approval instead of merging

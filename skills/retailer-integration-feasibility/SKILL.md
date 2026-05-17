@@ -44,6 +44,8 @@ When creating the PR for a retailer feasibility pass, use a simple title:
 
 Keep the title focused on the retailer and feasibility outcome even when the branch includes production wiring for the proven route.
 
+Disable Slack review notifications for retailer feasibility PRs by default. When creating the PR or review watcher, state explicitly that Slack review asks and automated `#engineering` nudges are disabled because the spreadsheet queue can produce many feasibility PRs. Only post to Slack if the user explicitly overrides this for a specific PR.
+
 When a PR is created for a solvable retailer from the feasibility spreadsheet, update the spreadsheet row promptly. Mark Alex as owner, set difficulty to `Easy` when all three surfaces are production-ready, fill the columns you understand, link the PR, and add concise notes on routes, store count, proxy requirements, and caveats. Use Chrome to edit the sheet when the Google Sheets connector cannot write, and do this for every PR before moving on to the next retailer.
 
 If stores and availability scanning are production-runnable but UPC resolution is the only failing surface, still create the feasibility PR when the user is working through the spreadsheet queue. Keep the UPC probe disabled with clear live-route evidence, and mark the sheet's UPC resolution/access column as `Hard` and the overall/difficulty column as `Hard` instead of `Easy`.
