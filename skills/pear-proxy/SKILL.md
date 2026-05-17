@@ -9,6 +9,10 @@ description: JurlProxyFallback and Jurl HTTP patterns — proxy Type ordering, c
 - `src/com/pear/http/JurlProxyFallback.java` — Proxy fallback, circuit breakers, Type enum
 - `src/com/alexwyler/jurl/LoggedJurl.java` — Logging + proxy-aware wrapper
 
+## `goThen` Attempt Semantics
+
+`goThen` runs inside the `JurlProxyFallback` attempt boundary. A non-null return means the attempt succeeded and may be cacheable. Returning `null` has the same attempt-failure semantics as throwing: fallback/retry should continue, and the response should not be treated as a success. Keep validation that decides whether a response is usable/cacheable inside `goThen`; if the checker objects but the validation belongs to the retry boundary, suppress the checker instead of moving validation out. Return a non-null empty domain value or sentinel only when "no data" is intentionally cacheable.
+
 ## Proxy Types (JurlProxyFallback.Type enum)
 
 Direct → `NO_PROXY`  

@@ -214,8 +214,9 @@ For availability updaters, batch updaters, retailer-list, URZA loaders, Pulse, a
 
 - Keep caller-specific Jurl behavior visible on the Jurl instance unless truly domain-wide.
 - `Supplier<LoggedJurl>` usually means a fresh mutable request per proxy/request attempt.
-- Put validation that controls cacheability inside `goThen` so bad transient responses are not written to jurlcache.
-- Preserve `goThen` semantics: returned object = success; `null` usually = retry/failure; throwing = failure; empty domain value = cacheable no-data only when intentionally true.
+- Put validation that controls retry/cacheability inside `goThen` so bad transient responses are not written to jurlcache.
+- Preserve `goThen` semantics: non-null return = success/cacheable; `null` return = failed attempt, same as throwing; empty domain value/sentinel = cacheable no-data only when intentionally true.
+- Do not move response-usability validation out of `goThen` to appease a checker; suppress the checker when validation belongs to the retry/cache boundary.
 - Use `throwOnNon200(true)` when non-200 means fetch failure.
 - Return `Optional.empty()`/sentinel only for cacheable no-data, not transient fetch failure.
 - Throw `JurlException` when request/response details help Sentry/Scalyr/Datadog debugging.
@@ -400,7 +401,7 @@ Use these while scanning:
 - Loop: stream/pipeline for pure transforms; keep loop for side effects, `ResultSet`, resources, early exit, exceptions, or ordered async. Avoid `parallelStream`; count hot-path passes.
 - Async: find executor/queue/pool/promise owner; make executor explicit; make failure/wait semantics visible; check SQS/SNS/Lambda concurrency/retry/delete; use repo helpers; batch same-table writes; extract sync work, not future wrappers.
 - Fetch/load: check columns/entities and predicates; group lookups; reuse futures/results; dedupe by domain key; prefer bulk/cache-aware loads; avoid bypassing broken paths; dirty caches after direct updates.
-- Jurl/external HTTP: distinguish failed fetch from cacheable no-data; keep cacheability validation in `goThen`; use typed DTO/body/query helpers; key cache by content identity, not incidental auth; whitelist success/no-result cases when retries are high.
+- Jurl/external HTTP: distinguish failed fetch from cacheable no-data; keep cacheability validation in `goThen`; remember only non-null `goThen` returns are success, while `null`/throw are failed attempts; use typed DTO/body/query helpers; key cache by content identity, not incidental auth; whitelist success/no-result cases when retries are high.
 - Cache: require reason, busting, kill switch, miss/failure strategy, memory/concurrency story, scope. Prefer query/batch/dedupe when cache hides avoidable load.
 - Status: preserve `INVALID`/`UNKNOWN`/`UNAVAILABLE`; return explicit results where metrics expect them.
 - Tests: deterministic, local data, parser fixtures over live network, justified flaky markers, exact repro path, Spring base when conceptually needed, compile/lint after import/annotation/build changes.

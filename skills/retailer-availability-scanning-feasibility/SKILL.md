@@ -124,11 +124,11 @@ Tuple2<Status, BigDecimal> result = new JurlProxyFallback(
     .get();
 ```
 
-Keep only response validation and parsing inside `goThen`. Build UPC/URZA objects, status semantics, and fallback endpoint choices outside it.
+Inside `goThen`, non-null return means success; `null` return and throw both mean failed attempt. Keep response validation and parsing that decide whether the availability response is usable/cacheable inside `goThen`. Build UPC/URZA objects, status semantics, and fallback endpoint choices outside it.
 
 Use `useJurlCache(...)` for script validation when repeatedly proving the same store/item route, especially after a live response has established the proxy/header/body shape. Keep TTLs short for volatile availability and price responses. When testing a changed proxy type, header set, render option, or request body provenance, bump `extraCacheKey(...)` so stale cached responses do not mask whether the new route works. Once the working proxy list is known, cache that list with a stable key and avoid exhaustive proxy checks in the real-time updater path.
 
-Validate proxy-rendered HTTP 200 bodies before treating availability as production-ready. Cloudflare/Forter-style sites can return `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells without product, price, or store-specific data while still returning 200 through render proxies. The `goThen` validator should require the supplied store id/item id to affect the response, reject known challenge/app-shell text, and use a bumped `extraCacheKey` whenever the body validator changes so stale cached shells do not hide the failed route.
+Validate proxy-rendered HTTP 200 bodies before treating availability as production-ready. Cloudflare/Forter-style sites can return `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells without product, price, or store-specific data while still returning 200 through render proxies. The `goThen` validator should require the supplied store id/item id to affect the response, reject known challenge/app-shell text by returning `null` or throwing, and use a bumped `extraCacheKey` whenever the body validator changes so stale cached shells do not hide the failed route.
 
 For Azure/APIM-style APIs, public long-lived subscription keys from browser bundles may be accepted as either `Ocp-Apim-Subscription-Key` or a `subscription-key` query parameter. If a copied API works locally but proxied Java returns a "missing subscription key" 401, retry with the traced key in both locations before pruning the proxy. Keep the successful final script to the proxy types that actually work.
 

@@ -119,11 +119,11 @@ return new JurlProxyFallback(
     .get();
 ```
 
-Keep only response validation and parsing inside `goThen`. Do matching, candidate ranking, and fallback search-term loops outside it unless the parsing result itself determines retry/failure.
+Inside `goThen`, non-null return means success; `null` return and throw both mean failed attempt. Keep response validation and parsing that decide whether search/PDP evidence is usable/cacheable inside `goThen`. Do matching, candidate ranking, and fallback search-term loops outside it unless the parsing result itself determines retry/failure.
 
 Use `useJurlCache(...)` for search/PDP documents during script validation so known-good routes are not re-scraped on every suite run. If you are changing only proxy type, headers, render settings, or another transport detail to prove production viability, bump `extraCacheKey(...)` for that experiment; otherwise a cached response from the old route can make the new route look successful. Once a proxy list is proven, keep the stable extra cache key and do not include exhaustive proxy sweeps in the passing resolver path.
 
-Validate proxy-rendered HTTP 200 bodies before treating a UPC route as live evidence. Cloudflare/Forter-style sites can return `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells without product/search data while still producing 200 responses through render proxies. The `goThen` validator should require item id plus UPC/GTIN evidence, reject known challenge/app-shell text, and use a bumped `extraCacheKey` whenever the body validator changes so stale cached shells cannot masquerade as a working route.
+Validate proxy-rendered HTTP 200 bodies before treating a UPC route as live evidence. Cloudflare/Forter-style sites can return `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells without product/search data while still producing 200 responses through render proxies. The `goThen` validator should require item id plus UPC/GTIN evidence, reject known challenge/app-shell text by returning `null` or throwing, and use a bumped `extraCacheKey` whenever the body validator changes so stale cached shells cannot masquerade as a working route.
 
 For retailer search or PDP APIs behind Azure/APIM, public long-lived subscription keys traced from browser bundles may need to be sent both as `Ocp-Apim-Subscription-Key` and as a `subscription-key` query parameter. If proxied Java sees a "missing subscription key" response while local Chrome/curl works, try the query-param form before abandoning that proxy route.
 

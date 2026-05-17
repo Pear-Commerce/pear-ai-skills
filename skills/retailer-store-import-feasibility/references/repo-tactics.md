@@ -91,6 +91,7 @@ Rendered/page-backed:
 - Use rate limiters for official APIs or high-volume detail calls.
 - The importer parallelism is AppConfig-backed (`availabilities/store-importer-parallelism`, default 8). Keep per-request timeouts and proxy attempts bounded.
 - Two local caches can make tests look stale: `databaseContainsRetailerImportedStores` caches for 10 minutes, and `RetailerZipStoreId` caches store ids by retailer/zip for 30 minutes.
+- In `JurlProxyFallback.goThen`, non-null return means success; `null` return and throw both mean failed attempt. For locators, return a non-null empty list only when the retailer truly has no stores for that query, not for a blocked/challenge/generic-shell response.
 
 ## Gotchas
 
