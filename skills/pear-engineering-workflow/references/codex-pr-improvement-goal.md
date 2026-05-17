@@ -167,7 +167,7 @@ public class PulseReportGenerationJob extends PearScheduledJob {
 
 - Use guard clauses. Extract helpers when a method combines fetching, classification, persistence, logging, response shaping, cache checks, and status transitions.
 - Prefer narrow hooks/template methods over broad strategy rewrites for tiny variations.
-- Remove stale fields, dead assignments, old-behavior comments, and contradictory code touched by the PR.
+- Remove stale fields, dead assignments, old-behavior comments, and contradictory code touched by the PR. Do not apply this as a blanket rule to serialized external JSON DTO fields; see the DTO guidance below.
 - Be terse, not cryptic. Domain names should say what they mean.
 - Choose behavior path before doing work; avoid "correction after old path" logic.
 - Validate null/empty once at boundaries.
@@ -222,6 +222,9 @@ For availability updaters, batch updaters, retailer-list, URZA loaders, Pulse, a
 - Throw `JurlException` when request/response details help Sentry/Scalyr/Datadog debugging.
 - Prefer structured API/ld+json/schema.org over CSS selectors when available.
 - Put `@JsonIgnoreProperties(ignoreUnknown = true)` on external DTOs for future upstream fields.
+- For external API DTOs, scraper payload models, JSON-LD/schema.org models, app/webhook payloads, and other Jackson/Pear `JSON`-deserialized classes, prefer representing as many real upstream fields as practical, even when today's code reads only some of them. These fields document the payload shape, help debugging, and save future rediscovery.
+- Do not remove serialized JSON DTO fields solely because they are currently unread. Stand firm graciously on review comments such as "this DTO field is deserialized but never read"; explain that unused-but-real DTO fields intentionally preserve the upstream contract. This is especially important in retailer integrations, where payload knowledge is part of the value of the implementation.
+- Remove DTO fields only when they are proven not to exist upstream, actively mislead readers, contain sensitive data we should not retain, duplicate another model with no added clarity, or create meaningful hot-path memory/parse cost. If the field is real and low-cost, prefer keeping it over narrowing the model to the current consumer's reads.
 - Treat one `JurlProxyFallback` as one logical request with proxy retry/chaining. Search terms or stores are alternative inputs, not fallback objects.
 - Separate cacheability validation from UPC/item/domain matching. A valid no-match response can be cached and classified later.
 - For high-fanout HTTP work, parse to the smallest useful object in the request path; avoid holding full body/DOM for thousands of requests.

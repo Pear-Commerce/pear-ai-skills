@@ -39,6 +39,14 @@ Production API paths may serialize `PearEntity` objects through SimpleORM, which
 
 For hydrated/computed/UI-only/response-only data, prefer explicit response DTOs. Add `@SimpleORMField` only for intentional DB schema/storage. Tests should exercise the endpoint response, DTO, or production serializer; avoid `new ObjectMapper()` entity tests unless that is the real call path.
 
+## Serialized JSON DTOs
+
+For external API response/request DTOs, scraper payload models, JSON-LD/schema.org models, app/webhook payloads, and other classes whose fields are populated by Jackson or Pear `JSON`, prefer representing as many upstream JSON fields as practical. These fields document the payload shape for future readers, make debugger inspection easier, and reduce rediscovery when another scraper/resolver path later needs the same data.
+
+Do not remove serialized JSON DTO fields solely because the current production code does not read them. A Copilot or reviewer comment like "field X is deserialized but never read" is usually not sufficient reason to delete it. Stand firm graciously: explain that unused-but-real DTO fields intentionally preserve the upstream contract, especially in retailer integrations and API clients.
+
+This guidance is different from dead behavior. Remove stale helpers, duplicate DTO classes, fields that are proven not to exist upstream, sensitive fields we should not retain, fields that actively mislead readers, or fields whose parsing has meaningful performance/memory cost in a hot path. When in doubt, keep the field and add a short comment only if the retention would otherwise look surprising.
+
 ## Spring Tests
 
 In `api.pearcommerce.com`, any JUnit test that needs Spring-managed beans, method-parameter `@Autowired`, `awsAppConfigUtil`, `Persistence`, `Resources`, or the Pear app test context should extend `BasePearScript`. Keep pure unit tests plain, but do not add ad hoc Spring annotations or manual context setup when `BasePearScript` is the repo pattern. Make Spring-backed tests deterministic by creating required SimpleORM rows in the test instead of assuming CI seed data contains them.
