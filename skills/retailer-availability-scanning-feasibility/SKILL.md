@@ -134,6 +134,8 @@ For Azure/APIM-style APIs, public long-lived subscription keys from browser bund
 
 If a search index such as Algolia exposes only global online stock fields like `StockOverrideMessage`, use it as diagnostic evidence but do not count it as store-level availability. A passing availability probe still needs the store id plus item id/UPC to affect the response, or a separate store-context/cart/fulfillment route that returns current pickup/in-store status and price.
 
+For Spartacus/SAP Commerce Cloud (OCC) storefronts, the direct `/products/{code}/stock` endpoint may be undocumented or require unclear location parameters. If so, trace the cart adapter in browser chunks and try a live anonymous-cart flow: `POST /rest/v2/<baseSite>/users/anonymous/carts?fields=FULL`, then `POST /rest/v2/<baseSite>/users/anonymous/carts/{guid}/entries?fields=FULL` with `quantity`, `product.code`, `product.isExternalVendorVariantProduct` when required, `deliveryPointOfService.name`, and the traced pickup option such as `bopis-delivery-option-*`. A passing probe should assert the cart modification status, price, stock status, pickup option, and returned `deliveryPointOfService.name`; run two store ids when possible to prove the store id affects the response. Cache stable store/search/detail GETs, but do not cache cart writes as availability proof; if local script cache can interfere, add a harmless nonce query parameter to the cart POST URLs and comment that production can omit it.
+
 ## Proxy Ladder
 
 Try and document the first working option, but do not stop at this short list if it fails:

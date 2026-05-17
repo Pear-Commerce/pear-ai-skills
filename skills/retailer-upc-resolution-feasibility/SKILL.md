@@ -129,6 +129,8 @@ For retailer search or PDP APIs behind Azure/APIM, public long-lived subscriptio
 
 For IBM/WCS storefronts or other legacy ecommerce sites using Algolia autocomplete, a blocked PDP/search page may still expose a header or header-fragment endpoint with a public `algoliaConfig` object. Look for `appID`, `APIKey`, product index names, default filters, and `siteRoot` in rendered HTML, header fragments, and autocomplete bundles. If the Algolia hit contains UPC/GTIN plus a stable product object id and PDP action URL, it is a valid live UPC-resolution route; treat the public search key as long-lived config and comment where it came from. Still verify the target UPC from the live Algolia response, not from a cached PDP or search snippet.
 
+For Spartacus/SAP Commerce Cloud (OCC) storefronts, inspect `/rest/v2/<baseSite>/products/search?query=...&fields=FULL` and `/rest/v2/<baseSite>/products/{code}?fields=FULL`. UPC search may return no results even when the detail API exposes `upc`, so use name/brand search to collect item ids, then fetch product detail for each candidate and require live UPC/GTIN evidence before resolving. Cache search/detail GETs once the proxy list is proven, but keep the final resolver tied to retailer-owned OCC responses rather than browser-copied payloads.
+
 ## Proxy Ladder
 
 Try and document the first working option, but do not stop at this short list if it fails:

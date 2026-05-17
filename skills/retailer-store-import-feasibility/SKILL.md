@@ -115,6 +115,8 @@ For Azure/APIM-style APIs, public long-lived subscription keys sometimes work ei
 
 For IBM/WCS storefronts, the visible store-locator page may be blocked by Incapsula/Distil while underlying AJAX views still work. Inspect rendered HTML and JS assets for `wc.service.declare(...)`, `StoreLocator`, `AjaxStoreLocatorSearch`, `EStoreStoreLocatorResultsView`, and similar route names. Try those endpoints directly with the same `storeId`, `catalogId`, and `langId` constants from the page, then add the postcode/city parameters seen in JavaScript such as `storeAddressSearch_zipCode` or `storeAddressSearch_city`. If the AJAX endpoint returns JSON wrapped in a JavaScript comment, strip `/* ... */`, parse the `searchResults` string, and use a production proxy list proven on that endpoint. Do not discard the route just because the human HTML document is blocked.
 
+For Spartacus/SAP Commerce Cloud (OCC) storefronts, look for `/rest/v2/<baseSite>/stores` with `returnAllStores=true` and fields such as `stores(name,displayName,geoPoint,address,features)`. Treat `PointOfService.name` as the candidate `Store.SStore.storeId` and verify it against the availability or cart route before preferring hidden bootstrap values like `warehouseCode`. Some OCC cart APIs accept the display/store name as `deliveryPointOfService.name` and reject the warehouse code, so a prettier or more numeric id is not automatically better.
+
 ## Proxy Ladder
 
 Try and document the first working option:
