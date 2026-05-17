@@ -115,7 +115,7 @@ For Azure/APIM-style APIs, public long-lived subscription keys sometimes work ei
 
 For IBM/WCS storefronts, the visible store-locator page may be blocked by Incapsula/Distil while underlying AJAX views still work. Inspect rendered HTML and JS assets for `wc.service.declare(...)`, `StoreLocator`, `AjaxStoreLocatorSearch`, `EStoreStoreLocatorResultsView`, and similar route names. Try those endpoints directly with the same `storeId`, `catalogId`, and `langId` constants from the page, then add the postcode/city parameters seen in JavaScript such as `storeAddressSearch_zipCode` or `storeAddressSearch_city`. If the AJAX endpoint returns JSON wrapped in a JavaScript comment, strip `/* ... */`, parse the `searchResults` string, and use a production proxy list proven on that endpoint. Do not discard the route just because the human HTML document is blocked.
 
-For Spartacus/SAP Commerce Cloud (OCC) storefronts, look for `/rest/v2/<baseSite>/stores` with `returnAllStores=true` and fields such as `stores(name,displayName,geoPoint,address,features)`. Treat `PointOfService.name` as the candidate `Store.SStore.storeId` and verify it against the availability or cart route before preferring hidden bootstrap values like `warehouseCode`. Some OCC cart APIs accept the display/store name as `deliveryPointOfService.name` and reject the warehouse code, so a prettier or more numeric id is not automatically better.
+For Spartacus/SAP Commerce Cloud (OCC) storefronts, do not assume the OCC prefix is `/rest/v2` or `/occ/v2`. Inspect app bundles, `cx-state`, and Spartacus config for `backend.occ.prefix`, `baseUrl`, and base site. Some retailers use `/api/v2/<baseSite>/stores?fields=FULL&onlyOpen=true&pageSize=100&currentPage=N` with paginated `PointOfService` records. Parse `name`, `displayName`, `geoPoint`, `address`, phones, and opening flags; fetch pages 5-10 at a time once the total count is known, and cache successful pages. Treat `PointOfService.name` as the candidate `Store.SStore.storeId` and verify it against the availability or cart route before preferring hidden bootstrap values like `warehouseCode`. Some OCC cart APIs accept the display/store name as `deliveryPointOfService.name` and reject the warehouse code, so a prettier or more numeric id is not automatically better.
 
 ## Proxy Ladder
 
@@ -177,6 +177,8 @@ Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibili
 - no duplicate store ids exist after normalization
 - a known sample store from Chrome appears
 - count matches the site total when the site exposes a total
+
+If multiple live `@Script` probes in one class create carts, mutate store context, or share proxy/cache state, annotate the class or methods with `@Execution(ExecutionMode.SAME_THREAD)` so the repo's JUnit parallelism does not make unrelated live probes interfere with each other.
 
 When the task is to reproduce a prior PR, load the checked-in `WebContent/META-INF/<retailer>/current.json` with `JSON.get().parseList(..., Store.SStore.class)` and compare the live normalized output field-by-field after sorting by `storeId`. Do not rely only on `Store.SStore.equals`; compare `storeId`, `name`, `address`, `geoAddress`, coordinates, `phone`, `category`, `countryCode`, and formatted zip so normalization drift is obvious.
 

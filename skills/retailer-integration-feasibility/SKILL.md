@@ -82,6 +82,7 @@ When a creative tactic works, or fails in a reusable way, update the focused ski
 - Prefer deterministic parser checks with fixtures when graduating code to production, but keep them as `@Script` while they live in retailer feasibility packages.
 - Assertions must prove real behavior: non-empty stores, stable store ids, target UPC match, expected item id/URL, non-`UNKNOWN` availability when the sample is known, and price when the retailer exposes it.
 - Do not mark a surface successful because it worked only in Chrome or only from the local IP without a proxy path that can run off-box.
+- If one feasibility class has multiple live probes that create carts, mutate store context, or share proxy/cache/session state, annotate it with `@Execution(ExecutionMode.SAME_THREAD)` so repo-level JUnit parallelism does not create false hangs or flakes.
 
 ## Completion
 

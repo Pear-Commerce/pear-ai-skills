@@ -131,7 +131,7 @@ For retailer search or PDP APIs behind Azure/APIM, public long-lived subscriptio
 
 For IBM/WCS storefronts or other legacy ecommerce sites using Algolia autocomplete, a blocked PDP/search page may still expose a header or header-fragment endpoint with a public `algoliaConfig` object. Look for `appID`, `APIKey`, product index names, default filters, and `siteRoot` in rendered HTML, header fragments, and autocomplete bundles. If the Algolia hit contains UPC/GTIN plus a stable product object id and PDP action URL, it is a valid live UPC-resolution route; treat the public search key as long-lived config and comment where it came from. Still verify the target UPC from the live Algolia response, not from a cached PDP or search snippet.
 
-For Spartacus/SAP Commerce Cloud (OCC) storefronts, inspect `/rest/v2/<baseSite>/products/search?query=...&fields=FULL` and `/rest/v2/<baseSite>/products/{code}?fields=FULL`. UPC search may return no results even when the detail API exposes `upc`, so use name/brand search to collect item ids, then fetch product detail for each candidate and require live UPC/GTIN evidence before resolving. Cache search/detail GETs once the proxy list is proven, but keep the final resolver tied to retailer-owned OCC responses rather than browser-copied payloads.
+For Spartacus/SAP Commerce Cloud (OCC) storefronts, do not assume the OCC prefix is `/rest/v2` or `/occ/v2`. Inspect app bundles, `cx-state`, and Spartacus config for `backend.occ.prefix`, `baseUrl`, and base site; some sites use `/api/v2/<baseSite>/products/search?query=...&fields=FULL` and `/api/v2/<baseSite>/products/{code}?fields=FULL`. UPC search may return no results even when the detail API exposes `upc`, so use name/brand search to collect item ids, then fetch product detail or the rendered PDP `cx-state` for each candidate and require live UPC/GTIN evidence before resolving. Cache search/detail GETs once the proxy list is proven, but keep the final resolver tied to retailer-owned OCC responses rather than browser-copied payloads.
 
 ## Proxy Ladder
 
@@ -162,6 +162,8 @@ Add focused JUnit methods annotated with both `@Test` and `@Script`; these are f
 - PDP/detail fetch exposes UPC evidence
 - direct UPC route works when available
 - end-to-end resolver returns the expected `itemId` for the sample UPC/name
+
+If multiple live `@Script` probes in one class share proxy/cache state or retailer sessions with store and availability probes, annotate the class or methods with `@Execution(ExecutionMode.SAME_THREAD)` so JUnit parallelism does not make the feasibility suite flaky.
 
 When using the production resolver, prefer `UPCResolutionUtilities.testMultiRunUPCResolution(...)` for an end-to-end check, as in `AlsBodegaTest`.
 
