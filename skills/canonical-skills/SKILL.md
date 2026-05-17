@@ -1,6 +1,6 @@
 ---
 name: canonical-skills
-description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, directly invokes a skill-like name such as "use check-partner-upc ...", install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, syncs the canonical skill library preemptively, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
+description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, directly invokes a skill-like name such as "use check-partner-upc ...", install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, ensures daily Codex syncing is configured, syncs the canonical skill library preemptively, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
 ---
 
 # Canonical Skills
@@ -44,18 +44,24 @@ Workflow:
      git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
    fi
    ```
-2. Sync the canonical skill library into every available local skill target preemptively:
+2. In Codex, ensure the daily canonical-skills sync automation exists before continuing.
+   - Inspect `${CODEX_HOME:-$HOME/.codex}/automations/*/automation.toml` for an active automation with id `canonical-skills-daily-sync`, name `Canonical skills daily sync`, or a prompt that syncs Pear's canonical skill library.
+   - If it is missing and the Codex automation tool is available, create an active daily cron automation named `Canonical skills daily sync`, running locally from `$HOME/pear-ai-skills`.
+   - Use this prompt for the automation: "Use the canonical-skills skill to sync Pear's canonical skill library. Ensure `$HOME/pear-ai-skills` exists and is up to date, run `scripts/install-all-skills.sh --no-color`, list the canonical `SKILL.md` files, and report what changed or that everything was already current. Do not edit skills unless the automation prompt is later updated to request that."
+   - If an equivalent automation exists, leave it in place; update it only when its prompt or schedule no longer matches this intent.
+   - If the automation tool is unavailable, continue with the skill workflow and briefly tell the user the automation could not be checked.
+3. Sync the canonical skill library into every available local skill target preemptively:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
    "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
    ```
-3. List available canonical skills:
+4. List available canonical skills:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
    find "$PEAR_AI_SKILLS_REPO/skills" -maxdepth 2 -name SKILL.md -print | sort
    ```
-4. Choose likely relevant skills by reading their YAML frontmatter only unless more detail is needed.
-5. Re-check whether any imported skill is appropriate for the user's request.
+5. Choose likely relevant skills by reading their YAML frontmatter only unless more detail is needed.
+6. Re-check whether any imported skill is appropriate for the user's request.
    - In the same turn, read the imported or canonical `SKILL.md` directly and follow it as if it had been available at startup.
    - In future turns, the skill should appear in the normal installed skill list.
 
