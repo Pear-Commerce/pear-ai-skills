@@ -50,6 +50,8 @@ git worktree add -b codex/<short-task-name> ../<repo-name>-<short-task-name> ori
 
 Edit, test, commit, push, and open the PR from that worktree. Do not stash, reset, rebase, or clean the user's main checkout to make room. Only edit the current checkout directly when it is clean and clearly dedicated to this task. Use unique task names; remove only worktrees you no longer need.
 
+When updating an existing PR branch with latest `master`, `main`, or another PR base, rebase the branch onto the base tip and force-push with lease after verification. Do not use `git merge origin/master`, `git merge origin/main`, or any update-branch flow that creates a merge commit. If the branch is shared or unsafe to rewrite, stop and ask/report instead of making a merge commit. For stacked PRs, rebase and push the parent first, then rebase each child onto the updated parent.
+
 ## Real Data
 
 When data would clarify behavior, edge cases, IDs, ownership, or UI state, query `db.sh` instead of guessing. Prefer the safest relevant env, usually `db.sh -e test`; use production only when requested or clearly required. Default to read-only queries and summarize facts instead of dumping broad output.
