@@ -19,7 +19,46 @@ When a task creates or substantially finishes a standalone app, tool, site, demo
 
 ## Your Role
 
-Work through the intake, decision, provisioning, auth wiring, and verification steps in order. At each step, use whatever tools are available (Cloudflare API, AWS CLI, MCP connectors, bash) to take action directly. Only fall back to telling the human what to do when a step genuinely requires credentials or console access you don't have.
+Work through the intake, dependency bootstrap, decision, provisioning, auth wiring, and verification steps in order. At each step, use whatever tools are available (Cloudflare API, AWS CLI, MCP connectors, bash) to take action directly. Only fall back to telling the human what to do when a step genuinely requires credentials or console access you don't have. This skill is self-contained; do not assume the Pear engineering skill, local `db.sh`, or an existing engineering workstation setup is present.
+
+---
+
+## Step 0: Bootstrap Missing Local Tools
+
+Do this before any GitHub, Cloudflare, AWS, or deployment action. The user may be a non-engineer with a fresh machine.
+
+1. Check for the common tools:
+   ```bash
+   for tool in git gh node npm jq curl dig; do
+     command -v "$tool" >/dev/null 2>&1 && echo "ok $tool" || echo "missing $tool"
+   done
+   command -v wrangler >/dev/null 2>&1 || command -v npx >/dev/null 2>&1 || echo "missing wrangler/npx"
+   command -v aws >/dev/null 2>&1 || echo "missing aws"
+   ```
+2. If Git, GitHub CLI, or Homebrew are missing, bootstrap Pear's canonical skill tooling first:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+     | bash -s -- --bootstrap-tools --no-color
+   ```
+3. If more tools are still missing on macOS, install them directly with Homebrew:
+   ```bash
+   brew install git gh node jq awscli bind
+   npm install -g wrangler
+   ```
+   `bind` provides `dig`. If global npm installs are blocked, use `npx wrangler` instead of `wrangler`.
+4. If Homebrew is missing and the installer could not install it, install Homebrew, then rerun the installer:
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+     | bash -s -- --bootstrap-tools --no-color
+   ```
+5. Authenticate only what the task needs:
+   - GitHub source work: `gh auth status || gh auth login --web --git-protocol https`
+   - Cloudflare Workers work: `wrangler whoami || wrangler login`
+   - AWS Lightsail/S3/Secrets/CloudFront work: `aws sts get-caller-identity` first; if it fails, help the user configure the Pear AWS profile or pause with the exact missing credential.
+6. Re-run the tool check. If credentials or device policy still block the task, say exactly which action is blocked. Do not continue by making unpushed local-only source changes.
+
+For simple manifest-only or repo-only work, install and authenticate only the required subset. For full hosting, expect to need Git/GitHub CLI, Node/npm, Wrangler, AWS CLI, jq, curl, and DNS tools.
 
 ---
 
@@ -63,7 +102,7 @@ All intern app source repositories must live under the `Pear-Commerce` GitHub or
 
 Use the GitHub publish workflow before hosting:
 
-1. Confirm `gh` is installed and authenticated with access to the `Pear-Commerce` GitHub org.
+1. Run Step 0 first. Confirm `git` and `gh` are installed, then run `gh auth status || gh auth login --web --git-protocol https` and confirm access to the `Pear-Commerce` GitHub org.
 2. Inspect `git status -sb` and the diff. If the worktree is mixed, stage only the app files and docs that belong to this intern app.
 3. If the manifest names an existing GitHub repo, pull or fetch it before editing so the local checkout is current.
 4. If there is no repo yet, create a private `Pear-Commerce` repo with a clear app name, initialize `main`, add a `.gitignore`, `.env.example`, README, deployment notes, and any source files needed to rebuild the app.

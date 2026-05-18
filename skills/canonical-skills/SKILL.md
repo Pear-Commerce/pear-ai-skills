@@ -21,6 +21,27 @@ Local checkout should usually be:
 $HOME/pear-ai-skills
 ```
 
+## No Prior Setup Assumed
+
+Do not assume the user has Pear engineering skills, repo checkouts, Homebrew, Git, or GitHub CLI installed. This skill is the bootstrap path.
+
+Before cloning, pulling, editing, or pushing skills, make the local environment usable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+  | bash -s -- --bootstrap-tools --no-color
+```
+
+What this installer should handle:
+
+- Install Homebrew on macOS when it is missing and local tools need it.
+- Install Git and GitHub CLI when possible.
+- Fall back to a GitHub archive snapshot if Git still is not available, so skill import can continue.
+- Replace an old archive snapshot with a normal Git checkout after Git becomes available.
+- Import all canonical Pear skills into Codex-compatible and Claude Desktop skill folders.
+
+If a tool install asks for a password, browser login, or device-code confirmation, explain the prompt plainly and wait for the user to finish it. If installing tools is blocked by device policy, continue with archive-based skill import when possible and report exactly which later actions, such as pushing to GitHub, still require setup.
+
 ## When Any Skill Is Mentioned
 
 When the user mentions skills in any context, do this before deciding no skill applies.
@@ -35,25 +56,21 @@ If a named skill is not in the current startup skill list, do not stop after loc
 
 Workflow:
 
-1. Make sure the canonical repo exists locally.
+1. Make sure basic tools and the canonical repo exist locally.
    ```bash
-   PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-   if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
-     git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
-   else
-     git clone https://github.com/Pear-Commerce/pear-ai-skills "$PEAR_AI_SKILLS_REPO"
-   fi
+   curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+     | bash -s -- --bootstrap-tools --no-color
    ```
 2. In Codex, ensure the daily canonical-skills sync automation exists before continuing.
    - Inspect `${CODEX_HOME:-$HOME/.codex}/automations/*/automation.toml` for an active automation with id `canonical-skills-daily-sync`, name `Canonical skills daily sync`, or a prompt that syncs Pear's canonical skill library.
    - If it is missing and the Codex automation tool is available, create an active daily cron automation named `Canonical skills daily sync`, running locally from `$HOME/pear-ai-skills`.
-   - Use this prompt for the automation: "Use the canonical-skills skill to sync Pear's canonical skill library. Ensure `$HOME/pear-ai-skills` exists and is up to date, run `scripts/install-all-skills.sh --no-color`, list the canonical `SKILL.md` files, and report what changed or that everything was already current. Do not edit skills unless the automation prompt is later updated to request that."
+   - Use this prompt for the automation: "Use the canonical-skills skill to sync Pear's canonical skill library. Ensure `$HOME/pear-ai-skills` exists and is up to date, run `scripts/install-all-skills.sh --bootstrap-tools --no-color`, list the canonical `SKILL.md` files, and report what changed or that everything was already current. Do not edit skills unless the automation prompt is later updated to request that."
    - If an equivalent automation exists, leave it in place; update it only when its prompt or schedule no longer matches this intent.
    - If the automation tool is unavailable, continue with the skill workflow and briefly tell the user the automation could not be checked.
 3. Sync the canonical skill library into every available local skill target preemptively:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-   "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
+   "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --bootstrap-tools --no-color
    ```
 4. List available canonical skills:
    ```bash
@@ -87,17 +104,32 @@ Tell the user Claude may need a restart before it sees newly synced skills.
 
 All Pear skill creation and edits start in the canonical repo.
 
-1. Pull the canonical repo first:
+1. Bootstrap tools and pull the canonical repo first:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-   git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
+   if [ -x "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" ]; then
+     "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --bootstrap-tools --no-color
+   else
+     curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+       | bash -s -- --bootstrap-tools --no-color
+   fi
+   if git -C "$PEAR_AI_SKILLS_REPO" status >/dev/null 2>&1; then
+     git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
+   else
+     echo "A normal Git checkout is required before editing or pushing skills."
+     exit 1
+   fi
    ```
-2. Create or edit `skills/<skill-name>/SKILL.md` in `$PEAR_AI_SKILLS_REPO`.
-3. Keep the skill concise, with clear YAML `name` and `description`. Add optional assistant metadata files, such as `agents/openai.yaml`, only when a target UI or assistant integration uses them. Do not create, require, or default skill icons; skill metadata should focus on names, descriptions, instructions, and target-specific prompts.
-4. Commit and push `Pear-Commerce/pear-ai-skills`.
-5. Copy the changed skill into any repo-local or installed copies that must stay in sync.
-6. For app repos other than `api.pearcommerce.com`, commit and push those synced copies directly after verification.
-7. For `api.pearcommerce.com`, use a `codex/` branch and open a pull request instead of pushing directly to `master`.
+2. Confirm GitHub CLI auth before any push:
+   ```bash
+   gh auth status || gh auth login --web --git-protocol https
+   ```
+3. Create or edit `skills/<skill-name>/SKILL.md` in `$PEAR_AI_SKILLS_REPO`.
+4. Keep the skill concise, with clear YAML `name` and `description`. Add optional assistant metadata files, such as `agents/openai.yaml`, only when a target UI or assistant integration uses them. Do not create, require, or default skill icons; skill metadata should focus on names, descriptions, instructions, and target-specific prompts.
+5. Commit and push `Pear-Commerce/pear-ai-skills`.
+6. Copy the changed skill into any repo-local or installed copies that must stay in sync.
+7. For app repos other than `api.pearcommerce.com`, commit and push those synced copies directly after verification.
+8. For `api.pearcommerce.com`, use a `codex/` branch and open a pull request instead of pushing directly to `master`.
 
 Do not make a repo-local skill copy the source of truth. Repo-local copies are vendored mirrors for compatibility.
 
@@ -106,14 +138,15 @@ Do not make a repo-local skill copy the source of truth. Repo-local copies are v
 To install this bootstrap skill and immediately get set up with Pear's shared skills in both Codex-compatible and Claude Desktop targets, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+  | bash -s -- --bootstrap-tools
 ```
 
 If the repo is already checked out locally:
 
 ```bash
 PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
-"$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --no-color
+"$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --bootstrap-tools --no-color
 ```
 
 Then start a new chat in that assistant and mention skills normally. Claude Desktop may need a restart before it sees newly synced skills.

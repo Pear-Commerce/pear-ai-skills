@@ -9,6 +9,7 @@ CLAUDE_SKILLS_DIR="${CLAUDE_SKILLS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/skills}"
 INSTALL_CODEX=1
 INSTALL_CLAUDE=1
 COLOR_MODE="${COLOR:-auto}"
+BOOTSTRAP_TOOLS="${PEAR_AI_SKILLS_BOOTSTRAP_TOOLS:-0}"
 RETIRED_SKILLS="sstore-store-extractor pear-upc-resolution-graph-code-changes pear-upc-resolution-verification"
 
 usage() {
@@ -23,6 +24,8 @@ Options:
   --branch NAME     Checkout/update this branch (default: main)
   --codex-only      Import only to the Codex-compatible skill target
   --claude-only     Import only to the Claude Desktop skill target
+  --bootstrap-tools Install missing local basics where possible
+                   (macOS: Homebrew if needed, then Git and GitHub CLI)
   --no-color        Disable colored output
   -h, --help        Show this help
 
@@ -34,6 +37,8 @@ Environment:
   CODEX_SKILLS_DIR          Exact Codex-compatible skills directory
   CLAUDE_HOME               Claude home directory (default: \$HOME/.claude)
   CLAUDE_SKILLS_DIR         Exact Claude Desktop skills directory
+  PEAR_AI_SKILLS_BOOTSTRAP_TOOLS=1
+                            Install missing local basics before importing
 EOF
 }
 
@@ -59,6 +64,10 @@ while [ "$#" -gt 0 ]; do
       INSTALL_CLAUDE=1
       shift
       ;;
+    --bootstrap-tools)
+      BOOTSTRAP_TOOLS=1
+      shift
+      ;;
     --no-color)
       COLOR_MODE="never"
       shift
@@ -74,6 +83,11 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+
+case "$BOOTSTRAP_TOOLS" in
+  1|true|TRUE|yes|YES|on|ON) BOOTSTRAP_TOOLS=1 ;;
+  *) BOOTSTRAP_TOOLS=0 ;;
+esac
 
 if [ "$INSTALL_CODEX" -eq 0 ] && [ "$INSTALL_CLAUDE" -eq 0 ]; then
   echo "Nothing to install. Pick at least one target." >&2
@@ -127,6 +141,102 @@ have() {
   command -v "$1" >/dev/null 2>&1
 }
 
+tool_available() {
+  case "$1" in
+    git|gh)
+      command -v "$1" >/dev/null 2>&1 && "$1" --version >/dev/null 2>&1
+      ;;
+    *)
+      command -v "$1" >/dev/null 2>&1
+      ;;
+  esac
+}
+
+activate_homebrew() {
+  if have brew; then
+    return 0
+  fi
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+  have brew
+}
+
+install_homebrew() {
+  activate_homebrew && return 0
+
+  [ "$(uname -s)" = "Darwin" ] || return 1
+  have curl || return 1
+
+  info "Homebrew is missing. Installing Homebrew so Git and GitHub CLI can be installed."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  activate_homebrew
+}
+
+install_package() {
+  command_name="$1"
+  brew_formula="$2"
+  apt_package="$3"
+  label="$4"
+
+  if tool_available "$command_name"; then
+    ok "$label is available"
+    return 0
+  fi
+
+  if [ "$BOOTSTRAP_TOOLS" -ne 1 ]; then
+    return 1
+  fi
+
+  if install_homebrew; then
+    info "Installing $label with Homebrew"
+    brew install "$brew_formula"
+    tool_available "$command_name"
+    return $?
+  fi
+
+  if have apt-get; then
+    info "Installing $label with apt"
+    sudo apt-get update
+    sudo apt-get install -y "$apt_package"
+    tool_available "$command_name"
+    return $?
+  fi
+
+  return 1
+}
+
+prepare_local_tools() {
+  step "0. Prepare local tools"
+
+  if install_package git git git "Git"; then
+    :
+  else
+    warn "Git is not available. I will use a GitHub archive snapshot for this import."
+    warn "Install Git later and rerun this script to get a normal updatable checkout."
+  fi
+
+  if install_package gh gh gh "GitHub CLI"; then
+    :
+  else
+    warn "GitHub CLI is not available. Skill import can continue, but creating or pushing repos will need it later."
+  fi
+
+  if have curl; then
+    ok "curl is available"
+  else
+    fail "curl is required to download Pear skills. Install curl and rerun this script."
+  fi
+
+  if have tar; then
+    ok "tar is available"
+  else
+    fail "tar is required for the no-git fallback. Install tar and rerun this script."
+  fi
+}
+
 repo_remote_looks_right() {
   case "$1" in
     *Pear-Commerce/pear-ai-skills*|*Pear-Commerce/pear-ai-skills.git*) return 0 ;;
@@ -160,6 +270,13 @@ checkout_with_git() {
       warn "$REPO_DIR has local changes, so I will not pull or switch branches."
       warn "Importing skills from the current local checkout instead."
     fi
+  elif [ -d "$REPO_DIR" ] && [ -f "$REPO_DIR/.pear-ai-skills-snapshot" ]; then
+    backup_dir="$REPO_DIR.snapshot-backup-$(date +%Y%m%d%H%M%S)"
+    warn "$REPO_DIR is an archive snapshot from an earlier no-git install."
+    warn "Moving it to $backup_dir and replacing it with a normal Git checkout."
+    mv "$REPO_DIR" "$backup_dir"
+    mkdir -p "$(dirname "$REPO_DIR")"
+    git clone --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
   elif [ -e "$REPO_DIR" ]; then
     fail "$REPO_DIR already exists but is not a Git checkout. Move it or set PEAR_AI_SKILLS_REPO to a different path."
   else
@@ -196,7 +313,7 @@ checkout_with_archive() {
 
 checkout_repo() {
   step "1. Checkout canonical skills"
-  if have git; then
+  if tool_available git; then
     checkout_with_git
   else
     checkout_with_archive
@@ -260,6 +377,7 @@ main() {
   say "${BOLD}Pear AI Skills Installer${RESET}"
   say "${DIM}Canonical repo: $REPO_URL${RESET}"
 
+  prepare_local_tools
   checkout_repo
 
   step "2. Import skills"

@@ -23,14 +23,14 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 
 ## Get Set Up and Stay Synced
 
-Most people should run the installer once. It checks out this canonical repo, syncs Pear's shared skills into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
+Most people should run the installer once. It checks out this canonical repo, installs missing basics such as Homebrew, Git, and GitHub CLI when possible, syncs Pear's shared skills into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
 
 ## Fast Path: Ask Your Assistant
 
 In Codex or Claude, start with this short prompt:
 
 ```text
-Find Pear-Commerce/pear-ai-skills and add all Pear skills to this assistant. If the repo is not checked out, clone or update it, run its installer, and then list the installed skills.
+Find Pear-Commerce/pear-ai-skills and add all Pear skills to this assistant. If anything basic is missing, bootstrap Homebrew/Git/GitHub CLI as needed, clone or update the repo, run its installer with --bootstrap-tools, and then list the installed skills.
 ```
 
 If that works, start a fresh chat and mention skills normally. Claude Desktop may need a restart before it sees newly synced skills.
@@ -42,20 +42,23 @@ If the assistant cannot find or run the installer, use the manual fallback below
 Paste this into Terminal:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh | bash -s -- --bootstrap-tools
 ```
 
 What it does:
 
+- Installs Homebrew on macOS if needed for missing local tools.
+- Installs Git and GitHub CLI when possible.
 - Clones or updates the repo at `$HOME/pear-ai-skills`.
 - Syncs Pear's shared skills into `${CODEX_HOME:-$HOME/.codex}/skills`.
 - Syncs Pear's shared skills into `$HOME/.claude/skills`.
 - Preserves local repo changes instead of overwriting them.
+- Falls back to a GitHub archive snapshot if Git cannot be installed yet.
 
 If you already have the repo checked out, run:
 
 ```bash
-./scripts/install-all-skills.sh
+./scripts/install-all-skills.sh --bootstrap-tools
 ```
 
 Claude Desktop may need a restart before it sees newly synced skills.
