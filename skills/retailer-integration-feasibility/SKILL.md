@@ -19,7 +19,7 @@ Use the focused skills for the actual implementation loops:
 - `$retailer-upc-resolution-feasibility` for UPC/name search, PDP parsing, and `ItemIdInfoResolver`
 - `$retailer-availability-scanning-feasibility` for `UPCRetailerZipAvailabilityRecomputer`, store-level inventory checks, and online availability access
 
-If the user asks for all three, work in this order: stores, UPC resolution, availability. Availability usually needs a real store id and item id from the first two passes. If no store-scoped inventory route exists, do not stop there: try to prove live online availability access from PDP/product/search/cart routes that expose current stock/out-of-stock state and price. This is useful for avoiding dead PDP/checkout links, even though it is not inventory access.
+If the user asks for all three, work in this order: stores, UPC resolution, availability. Availability usually needs a real store id and item id from the first two passes. If no store-scoped inventory route exists, do not stop there: try to prove live online availability access from PDP/product/search/cart routes that expose current stock/out-of-stock state, price, and a buyability/add-to-cart signal. This is useful for avoiding dead PDP/checkout links, even though it is not inventory access. Do not mark online availability as passing from stock text alone if the live page/API disables buy/add-to-cart or the cart route rejects the item.
 
 ## Default Artifacts
 
@@ -57,7 +57,7 @@ Every combined `@Script` probe class should start with a compact comment like:
  * FEASIBILITY SUMMARY
  * Stores: PASS via store-locator JSON; STATIC works; 312 stores; sample storeId=123.
  * UPC resolution: PASS via name search + PDP embedded GTIN; UNBLOCKER required; sample UPC=...
- * Availability: PASS online-only via live product JSON stock/price; no store-level inventory route found.
+ * Availability: PASS online-only via live product JSON stock/price plus enabled add-to-cart; no store-level inventory route found.
  */
 ```
 
@@ -84,7 +84,7 @@ When a creative tactic works, or fails in a reusable way, update the focused ski
 - Prefer deterministic parser checks with fixtures when graduating code to production, but keep them as `@Script` while they live in retailer feasibility packages.
 - Assertions must prove real behavior: non-empty stores, stable store ids, target UPC match, expected item id/URL, non-`UNKNOWN` availability when the sample is known, and price when the retailer exposes it.
 - Do not mark a surface successful because it worked only in Chrome or only from the local IP without a proxy path that can run off-box.
-- Do not mark a retailer failed solely because availability is online/global instead of store-specific. If Java can fetch current in-stock/out-of-stock state and price from a live retailer-owned PDP/product/search/cart route, mark availability as passing online availability access and document that store-level inventory remains unavailable.
+- Do not mark a retailer failed solely because availability is online/global instead of store-specific. If Java can fetch current in-stock/out-of-stock state and price from a live retailer-owned PDP/product/search/cart route and also prove the item is buyable or add-to-cart is enabled/accepted, mark availability as passing online availability access and document that store-level inventory remains unavailable. If buy/add-to-cart cannot be proven, keep iterating or leave the probe disabled as a dead-link risk.
 - If one feasibility class has multiple live probes that create carts, mutate store context, or share proxy/cache/session state, annotate it with `@Execution(ExecutionMode.SAME_THREAD)` so repo-level JUnit parallelism does not create false hangs or flakes.
 
 ## Completion
