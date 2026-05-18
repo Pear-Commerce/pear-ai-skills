@@ -13,6 +13,12 @@ description: JurlProxyFallback and Jurl HTTP patterns — proxy Type ordering, c
 
 `goThen` runs inside the `JurlProxyFallback` attempt boundary. A non-null return means the attempt succeeded and may be cacheable. Returning `null` has the same attempt-failure semantics as throwing: fallback/retry should continue, and the response should not be treated as a success. Keep validation that decides whether a response is usable/cacheable inside `goThen`; if the checker objects but the validation belongs to the retry boundary, suppress the checker instead of moving validation out. Return a non-null empty domain value or sentinel only when "no data" is intentionally cacheable.
 
+## Browser-Like Requests
+
+For routes discovered in Chrome, especially retailer search, PDP, inventory, cart, locator, and JSON hydration routes, start the `LoggedJurl` supplier with `.asChrome()` unless the endpoint is known to reject browser headers. `.asChrome()` applies the repo's browser-like request profile and often fixes 403/429, hangs, bot shells, or header-sensitive responses before heavier proxies are needed.
+
+If a request works in local Chrome but Java replay is flaky or blocked, try `.asChrome()` before broadening the proxy ladder, copying large header sets by hand, or declaring the route infeasible. Keep `.asChrome()` in the final code when it was part of the proven production path; do not remove it just because a copied cURL has fewer headers.
+
 ## Proxy Types (JurlProxyFallback.Type enum)
 
 Direct → `NO_PROXY`  

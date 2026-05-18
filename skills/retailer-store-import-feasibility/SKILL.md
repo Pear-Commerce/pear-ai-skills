@@ -80,6 +80,8 @@ Make this a compact rerun guide for that exact site. Include the retailer name, 
 
 Use `JurlProxyFallback` for live HTTP:
 
+Default browser-discovered store routes to `new LoggedJurl().asChrome()` so Java sends a browser-like header profile. If a plain `LoggedJurl` gets 403/429, hangs, returns a bot shell, or differs from local Chrome, add `.asChrome()` before expanding the proxy list or switching extraction strategies. Keep `.asChrome()` on the final route when it is part of the proven production replay.
+
 ```java
 return new JurlProxyFallback(
     List.of(Type.STATIC, Type.SMARTPROXY_STATIC, Type.SOAX_STATIC, Type.NETNUT_STATIC, Type.DATAIMPULSE_STATIC, Type.UNBLOCKER),

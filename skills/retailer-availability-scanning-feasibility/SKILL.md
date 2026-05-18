@@ -110,6 +110,8 @@ Use `Status.AVAILABLE`, `Status.UNAVAILABLE`, `Status.UNKNOWN`, and `Status.INVA
 
 Use `JurlProxyFallback` for live HTTP:
 
+Default browser-discovered inventory, PDP, cart, and price/buyability routes to `new LoggedJurl().asChrome()` so Java sends a browser-like header profile. If a plain `LoggedJurl` gets blocked, times out, returns a bot/app shell, or fails while Chrome succeeds, retry with `.asChrome()` before escalating to heavier proxies or declaring availability infeasible. Keep `.asChrome()` on the final scanner/script route when it is part of the proven production replay.
+
 ```java
 Tuple2<Status, BigDecimal> result = new JurlProxyFallback(
     List.of(Type.STATIC, Type.UNBLOCKER, Type.ZENROWS_DATACENTER_SCRAPE, Type.ZENROWS_DATACENTER_RENDER),

@@ -106,6 +106,8 @@ For resolver search text, prefer existing helpers like `buildLikelyNameOrBrandSe
 
 Use `JurlProxyFallback` for live HTTP and preserve browser headers only when they matter:
 
+Default browser-discovered search, PDP, and product API routes to `new LoggedJurl().asChrome()` so Java sends a browser-like header profile. If a plain `LoggedJurl` gets blocked, times out, returns an app/challenge shell, or fails while Chrome succeeds, retry with `.asChrome()` before escalating to heavier proxies or marking the UPC route hard. Keep `.asChrome()` on the final resolver/script route when it is part of the proven production replay.
+
 ```java
 return new JurlProxyFallback(
     List.of(Type.STATIC, Type.UNBLOCKER, Type.ZENROWS_DATACENTER_RENDER, Type.ZENROWS_RESIDENTIAL_RENDER),
