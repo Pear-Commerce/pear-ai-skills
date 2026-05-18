@@ -77,7 +77,7 @@ Every combined `@Script` probe class should start with a compact comment like:
 
 ## Creative Recovery
 
-Get creative when the obvious browser route, copied API, or first proxy ladder fails. Try alternate store modes, full documents instead of APIs, embedded app state, sitemap/search-index data, mobile or app-adjacent endpoints, cart/PDP side doors, platform-sibling banners, checked-in PR artifacts, and rendered DOM traversal before declaring a surface infeasible.
+Get creative when the obvious browser route, copied API, or first proxy ladder fails. For UPC resolution especially, if Chrome renders a PDP with UPC/GTIN evidence, trace the API or payload that served that data to the PDP before declaring resolution hard: check XHR/fetch calls, hydration JSON, script bundles, delayed product-spec/detail calls, GraphQL operations, tag-manager data, and lazy structured-data loaders, then replay the stable retailer-owned source in Java if production-runnable. Also try alternate store modes, full documents instead of APIs, embedded app state, sitemap/search-index data, mobile or app-adjacent endpoints, cart/PDP side doors, platform-sibling banners, checked-in PR artifacts, and rendered DOM traversal before declaring a surface infeasible.
 
 When a creative tactic works, or fails in a reusable way, update the focused skill's `SKILL.md` or `references/repo-tactics.md` in the canonical skills repo before finishing. Keep the note short, name the route/platform/proxy signal, validate the skill, and sync it into the local skill target.
 

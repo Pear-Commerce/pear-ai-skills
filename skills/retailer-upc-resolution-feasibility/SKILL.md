@@ -11,7 +11,7 @@ Use this skill to prove that Pear can take a UPC and product name, find the reta
 
 The route is feasible only when the Java code can replay it from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome success is discovery evidence, not proof. Search-engine snippets, cached pages, indexed PDP text, copied DevTools payloads, hardcoded fixtures, screenshots, or demo snapshots may help diagnose a route, but they must not make a passing resolver `@Script`.
 
-A passing UPC resolution probe must fetch the item id and UPC evidence live from the retailer or an approved retailer-owned API at script runtime. If all live routes are blocked or incomplete, keep the code, disable the probe, and document the blocker instead of substituting canned product data. Before giving up, iterate through alternative retailer-owned routes: search APIs, PDP documents, embedded app JSON, mobile/app-adjacent APIs, sitemap-discovered PDPs, canonical URL patterns, category/search hydration calls, and rendered document routes across the proxy ladder.
+A passing UPC resolution probe must fetch the item id and UPC evidence live from the retailer or an approved retailer-owned API at script runtime. If all live routes are blocked or incomplete, keep the code, disable the probe, and document the blocker instead of substituting canned product data. Before giving up, iterate through alternative retailer-owned routes: search APIs, PDP documents, embedded app JSON, the XHR/fetch/script API calls that hydrate the PDP itself, mobile/app-adjacent APIs, sitemap-discovered PDPs, canonical URL patterns, category/search hydration calls, and rendered document routes across the proxy ladder.
 
 When a spreadsheet-queue retailer has production-runnable stores and availability but UPC resolution is the only blocker, do not block the feasibility PR solely for the missing UPC route. Leave the UPC `@Script` disabled with the live routes and proxy results documented, and make sure the sheet marks UPC resolution/access as `Hard` and overall/difficulty as `Hard`.
 
@@ -41,8 +41,9 @@ Explore in local Chrome before coding:
 1. Search the retailer site by UPC.
 2. If UPC search fails, search by product name, brand, and distinctive size words.
 3. Open likely PDPs and find UPC/GTIN evidence in visible text, `application/ld+json`, `__NEXT_DATA__`, `__NUXT__`, product detail JSON, script variables, data attributes, or PDP API responses.
-4. Inspect search and PDP Network requests for stable item ids, product ids, SKUs, canonical URLs, and UPC fields.
-5. If on-site search is poor, use search-engine `site:` discovery only to find candidate retailer URLs. The resolver still must fetch a retailer-owned live page/API and verify UPC evidence there.
+4. If Chrome shows UPC/GTIN on a PDP but Java cannot replay the PDP document, trace where that PDP value came from before giving up: inspect Network XHR/fetch, script bundles, hydration JSON, API base URLs, product-id parameters, and delayed calls that populate product specs or structured data. Recreate the underlying retailer-owned PDP loader/API in Java when it is stable and production-runnable.
+5. Inspect search and PDP Network requests for stable item ids, product ids, SKUs, canonical URLs, and UPC fields.
+6. If on-site search is poor, use search-engine `site:` discovery only to find candidate retailer URLs. The resolver still must fetch a retailer-owned live page/API and verify UPC evidence there.
 
 Never accept a name-only match as resolved. The Java test must confirm the target UPC with `UPC.isAUPCMatch(...)` or equivalent UPC normalization, or clearly mark the route incomplete.
 
@@ -148,7 +149,7 @@ When the common ladder fails during discovery, expand to all currently available
 
 ## Creative Recovery
 
-Get creative if you have to: when UPC search, name search, or PDP parsing does not expose enough evidence, keep trying plausible retailer-owned routes before declaring resolution infeasible. Try brand/size query variants, canonical PDP URL patterns, embedded product JSON, structured data, search autocomplete APIs, category/search result hydration calls, sitemap or search-engine `site:` discovery for candidate URLs, mobile/app-adjacent APIs, platform-sibling banners, app decompilation when appropriate, and cached retailer metadata before declaring resolution infeasible.
+Get creative if you have to: when UPC search, name search, or PDP parsing does not expose enough evidence, keep trying plausible retailer-owned routes before declaring resolution infeasible. If a local browser-rendered PDP exposes the UPC, assume there may be a data source that served it to the page and trace that source before marking resolution hard: XHR/fetch calls, hydration payloads, product-spec APIs, recommendation/product-detail APIs, GraphQL operations, script-bundle constants, tag-manager injected data, and lazy-loaded structured data are all fair game. Try brand/size query variants, canonical PDP URL patterns, embedded product JSON, structured data, search autocomplete APIs, category/search result hydration calls, sitemap or search-engine `site:` discovery for candidate URLs, mobile/app-adjacent APIs, platform-sibling banners, app decompilation when appropriate, and cached retailer metadata before declaring resolution infeasible.
 
 When app decompilation or APK string extraction reveals API base URLs, route fragments, DTO names, or parameter names, reconstruct the most likely retailer-owned requests and test them through Java/proxies. Treat those strings as a map, not proof: the passing resolver still needs a live response that contains item id plus UPC evidence, and any required app headers, tokens, cookies, or device identifiers must be reproducible from production boxes.
 
