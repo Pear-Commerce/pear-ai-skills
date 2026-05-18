@@ -49,7 +49,7 @@ This guidance is different from dead behavior. Remove stale helpers, duplicate D
 
 ## Spring Tests
 
-In `api.pearcommerce.com`, any JUnit test that needs Spring-managed beans, method-parameter `@Autowired`, `awsAppConfigUtil`, `Persistence`, `Resources`, or the Pear app test context should extend `BasePearScript`. Keep pure unit tests plain, but do not add ad hoc Spring annotations or manual context setup when `BasePearScript` is the repo pattern. Make Spring-backed tests deterministic by creating required SimpleORM rows in the test instead of assuming CI seed data contains them.
+In `api.pearcommerce.com`, any JUnit test that needs Spring-managed beans, method-parameter `@Autowired`, `awsAppConfigUtil`, `Persistence`, `Resources`, or the Pear app test context should usually extend `BasePearScript` because it loads the Spring/Pear test context. If a test sees null `Persistence.global()`, missing `Resources`, or uninitialized autowired collaborators, first check whether it should be based on `BasePearScript`. Keep pure unit tests plain, but do not add ad hoc Spring annotations or manual context setup when `BasePearScript` is the repo pattern. Make Spring-backed tests deterministic by creating required SimpleORM rows in the test instead of assuming CI seed data contains them.
 
 ## Concurrent Repo Work
 
