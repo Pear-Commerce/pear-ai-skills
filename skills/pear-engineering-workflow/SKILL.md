@@ -11,6 +11,14 @@ Keep Pear code work grounded in repo patterns, real data, and the actual browser
 
 Canonical repo: `https://github.com/Pear-Commerce/pear-ai-skills`. For skill edits, update and push `skills/pear-engineering-workflow/SKILL.md` there first, then sync installed/vendored copies. For app repos other than `api.pearcommerce.com`, commit synced copies directly after verification; for `api.pearcommerce.com`, use a `codex/` branch and PR.
 
+## Offers Deploy Safety
+
+For `offers.pearcommerce.com`, never repair or deploy CDN/static asset content by pushing local workstation files to S3/R2/CloudFront/Cloudflare or any production bucket. Do not use `aws s3 cp`, `aws s3 sync`, `s3api put-object`, R2 object writes, Cloudflare direct uploads, or equivalent local artifact pushes for Offers production or staging assets, including emergency fixes.
+
+Never deploy production from a local or dev build. Production Offers artifacts must be built and uploaded by the GitHub Actions/CI deploy pipeline from the merged source branch, using production configuration. If a live asset is stale or wrong, fix the source, deploy script, cache headers, or invalidation path in code; merge through PR/CI; trigger or rerun the CI deploy; then verify the public URLs and browser flow.
+
+CDN cache purges/invalidations may be run when needed to make already-deployed CI artifacts visible, but they must not be paired with local object-content writes. If a situation appears to require manual production object mutation, stop and escalate instead of improvising from local files.
+
 ## Review Rules
 
 Before calling code changes done, read the PR-improvement guide. Prefer:
