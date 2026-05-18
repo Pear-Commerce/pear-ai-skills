@@ -1,6 +1,6 @@
 ---
 name: retailer-integration-feasibility
-description: Coordinate Pear retailer onboarding feasibility for store importers, UPC/item ID resolvers, and store-level availability scanners in api.pearcommerce.com. Use when given a retailer name or URL and asked to assess or build a retailer integration, create AvailabilityUpdater/recomputer support, create ItemIdInfoResolver/UPC resolution support, import Store.SStore data, or produce Java @Script feasibility probes that use Chrome discovery, JurlProxyFallback, and proxies without running in CI.
+description: Coordinate Pear retailer onboarding feasibility for store importers, UPC/item ID resolvers, and store-level or online availability scanners in api.pearcommerce.com. Use when given a retailer name or URL and asked to assess or build a retailer integration, create AvailabilityUpdater/recomputer support, create ItemIdInfoResolver/UPC resolution support, import Store.SStore data, or produce Java @Script feasibility probes that use Chrome discovery, JurlProxyFallback, and proxies without running in CI.
 ---
 
 # Retailer Integration Feasibility
@@ -9,7 +9,7 @@ Use this skill as the coordinator for a new retailer integration. The goal is to
 
 - store import: retailer store ids, addresses, coordinates, and `Store.SStore`-compatible data
 - UPC resolution: UPC/name to retailer item id and PDP URL
-- availability scanning: store id plus item id/UPC to stock status and price
+- availability scanning: store id plus item id/UPC to stock status and price, or live online ecommerce availability/price when store-level inventory is unavailable
 
 ## Focused Skills
 
@@ -17,9 +17,9 @@ Use the focused skills for the actual implementation loops:
 
 - `$retailer-store-import-feasibility` for store locators and store importers
 - `$retailer-upc-resolution-feasibility` for UPC/name search, PDP parsing, and `ItemIdInfoResolver`
-- `$retailer-availability-scanning-feasibility` for `UPCRetailerZipAvailabilityRecomputer` and store-level inventory checks
+- `$retailer-availability-scanning-feasibility` for `UPCRetailerZipAvailabilityRecomputer`, store-level inventory checks, and online availability access
 
-If the user asks for all three, work in this order: stores, UPC resolution, availability. Availability usually needs a real store id and item id from the first two passes.
+If the user asks for all three, work in this order: stores, UPC resolution, availability. Availability usually needs a real store id and item id from the first two passes. If no store-scoped inventory route exists, do not stop there: try to prove live online availability access from PDP/product/search/cart routes that expose current stock/out-of-stock state and price. This is useful for avoiding dead PDP/checkout links, even though it is not inventory access.
 
 ## Default Artifacts
 
@@ -57,7 +57,7 @@ Every combined `@Script` probe class should start with a compact comment like:
  * FEASIBILITY SUMMARY
  * Stores: PASS via store-locator JSON; STATIC works; 312 stores; sample storeId=123.
  * UPC resolution: PASS via name search + PDP embedded GTIN; UNBLOCKER required; sample UPC=...
- * Availability: FAILING; API 403s on STATIC/UNBLOCKER/ZENROWS; disabled test documents last curl and headers.
+ * Availability: PASS online-only via live product JSON stock/price; no store-level inventory route found.
  */
 ```
 
@@ -84,6 +84,7 @@ When a creative tactic works, or fails in a reusable way, update the focused ski
 - Prefer deterministic parser checks with fixtures when graduating code to production, but keep them as `@Script` while they live in retailer feasibility packages.
 - Assertions must prove real behavior: non-empty stores, stable store ids, target UPC match, expected item id/URL, non-`UNKNOWN` availability when the sample is known, and price when the retailer exposes it.
 - Do not mark a surface successful because it worked only in Chrome or only from the local IP without a proxy path that can run off-box.
+- Do not mark a retailer failed solely because availability is online/global instead of store-specific. If Java can fetch current in-stock/out-of-stock state and price from a live retailer-owned PDP/product/search/cart route, mark availability as passing online availability access and document that store-level inventory remains unavailable.
 - If one feasibility class has multiple live probes that create carts, mutate store context, or share proxy/cache/session state, annotate it with `@Execution(ExecutionMode.SAME_THREAD)` so repo-level JUnit parallelism does not create false hangs or flakes.
 
 ## Completion
@@ -93,5 +94,6 @@ Finish by reporting:
 - which surfaces pass, fail, or are disabled
 - the required proxy types and whether static works
 - sample inputs used: retailer URL, store id, UPC/name, item id/PDP
+- whether availability is store-level inventory access or online availability access
 - Java files and `@Script` probes created or updated
 - the exact focused Gradle/JUnit `@Script` checks run, or why they could not run

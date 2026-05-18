@@ -1,17 +1,17 @@
 ---
 name: retailer-availability-scanning-feasibility
-description: Discover, implement, and verify Pear retailer availability scanning feasibility in api.pearcommerce.com. Use when asked to build or assess an AvailabilityUpdater, UPCRetailerZipAvailabilityRecomputer, store-level inventory check, price scraper, in-store/ship-to-home status scanner, or Java @Script probes that take store IDs and item IDs/UPCs and validate availability through JurlProxyFallback and proxies without running in CI.
+description: Discover, implement, and verify Pear retailer availability scanning feasibility in api.pearcommerce.com. Use when asked to build or assess an AvailabilityUpdater, UPCRetailerZipAvailabilityRecomputer, store-level inventory check, online availability/price scraper, in-store/ship-to-home status scanner, or Java @Script probes that take store IDs and/or item IDs/UPCs and validate availability through JurlProxyFallback and proxies without running in CI.
 ---
 
 # Retailer Availability Scanning Feasibility
 
-Use this skill to prove that Pear can take a store id plus retailer item id/UPC and return stock status and price.
+Use this skill to prove that Pear can take a store id plus retailer item id/UPC and return stock status and price. Store-level inventory is ideal, but it is not the only useful success mode: if the retailer exposes live online ecommerce stock/out-of-stock state and price for a PDP/cart/search result that lets a shopper check out, that is valid availability access. Treat that as different from store-level inventory access, document the limitation clearly, and still move the retailer forward when the route is production-runnable.
 
 ## Production-Runnable Requirement
 
 The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome exploration, DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.
 
-A passing availability probe must fetch current status and price live at script runtime for the supplied store id plus item id/UPC. If all live routes are blocked, session-bound in a way Java cannot replay, or missing store-specific inventory data, keep the code, disable the probe, and document the blocker instead of substituting demo data. Before giving up, keep iterating through retailer-owned alternatives: inventory APIs, PDP documents after store-context setup, cart/add-to-cart validation, fulfillment endpoints, GraphQL variants, mobile/app-adjacent APIs, rendered documents, app decompilation when appropriate, and every relevant proxy/header combination.
+A passing availability probe must fetch current status and price live at script runtime. Prefer the supplied store id plus item id/UPC and prove that the store id affects the response when the retailer supports pickup or local inventory. If no store-scoped route exists but the site exposes current online stock/price that can send shoppers to a non-dead PDP or checkout path, make that probe pass as online availability access instead: the method may accept a nullable/placeholder store id, must assert the item id/UPC/PDP, current in-stock/out-of-stock signal, and price when exposed, and must comment that the route proves online availability but not store-level inventory. If all live routes are blocked or session-bound in a way Java cannot replay, keep the code, disable the probe, and document the blocker instead of substituting demo data. Before giving up, keep iterating through retailer-owned alternatives: inventory APIs, PDP documents after store-context setup, cart/add-to-cart validation, fulfillment endpoints, GraphQL variants, mobile/app-adjacent APIs, rendered documents, app decompilation when appropriate, and every relevant proxy/header combination.
 
 During planning/discovery, before declaring a live route blocked, enumerate the currently available `JurlProxyFallback.Type` values from `src/com/pear/http/JurlProxyFallback.java` and run a bounded one-off probe across every relevant non-local, non-deprecated proxy type. Include static, ISP/residential, geo variants, BrightData unblockers, ZenRows scrape/render, Scrapfly scrape/render/ASP, and provider-specific static pools. Skip only types that are explicitly local, deprecated/invalid, retailer-specific for another retailer, or documented as requiring a browser profile incompatible with Java. Record the tested type list and the response signal in the disabled probe/comment.
 
@@ -44,7 +44,7 @@ Explore in local Chrome before coding:
 5. Record required headers, cookies, postal code/store id parameters, GraphQL operation names, request bodies, and local storage/session setup.
 6. Check whether the route can be replayed statelessly in Java. If session state is required, reproduce the session setup request sequence in Java instead of relying on the browser session.
 
-Prefer stable sources in this order: inventory API, product detail API with store id, cart/add-to-cart validation, PDP embedded store-specific JSON, rendered PDP DOM.
+Prefer stable sources in this order: inventory API, product detail API with store id, cart/add-to-cart validation, PDP embedded store-specific JSON, rendered PDP DOM, then live online PDP/product/search JSON when it exposes checkout-relevant stock status and price.
 
 Do not treat stale or indexed text as availability success. It can prove what words to parse, but it cannot prove that Pear can scan live inventory later.
 
@@ -128,13 +128,13 @@ Inside `goThen`, non-null return means success; `null` return and throw both mea
 
 Use `useJurlCache(...)` for script validation when repeatedly proving the same store/item route, especially after a live response has established the proxy/header/body shape. Keep TTLs short for volatile availability and price responses. When testing a changed proxy type, header set, render option, or request body provenance, bump `extraCacheKey(...)` so stale cached responses do not mask whether the new route works. Once the working proxy list is known, cache that list with a stable key and avoid exhaustive proxy checks in the real-time updater path.
 
-Validate proxy-rendered HTTP 200 bodies before treating availability as production-ready. Cloudflare/Forter-style sites can return `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells without product, price, or store-specific data while still returning 200 through render proxies. The `goThen` validator should require the supplied store id/item id to affect the response, reject known challenge/app-shell text by returning `null` or throwing, and use a bumped `extraCacheKey` whenever the body validator changes so stale cached shells do not hide the failed route.
+Validate proxy-rendered HTTP 200 bodies before treating availability as production-ready. Cloudflare/Forter-style sites can return `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells without product, price, or availability data while still returning 200 through render proxies. The `goThen` validator should require either the supplied store id plus item id to affect the response, or a clearly documented online availability path where the supplied item id/UPC/PDP affects the response and the body exposes current online stock status and price. Reject known challenge/app-shell text by returning `null` or throwing, and use a bumped `extraCacheKey` whenever the body validator changes so stale cached shells do not hide the failed route.
 
 For Azure/APIM-style APIs, public long-lived subscription keys from browser bundles may be accepted as either `Ocp-Apim-Subscription-Key` or a `subscription-key` query parameter. If a copied API works locally but proxied Java returns a "missing subscription key" 401, retry with the traced key in both locations before pruning the proxy. Keep the successful final script to the proxy types that actually work.
 
-If a search index such as Algolia exposes only global online stock fields like `StockOverrideMessage`, use it as diagnostic evidence but do not count it as store-level availability. A passing availability probe still needs the store id plus item id/UPC to affect the response, or a separate store-context/cart/fulfillment route that returns current pickup/in-store status and price.
+If a search index such as Algolia exposes only global online stock fields like `StockOverrideMessage`, first decide whether it is stale diagnostic text or a live retailer-owned ecommerce source used by the site. Stale/indexed/archive text alone is not enough. A live search/PDP/product JSON route may count as online availability access when it returns current in-stock/out-of-stock state and price for the supplied item/UPC and the PDP supports checkout, but it must be documented as online availability rather than store-level inventory. Keep searching for a store-context/cart/fulfillment route when local pickup/in-store inventory is important, but do not fail an otherwise production-runnable retailer solely because the only available stock signal is global online availability.
 
-If a storefront exposes a hidden delivery-info endpoint, shipping modal, add-to-bag modal, or basket page that mentions click-and-collect, verify whether the supplied store id changes the response before treating it as an availability route. Carrier collection copy, global ecommerce stock, POQ/cart line data, or header-only store context are useful negative probes, but they are not store-level inventory unless two distinct store ids produce distinct pickup/store fulfillment evidence for the same item.
+If a storefront exposes a hidden delivery-info endpoint, shipping modal, add-to-bag modal, or basket page that mentions click-and-collect, verify whether the supplied store id changes the response before treating it as store-level inventory. Carrier collection copy, global ecommerce stock, POQ/cart line data, or header-only store context are useful negative probes for inventory access, but they can still support online availability access when they provide current stock/out-of-stock state and price for the supplied item. Name which mode the script proves.
 
 When one inventory response includes multiple fulfillment modes, parse the exact branch that proves the requested store. Direct-ship warehouses, nearby-store suggestions, or global fallback arrays can sit beside `instorepickup`/pickup data and contain positive `stockAvailable` values. The passing probe should require the requested fulfillment mode plus matching `storeCode`, `locationCode`, `deliveryPointOfService`, or equivalent id before returning `AVAILABLE`; never let a max stock quantity across the whole payload make the script pass.
 
@@ -169,7 +169,8 @@ For GraphQL routes copied from browser bundles, keep the operation and fragments
 
 Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibility probes that should not run in CI by default. Prove:
 
-- a known store id plus item id/UPC returns a non-null status
+- a known store id plus item id/UPC returns a non-null status when store-level inventory is available
+- or, for online availability access, a known item id/UPC/PDP returns a non-null live ecommerce status and price without pretending it is store-specific
 - a known available item returns `AVAILABLE` when the sample is stable enough
 - a known unavailable item returns `UNAVAILABLE` when available
 - price is parsed when the retailer exposes store-specific price
@@ -181,7 +182,7 @@ For production recomputers, construct a `UPC`, set retailer data item id, constr
 
 For bot-blocking checks, a repeated `@Script` probe with a small cycle count is useful only when it proves the route is not intermittently blocked.
 
-Never make this probe pass by parsing hardcoded/indexed/cached PDP text. If the only available stock signal is from a search result, archive, fixture, or manually copied page, treat it as diagnostic evidence and leave the live probe disabled.
+Never make this probe pass by parsing hardcoded, archived, fixture, or manually copied PDP text. If the only available stock signal is from stale indexed text, treat it as diagnostic evidence and leave the live probe disabled. If the site itself uses a live search/product/PDP endpoint that returns current online stock and price, it may pass as online availability access when the script fetches it live at runtime and documents that store-level inventory remains unavailable.
 
 If the route is not feasible yet, keep the failing probe and disable it:
 
