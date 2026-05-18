@@ -382,7 +382,7 @@ npm run manifest:upsert -- \
   --upload
 ```
 
-Use `--exclude-from-directory true` and `--exclude-reason "<why hidden>"` for support records, origin hosts, certificate-validation records, or aliases that should remain registered but hidden from the directory UI.
+Use `--exclude-from-directory true` and `--exclude-reason "<why hidden>"` for support records, origin hosts, certificate-validation records, or aliases that should remain registered but hidden from the directory UI. Certificate-validation and other hosting-artifact DNS records often start with an underscore, for example `_422573a1a06b6a7cdbe9684deabfc5d5.wayvia-dash.intern.pearcommerce.com`; these are never apps and should be hidden automatically by the directory. Do not create icons, summaries, or app cards for underscore hostnames.
 
 If that repo is unavailable, update the two S3 JSON objects directly with AWS CLI and `jq`, preserving `public-read` object ACLs. Never include secrets or private user data in a manifest. Use blank `author` when unsure.
 
