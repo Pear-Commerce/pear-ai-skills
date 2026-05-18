@@ -1,0 +1,4 @@
+interface:
+  display_name: "UPC Resolution Code Changes"
+  short_description: "Verify UPC resolution edits with focused tests and devdb e2e"
+  default_prompt: "Use upc-resolution-code-changes when changing UPC resolution graph, TinEye/image comparison, resolver gating, known item details, retailer UPC feasibility scripts, or direct/trusted candidate behavior; run focused unit checks and supplement them with local devdb UPC resolution coverage."

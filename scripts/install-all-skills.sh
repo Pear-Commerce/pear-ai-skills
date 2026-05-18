@@ -9,7 +9,7 @@ CLAUDE_SKILLS_DIR="${CLAUDE_SKILLS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/skills}"
 INSTALL_CODEX=1
 INSTALL_CLAUDE=1
 COLOR_MODE="${COLOR:-auto}"
-RETIRED_SKILLS="sstore-store-extractor"
+RETIRED_SKILLS="sstore-store-extractor pear-upc-resolution-graph-code-changes pear-upc-resolution-verification"
 
 usage() {
   cat <<EOF

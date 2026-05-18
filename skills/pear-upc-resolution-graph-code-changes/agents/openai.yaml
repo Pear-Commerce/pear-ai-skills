@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pear UPC Resolution Graph Code Changes"
-  short_description: "Verify UPC graph edits with unit tests and devdb e2e"
-  default_prompt: "Use pear-upc-resolution-graph-code-changes when changing UPC resolution graph, TinEye/image comparison, resolver gating, known item details, or direct/trusted candidate behavior; run focused unit checks and supplement them with pear-upc-resolution-verification local devdb coverage."
