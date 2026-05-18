@@ -48,7 +48,9 @@ Keep the title focused on the retailer and feasibility outcome even when the bra
 
 Disable Slack review notifications for retailer feasibility PRs by default. When creating the PR or review watcher, state explicitly that Slack review asks and automated `#engineering` nudges are disabled because the spreadsheet queue can produce many feasibility PRs. Only post to Slack if the user explicitly overrides this for a specific PR.
 
-When a PR is created for a solvable retailer from the feasibility spreadsheet, update the spreadsheet row promptly. Mark Alex as owner, set difficulty to `Easy` when all three surfaces are production-ready, fill the columns you understand, link the PR, and add concise notes on routes, store count, proxy requirements, and caveats. Use Chrome to edit the sheet when the Google Sheets connector cannot write, and do this for every PR before moving on to the next retailer.
+When a PR is created or materially corrected for a solvable retailer from the feasibility spreadsheet, update the spreadsheet row promptly before moving on. Mark Alex as owner, fill the columns you understand, link the PR, and add concise notes on routes, store count, proxy requirements, and caveats. Use Chrome to edit the sheet when the Google Sheets connector cannot write.
+
+Do not mark the availability column/surface as `Hard` merely because store-level inventory is unavailable. If the scripts prove live online availability access with current stock/out-of-stock, price when exposed, and buyability/add-to-cart proof, mark availability as working/easy and explain in notes that it is online availability, not store-level inventory. Only the unsolved surface should stay hard.
 
 If stores and availability scanning are production-runnable but UPC resolution is the only failing surface, still create the feasibility PR when the user is working through the spreadsheet queue. Keep the UPC probe disabled with clear live-route evidence, and mark the sheet's UPC resolution/access column as `Hard` and the overall/difficulty column as `Hard` instead of `Easy`.
 
