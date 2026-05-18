@@ -21,6 +21,8 @@ Use the focused skills for the actual implementation loops:
 
 If the user asks for all three, work in this order: stores, UPC resolution, availability. Availability usually needs a real store id and item id from the first two passes. If no store-scoped inventory route exists, do not stop there: try to prove live online availability access from PDP/product/search/cart routes that expose current stock/out-of-stock state, price, and a buyability/add-to-cart signal. This is useful for avoiding dead PDP/checkout links, even though it is not inventory access. Do not mark online availability as passing from stock text alone if the live page/API disables buy/add-to-cart or the cart route rejects the item.
 
+When Java can fetch live status/price but buyability is best validated through the actual shopper experience, use local Chrome during discovery. Test the PDP in more than one relevant store/postal context when the site has store context, confirm the visible buy/add-to-cart button is enabled, and click far enough to prove the cart/add confirmation when practical. Record that Chrome-observed user-path evidence in the `@Script` comments while keeping the runtime Java probe focused on production-runnable live status/price. Do not confuse Chrome-only user-path validation with store-level inventory access.
+
 ## Default Artifacts
 
 Prefer feasibility artifacts under:
@@ -85,6 +87,7 @@ When a creative tactic works, or fails in a reusable way, update the focused ski
 - Assertions must prove real behavior: non-empty stores, stable store ids, target UPC match, expected item id/URL, non-`UNKNOWN` availability when the sample is known, and price when the retailer exposes it.
 - Do not mark a surface successful because it worked only in Chrome or only from the local IP without a proxy path that can run off-box.
 - Do not mark a retailer failed solely because availability is online/global instead of store-specific. If Java can fetch current in-stock/out-of-stock state and price from a live retailer-owned PDP/product/search/cart route and also prove the item is buyable or add-to-cart is enabled/accepted, mark availability as passing online availability access and document that store-level inventory remains unavailable. If buy/add-to-cart cannot be proven, keep iterating or leave the probe disabled as a dead-link risk.
+- Chrome-visible buyability can satisfy the user-path proof when the production Java route already fetches live status/price but the cart API is too session-heavy to replay. In that case, test multiple store/postal contexts where applicable and document the enabled button/cart confirmation in the feasibility comments.
 - If one feasibility class has multiple live probes that create carts, mutate store context, or share proxy/cache/session state, annotate it with `@Execution(ExecutionMode.SAME_THREAD)` so repo-level JUnit parallelism does not create false hangs or flakes.
 
 ## Completion
