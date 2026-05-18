@@ -74,6 +74,8 @@ For live server logs, use `devops/logs.sh -e <env>`. For UPC resolution, `devops
 
 Consider browser E2E for user-facing admin/offers/API-backed flows, especially UI state, auth, extension behavior, API wiring, server/client errors, or displayed data.
 
+For Chrome/unpacked extension work, treat `manifest.json` versioning as part of the change. Bump the manifest `version` whenever extension behavior changes, verify Chrome is loading the path you edited (for example the profile's extension details or Secure Preferences path), reload the extension in that profile, and confirm `chrome://extensions` shows the new version. If the version does not change after reload, you probably edited a different checkout than the one Chrome has loaded; sync or patch the loaded path explicitly before retesting.
+
 For local dashboard work, inspect IntelliJ run configs before starting services. In `api.pearcommerce.com`, mirror `SpringBootTomcat` and always use the shared dev DB unless the user explicitly asks for a disposable local DB. Gradle example:
 
 ```bash
