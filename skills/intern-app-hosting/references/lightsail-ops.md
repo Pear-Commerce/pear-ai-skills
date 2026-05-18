@@ -14,7 +14,7 @@ aws lightsail create-instances \
   --instance-names "<app-name>-intern" \
   --availability-zone us-east-1a \
   --blueprint-id node_20 \
-  --bundle-id nano_3_0 \
+  --bundle-id micro_3_0 \
   --region us-east-1
 ```
 
@@ -24,8 +24,29 @@ Common blueprints:
 - `amazon_linux_2023` — bare Linux (if you need more control)
 
 Common bundles (pick the smallest that fits):
-- `nano_3_0` — 512MB RAM, 1 vCPU (fine for simple internal tools)
-- `micro_3_0` — 1GB RAM, 1 vCPU
+- `micro_3_0` — 1GB RAM, 1 vCPU (default for conventional Node intern apps)
+- `nano_3_0` — 512MB RAM, 1 vCPU (only for very small, low-traffic utilities with one lightweight process)
+
+Default to one conventional Node app per Lightsail instance. Do not place multiple long-running Node apps on the same `nano_3_0` or `micro_3_0` host unless the user explicitly accepts the reliability tradeoff. Shared tiny hosts have caused memory pressure, hung requests, and CloudFront 504s.
+
+### Add Swap on Small Ubuntu Hosts
+
+For `nano_3_0` and `micro_3_0` Ubuntu/Node instances, add a 1 GB swapfile before final verification:
+
+```bash
+sudo fallocate -l 1G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h
+```
+
+If `fallocate` is unavailable, use:
+
+```bash
+sudo dd if=/dev/zero of=/swapfile bs=1M count=1024
+```
 
 ### Get the Public IP
 
@@ -243,3 +264,5 @@ Use this for second-level intern hostnames such as `<app-name>.intern.pearcommer
 7. Verify `curl -sI https://<app-name>.intern.pearcommerce.com` shows CloudFront headers and a browser-valid Amazon-issued certificate for the exact hostname.
 
 Do not switch the public hostname back to a Cloudflare-proxied `A` record unless Cloudflare custom-hostname certificate coverage is explicitly configured for that exact intern hostname.
+
+If Cloudflare DNS writes are unavailable but the Lightsail instance has a static IP, you can use the instance's stable EC2 public DNS name as the CloudFront origin, for example `ec2-203-0-113-10.compute-1.amazonaws.com`. This is less readable than a `*-origin.intern.pearcommerce.com` DNS-only record, but it avoids a hard dependency on Cloudflare DNS access and still keeps browsers on the CloudFront-backed public hostname.

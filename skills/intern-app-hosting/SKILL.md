@@ -102,6 +102,8 @@ Choose Lightsail when any of the following is true:
 
 State your choice and the one-sentence reason. The goal is the lowest-risk path that keeps the app working as built.
 
+For conventional Node apps on Lightsail, default to one app per `micro_3_0` instance. Do not co-host multiple long-running Node apps on a `nano_3_0` or `micro_3_0` instance unless the user explicitly asks for shared infrastructure after you explain the reliability tradeoff. A `nano_3_0` is only appropriate for very small, low-traffic utilities with a single lightweight process; when in doubt, use `micro_3_0`.
+
 ---
 
 ## Step 3: Provision the Subdomain
@@ -122,6 +124,8 @@ Confirm the intended `<app-name>` with the user if not obvious.
 3. Preferred proven pattern for conventional Lightsail apps: create/confirm a DNS-only origin record, serve the app from nginx over HTTP on port 80, request an ACM certificate in `us-east-1`, validate it with a DNS-only Cloudflare CNAME, create a CloudFront distribution with the ACM cert, then point the public hostname to CloudFront with a DNS-only CNAME.
 4. Configure CloudFront as: alias `<app-name>.intern.pearcommerce.com`, origin `<app-name>-origin.intern.pearcommerce.com` or another DNS-only origin hostname pointing at the Lightsail IP, origin protocol `http-only`, viewer protocol policy `redirect-to-https`, cache disabled, forward viewer request details, and ACM viewer certificate.
 5. Confirm HTTPS from the real hostname returns a browser-trusted cert before handing the URL back.
+6. For `nano_3_0` and `micro_3_0` Ubuntu/Node hosts, add a 1 GB swapfile, persist it in `/etc/fstab`, and verify the service still runs after restarting nginx and the app service.
+7. If Cloudflare DNS writes are blocked but the Lightsail instance has a static IP, using the instance's stable EC2 public DNS name as the CloudFront origin is acceptable. Still use a friendly `*-origin.intern.pearcommerce.com` DNS-only origin when you have working DNS credentials.
 
 Read `references/cloudflare-ops.md` for step-by-step Cloudflare actions.
 Read `references/lightsail-ops.md` for Lightsail provisioning steps.
