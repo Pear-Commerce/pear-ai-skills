@@ -1,0 +1,3 @@
+directory:
+  placement: "auxiliary"
+  reason: "Implementation helper used by broader Pear engineering workflows."
