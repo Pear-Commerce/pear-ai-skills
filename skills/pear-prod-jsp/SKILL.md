@@ -51,7 +51,7 @@ aws s3 cp s3://assets.pearcommerce.com/jsp-log/<key>.jsp -
 Useful patterns seen in history:
 
 - `devops/jsp.sh` gives each run a timestamp/user/random nonce name, uploads source to `s3://assets.pearcommerce.com/jsp-log/`, copies it into the live container, and curls it with `pear_debug=true`.
-- `--single` is the safe default for side effects. Non-single runs are for per-instance diagnostics such as cache/thread state.
+- Older archived scripts sometimes used `--single` for side effects. With the current button-approval workflow, deploy the no-param preview without `--single`; reserve `--single` for legacy helper-curl execution or per-instance diagnostics.
 - `jsp.sh -j some.jsp?x=y` strips the query string; do not rely on arbitrary query params with `jsp.sh`. Use hard-coded constants, put real work behind the preview page's `Run` button, or use an existing repo JSP with `jspx` only after confirming that path still works for the target environment.
 - For Fargate/FG environments, read the current `jsp.sh` and `fg-jsp.sh` branch before side effects. Delegation and `--task` handling may differ from EC2.
 
@@ -159,7 +159,7 @@ Also show exact resources/entities/tables, expected max affected rows/items, and
 Old-value guard pattern:
 
 ```jsp
-boolean execute = false; // switch to true only after run approval
+boolean run = "true".equalsIgnoreCase(String.valueOf(request.getParameter("run")));
 long id = 123L;
 MyEntity entity = orm.load(MyEntity.class, id);
 out.println("current=" + entity.someField);
@@ -168,8 +168,8 @@ if (!"EXPECTED_OLD_VALUE".equals(entity.someField)) {
     out.println("skip: old value did not match guard");
     return;
 }
-if (!execute) {
-    out.println("DRY RUN: would set someField=NEW_VALUE for id=" + id);
+if (!run) {
+    out.println("Preview: clicking Run will set someField=NEW_VALUE for id=" + id);
     return;
 }
 entity.someField = "NEW_VALUE";
@@ -178,6 +178,7 @@ out.println("updated id=" + id);
 ```
 
 ## Common Actions
+When lifting older archived JSPs, convert hard-coded `preview`, `writeChange`, or direct request-param execution into the standard no-param preview plus `run=true` button flow. Keep the useful parts: exact IDs, old values, row counts, per-item results, timings, and errors.
 
 Live ORM read:
 
@@ -186,6 +187,109 @@ PearSimpleORM orm = Persistence.global().orm();
 Vendor vendor = orm.load(Vendor.class, 123L);
 out.println("vendor=" + vendor.id + " " + vendor.name);
 ```
+
+JDBC table/scalar read:
+
+```jsp
+<%@ page import="com.pear.persistence.JDBCUtil" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+
+List<Map<String, Object>> rows = JDBCUtil.executeQueryToMapList(
+    "select id, enumName, live from RetailPartner where enumName = ? limit 20",
+    "Tops");
+for (Map<String, Object> row : rows) {
+    out.println(row.get("id") + " " + row.get("enumName") + " live=" + row.get("live") + "<br>");
+}
+
+long count = JDBCUtil.executeQueryAndReturnSingleLongId(
+    "select count(*) from Store where retailerId = ?",
+    1367L);
+out.println("storeCount=" + count);
+```
+
+Guarded ORM row repair:
+
+```jsp
+<%@ page import="com.pear.config.Persistence" %>
+<%@ page import="com.pear.entities.inventory.RetailPartner" %>
+
+RetailPartner retailer = Persistence.global().orm().load(RetailPartner.class, 13725L);
+out.println("current instacartId=" + retailer.instacartId + "<br>");
+if (retailer.instacartId != 0 && retailer.instacartId != 282) {
+    out.println("skip: unexpected current instacartId");
+    return;
+}
+
+retailer.instacartId = 282;
+retailer.itemUpdateConfiguration.instacartId = 282;
+retailer.itemUpdateConfiguration.instacartSlug = "price-chopper-ny";
+retailer.save();
+out.println("saved retailer=" + retailer.id + " " + retailer.enumName);
+```
+
+Use ORM/entity `save()` for entity changes when possible. If a narrow SQL update is the right tool, print the exact `WHERE`, expected max rows, and affected rows:
+
+```jsp
+int rows = JDBCUtil.executeUpdate("UPDATE Store SET live = 0 WHERE id = ? AND live = 1 LIMIT 1", storeId);
+out.println("updatedRows=" + rows + " expectedMax=1");
+```
+
+Store or retailer audit table:
+
+```jsp
+<%@ page import="com.pear.config.Persistence" %>
+<%@ page import="com.pear.entities.inventory.Store" %>
+<%@ page import="com.pear.persistence.JDBCUtil" %>
+<%@ page import="java.net.URLEncoder" %>
+<%@ page import="java.nio.charset.StandardCharsets" %>
+<%@ page import="java.util.List" %>
+
+List<String> storeIds = List.of("758999001", "123999001");
+List<Store> stores = Persistence.global().orm().loadWhere(
+    Store.class,
+    "storeId in " + JDBCUtil.buildListToken(storeIds));
+
+out.println("<table><tr><th>id</th><th>storeId</th><th>name</th><th>address</th><th>live</th></tr>");
+for (Store s : stores) {
+    String addr = s.address == null ? "" : URLEncoder.encode(s.address, StandardCharsets.UTF_8);
+    out.println("<tr><td>" + s.id + "</td><td>" + s.storeId + "</td><td>" + s.name + "</td>"
+        + "<td><a target='_blank' href='https://www.google.com/maps/search/?api=1&query=" + addr + "'>"
+        + s.address + "</a></td><td>" + s.live + "</td></tr>");
+}
+out.println("</table>");
+```
+
+Retailer/store import or refresh:
+
+```jsp
+<%@ page import="com.pear.config.Persistence" %>
+<%@ page import="com.pear.entities.inventory.RetailPartner" %>
+<%@ page import="com.pear.entities.inventory.Store" %>
+<%@ page import="java.util.Date" %>
+
+RetailPartner retailer = RetailPartner.forEnumName("Tops");
+Store store = Persistence.global().orm().loadSingleWhere(
+    Store.class,
+    "retailerId = ? AND storeId = ?",
+    retailer.id,
+    "123");
+boolean created = store == null;
+if (created) {
+    store = new Store();
+    store.retailerId = retailer.id;
+    store.storeId = "123";
+}
+store.importedFromRetailerDate = new Date();
+store.name = "Tops Friendly Market Example";
+store.address = "1275 Jefferson Rd, Rochester, NY 14623";
+store.live = true;
+store.setZip("14623");
+store.save();
+out.println((created ? "created" : "updated") + " store id=" + store.id);
+```
+
+For full store imports, scrape with `JurlProxyFallback`, geocode with `GeoUtil.geocodeMulti(...)`, print created/updated/skipped/error counts, and save each `Store` through ORM.
 
 S3 JSON upload from the live server:
 
@@ -214,7 +318,68 @@ String url = S3Util.uploadFile(
 out.println("uploaded=" + url);
 ```
 
-Spring bean/job trigger:
+S3 list, read, download, or signed URL:
+
+```jsp
+<%@ page import="com.pear.persistence.S3Util" %>
+<%@ page import="java.io.File" %>
+<%@ page import="java.util.Date" %>
+<%@ page import="java.util.Set" %>
+
+Set<String> keys = S3Util.listItemsInS3(S3Util.PRIVATE_S3_BUCKET, "partner-upc/debug");
+out.println("keys=" + keys.size() + "<br>");
+
+String body = S3Util.getString(S3Util.PRIVATE_S3_BUCKET, "partner-upc/debug/input.json");
+File local = S3Util.downloadFile(S3Util.PRIVATE_S3_BUCKET, "partner-upc/debug/input.csv", new File("/tmp/input.csv"));
+String signed = S3Util.getSignedURL(
+    S3Util.PRIVATE_S3_BUCKET,
+    "partner-upc/debug/input.csv",
+    new Date(System.currentTimeMillis() + 60L * 60L * 1000L));
+out.println("downloaded=" + local.getAbsolutePath() + " signed=" + signed);
+```
+
+Remote image or asset re-upload: `String newUrl = S3Util.uploadRemoteAsset("https://example.com/logo.png");`
+
+Jurl/proxy probe or scrape:
+
+```jsp
+<%@ page import="com.alexwyler.jurl.LoggedJurl" %>
+<%@ page import="com.pear.http.JurlProxyFallback" %>
+<%@ page import="com.pear.http.JurlProxyFallback.Type" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.concurrent.TimeUnit" %>
+
+String body = new JurlProxyFallback(
+        List.of(Type.SMARTPROXY_STATIC, Type.SOAX_STATIC, Type.NETNUT_STATIC, Type.DATAIMPULSE_STATIC),
+        () -> new LoggedJurl()
+            .url("https://www.example.com/store-locator")
+            .method("GET")
+            .asChrome()
+            .timeout(30_000))
+    .useJurlCache(true, TimeUnit.HOURS.toMillis(1))
+    .goThen(jurl -> jurl.getResponseBody())
+    .get();
+out.println("bodyLength=" + body.length());
+```
+
+Internal endpoint/controller probe from the live server:
+
+```jsp
+<%@ page import="com.alexwyler.jurl.LoggedJurl" %>
+<%@ page import="com.alexwyler.jurl.IJurl" %>
+<%@ page import="org.apache.commons.text.StringEscapeUtils" %>
+
+LoggedJurl jurl = new LoggedJurl()
+    .url("http://127.0.0.1:8080/v1/health")
+    .method(IJurl.GET)
+    .throwOnNon200(false)
+    .timeout(30_000)
+    .go();
+out.println("status=" + jurl.getResponseCode());
+out.println("<pre>" + StringEscapeUtils.escapeHtml4(jurl.getResponseBody()) + "</pre>");
+```
+
+Spring bean or service call:
 
 ```jsp
 <%@ page import="com.pear.spring.SpringApplicationContextProvider" %>
@@ -226,4 +391,110 @@ MyService service = SpringApplicationContextProvider.getApplicationContext()
 service.doTheThing();
 ```
 
-Treat job triggers as runs that need a clear preview of what clicking `Run` will start.
+Pulse/batch updater job:
+
+```jsp
+<%@ page import="com.pear.itemurlupdater.AbscoBatchUpdater_October2025" %>
+<%@ page import="com.pear.itemurlupdater.PulseOrchestrator" %>
+<%@ page import="com.pear.spring.SpringApplicationContextProvider" %>
+
+PulseOrchestrator pulse = SpringApplicationContextProvider.getApplicationContext()
+    .get()
+    .getAutowireCapableBeanFactory()
+    .getBean(PulseOrchestrator.class);
+out.println("starting " + AbscoBatchUpdater_October2025.class.getSimpleName() + "<br>");
+out.flush();
+pulse.runSingle(AbscoBatchUpdater_October2025.class);
+out.println("job complete");
+```
+
+Bounded queue processor kick:
+
+```jsp
+<%@ page import="com.pear.partnerupclifecyclemanagement.RetailerBatchQueueProcessor" %>
+<%@ page import="java.util.concurrent.TimeUnit" %>
+
+RetailerBatchQueueProcessor processor = new RetailerBatchQueueProcessor("instacart");
+Thread processorThread = Thread.ofPlatform().start(processor::process);
+try {
+    TimeUnit.MINUTES.sleep(10);
+} finally {
+    processor.shutdown();
+    processorThread.join(10_000);
+}
+out.println("queue processor stopped");
+```
+
+Prewarm/report regeneration:
+
+```jsp
+<%@ page import="com.pear.config.Persistence" %>
+<%@ page import="com.pear.controllers.app.Prewarm" %>
+<%@ page import="com.pear.controllers.util.PrewarmUtil" %>
+<%@ page import="com.pear.entities.inventory.UPC" %>
+<%@ page import="java.util.stream.Collectors" %>
+
+long vendorId = 123L;
+Prewarm prewarm = new Prewarm();
+prewarm.setId(Persistence.global().orm().getIdGen().getNext());
+prewarm.name = "JSP generated prewarm list for vendor " + vendorId;
+prewarm.upcIds = Persistence.global().orm()
+    .loadWhere(UPC.class, "vendorId = ?", vendorId)
+    .stream()
+    .map(UPC::getId)
+    .collect(Collectors.toList());
+PrewarmUtil.generatePrewarmReport(prewarm);
+prewarm.generated = true;
+prewarm.ended = System.currentTimeMillis();
+prewarm.save();
+out.println("prewarmId=" + prewarm.id + " upcs=" + prewarm.upcIds.size());
+```
+
+Redis/cache invalidation:
+
+```jsp
+<%@ page import="com.pear.lang.LettuceUtil" %>
+<%@ page import="io.lettuce.core.cluster.api.async.RedisClusterAsyncCommands" %>
+<%@ page import="java.nio.charset.StandardCharsets" %>
+<%@ page import="java.util.concurrent.TimeUnit" %>
+
+RedisClusterAsyncCommands<byte[], byte[]> redis = LettuceUtil.redisClientLettuce();
+String redisKey = "retailer-batch-upc-processing:instacart:2964183724931267";
+Long deleted = redis.del(redisKey.getBytes(StandardCharsets.UTF_8))
+    .toCompletableFuture()
+    .get(5, TimeUnit.SECONDS);
+out.println("redisDeleted=" + deleted + " key=" + redisKey);
+```
+
+Static live cache invalidation can call the specific invalidator, for example `BrightDataCredentials.invalidate(BrightDataCredentials.SECRET_UNBLOCKER)`.
+
+Per-item loop with visible failures and a stop guard:
+
+```jsp
+<%@ page import="com.pear.config.Resources" %>
+<%@ page import="org.apache.commons.lang3.exception.ExceptionUtils" %>
+<%@ page import="org.apache.commons.text.StringEscapeUtils" %>
+
+int ok = 0;
+int failed = 0;
+int consecutiveFailures = 0;
+for (Long id : ids) {
+    long stepStart = System.nanoTime();
+    try {
+        // process id
+        ok++;
+        consecutiveFailures = 0;
+        out.println("ok id=" + id + " ms=" + ((System.nanoTime() - stepStart) / 1_000_000.0) + "<br>");
+    } catch (RuntimeException e) {
+        failed++;
+        consecutiveFailures++;
+        Resources.global().logger.error(LOG + " failed id=" + id, e);
+        out.println("<h3>failed id=" + id + "</h3><pre>"
+            + StringEscapeUtils.escapeHtml4(ExceptionUtils.getStackTrace(e)) + "</pre>");
+        if (consecutiveFailures >= 5) {
+            throw e;
+        }
+    }
+}
+out.println("summary ok=" + ok + " failed=" + failed);
+```
