@@ -44,7 +44,7 @@ If a tool install asks for a password, browser login, or device-code confirmatio
 
 ## When Any Skill Is Mentioned
 
-When the user mentions skills in any context, do this before deciding no skill applies.
+When the user mentions skills in any context, pull the canonical GitHub repo before inspecting installed skill mirrors or deciding no skill applies.
 Treat these as skill mentions even if the word "skill" is absent:
 
 - Direct invocations such as `use check-partner-upc`, `run pear-pr-review-flow`, or `check-partner-upc 012345678905`.
@@ -52,14 +52,29 @@ Treat these as skill mentions even if the word "skill" is absent:
 - Requests to use, run, apply, install, import, update, create, modify, list, or inspect any named assistant workflow.
 - References to repo-local or installed skill paths.
 
-If a named skill is not in the current startup skill list, do not stop after local discovery. Sync and list the canonical repo first, then re-check the request against the freshly synced skills.
+When a user asks to hide skills from the skills directory, interpret "hide" as marking those skills auxiliary with `config.yaml`:
+
+```yaml
+directory:
+  placement: "auxiliary"
+  reason: "<why this skill belongs outside the primary directory>"
+```
+
+Do not delete, rename, or skip installing the skill unless the user explicitly asks for removal.
+
+Do not trust the current startup skill list, `$HOME/.codex/skills`, or other installed mirrors until the canonical repo has been refreshed from GitHub. If a named skill is not in the current startup skill list, do not stop after local discovery. Sync and list the canonical repo first, then re-check the request against the freshly synced skills.
 
 Workflow:
 
-1. Make sure basic tools and the canonical repo exist locally.
+1. Make sure basic tools and the canonical repo exist locally, then pull GitHub before any local skill discovery.
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
-     | bash -s -- --bootstrap-tools --no-color
+   PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
+   if [ -d "$PEAR_AI_SKILLS_REPO/.git" ]; then
+     git -C "$PEAR_AI_SKILLS_REPO" pull --ff-only
+   else
+     curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
+       | bash -s -- --bootstrap-tools --no-color
+   fi
    ```
 2. In Codex, ensure the daily canonical-skills sync automation exists before continuing.
    - Inspect `${CODEX_HOME:-$HOME/.codex}/automations/*/automation.toml` for an active automation with id `canonical-skills-daily-sync`, name `Canonical skills daily sync`, or a prompt that syncs Pear's canonical skill library.
