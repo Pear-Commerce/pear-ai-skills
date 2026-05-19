@@ -13,6 +13,7 @@ Use a temporary JSP when the useful execution context is the live Pear server: p
 
 - Every one-off production JSP must render a no-parameter preview with exactly what will happen and a `Run` button that reloads with `run=true`. The no-parameter path must have zero side effects.
 - The `Run` button is approval for every JSP. Codex may open the preview page, but must not bypass the button by opening `run=true` directly. If the user asks Codex to proceed from the preview page, click the visible `Run` button rather than constructing a run URL.
+- The preview page's `Run` button must visibly enter a loading state when clicked: disable the button on submit and replace or augment its label with a small spinner, since production JSP requests often take a while.
 - Run the compile/deploy preview without `--single` when the no-parameter path is side-effect-free; this fans the JSP out to every server, so a later browser request can land on any backend and still find the JSP. Use `--single` only when invoking side effects from the helper path, which should usually be avoided in favor of the browser `Run` button.
 - By default, make the helpful execution report visible: title, steps, timings, context, stack traces, and verification notes are the point of most JSPs. Do not add a `debug` parameter or collapse that report. Use `output=raw` only when the user needs a formal artifact without the human report.
 - Be explicit about environment. `jsp.sh` defaults to `PROD` when `-e` is omitted, so pass `-e PROD`, `-e TEST`, or the intended env deliberately.
@@ -79,6 +80,43 @@ Use HTML for ordinary production one-off JSPs. The default page is a preview/app
 <%@ page import="com.pear.simpleorm.orm.PearSimpleORM" %>
 <%@ page import="org.apache.commons.lang3.exception.ExceptionUtils" %>
 
+<style>
+    .run-button {
+        align-items: center;
+        display: inline-flex;
+        gap: 8px;
+    }
+    .run-button[disabled] {
+        cursor: wait;
+        opacity: 0.75;
+    }
+    .run-spinner {
+        animation: run-spin 0.8s linear infinite;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        display: inline-block;
+        height: 12px;
+        width: 12px;
+    }
+    @keyframes run-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+<script>
+    function markRunButtonLoading(form) {
+        var button = form.querySelector("button[type='submit']");
+        if (!button) {
+            return true;
+        }
+        button.disabled = true;
+        button.innerHTML = "<span class='run-spinner'></span><span>Running...</span>";
+        return true;
+    }
+</script>
+
 <%
 String LOG = "[prod-jsp-example] ";
 boolean run = "true".equalsIgnoreCase(String.valueOf(request.getParameter("run")));
@@ -91,9 +129,9 @@ try {
             <li>Describe step one and its exact target IDs/counts.</li>
             <li>Describe step two and what systems or data it may touch.</li>
         </ol>
-        <form method="get">
+        <form method="get" onsubmit="return markRunButtonLoading(this);">
             <input type="hidden" name="run" value="true">
-            <button type="submit">Run</button>
+            <button class="run-button" type="submit">Run</button>
         </form>
 <%
         return;
@@ -153,6 +191,8 @@ Raw output URL: (only for formal outputs)
 ```
 
 Do not create separate approval categories. Do not bypass the preview by opening `run=true` directly. If the user asks Codex to proceed, click the visible `Run` button. If the JSP changes, show the preview again before running.
+
+Make the `Run` button submit through a small loading-state handler that disables the button and shows a spinner/`Running...` label immediately after click.
 
 Also show exact resources/entities/tables, expected max affected rows/items, and old-value/idempotency guards whenever those concepts apply.
 
