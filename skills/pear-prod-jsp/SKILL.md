@@ -7,13 +7,14 @@ description: Run one-off JSPs on live Pear api.pearcommerce.com servers for prod
 
 ## Overview
 
-Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Every production one-off JSP must default to a no-parameter preview page with a user-visible plan and a `Run` button; real work belongs behind `run=true`.
+Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Every production one-off JSP must default to a no-parameter preview page with a user-visible plan and a `Run` button; real work belongs behind `run=true`. The normal run page should be a useful execution report: title, summary, steps, timings, context, errors, stack traces, and verification details. Only hide or collapse that report when the user explicitly asked the JSP to render a formal output contract such as JSON, CSV, or very particular HTML.
 
 ## Required Safety
 
 - Every one-off production JSP must render a no-parameter preview with exactly what will happen and a `Run` button that reloads with `run=true`. The no-parameter path must have zero side effects.
 - For database writes, the preview page is the approval surface. Codex may open the preview page, but must not click `Run` or open `run=true` unless the user explicitly approves in chat or clicks the button themselves. Database writes include `save`, `saveAsync`, `saveAsyncWithBackpressure`, `delete`, `queuedForDeletion`, association writes, `JDBCUtil.executeUpdate`, SQL `UPDATE`/`INSERT`/`DELETE`, schema changes, and job/service triggers that are expected to write database rows.
 - Run the compile/deploy preview without `--single` when the no-parameter path is side-effect-free; this fans the JSP out to every server, so a later browser request can land on any backend and still find the JSP. Use `--single` only when invoking side effects from the helper path, which should usually be avoided in favor of the browser `Run` button.
+- By default, make the helpful execution report visible: title, steps, timings, context, stack traces, and verification notes are the point of most JSPs. Move that report into Debug only when the user asked for a formal output contract that would be harmed by extra HTML/text.
 - Be explicit about environment. `jsp.sh` defaults to `PROD` when `-e` is omitted, so pass `-e PROD`, `-e TEST`, or the intended env deliberately.
 - Make DB writes idempotent and narrow: hard-code or parameterize exact IDs, verify old values before changing them, print skips, and ensure a second hit of the random JSP URL cannot duplicate work.
 - Prefer `Persistence.global().orm()`/entity `save` over direct SQL so PearSimpleORM hooks, history, and cache behavior run normally. If direct SQL is necessary, state the cache/ORM bypass risk in the approval request.
@@ -54,9 +55,28 @@ Useful patterns seen in history:
 - `jsp.sh -j some.jsp?x=y` strips the query string; do not rely on arbitrary query params with `jsp.sh`. Use hard-coded constants, create separate dry-run/write JSPs, or use an existing repo JSP with `jspx` only after confirming that path still works for the target environment.
 - For Fargate/FG environments, read the current `jsp.sh` and `fg-jsp.sh` branch before side effects. Delegation and `--task` handling may differ from EC2.
 
+## Formal Output Exception
+
+Use this only when the user asked for a formal output contract, such as JSON, CSV, a specific table, or a particular HTML artifact. Ordinary operational JSPs should keep the full execution report visible as the main output.
+
+For formal human-readable HTML/table reports, prefer this `run=true` structure:
+
+1. The requested formal output first, or alone if the user asked for exact output.
+2. Optional Debug section after it containing the normal helpful execution report: title/summary, steps, timings, stack traces, server/env context, raw IDs, and verification details.
+
+For these formal-output JSPs, support a `debug` query parameter:
+
+- Missing, `debug=true`, or `debug=expanded`: render Debug open by default, unless that would violate the formal output contract.
+- `debug=collapse` or `debug=collapsed`: render Debug inside `<details>` collapsed by default.
+- `debug=false`, `debug=0`, or `debug=none`: omit Debug entirely. Still show a terse top-level failure message if the JSP failed; do not hide that failure occurred.
+
+For formal HTML/table JSPs, default the Run button to `debug=collapse` only when the requested output should lead. For strict machine-readable output such as JSON or CSV, do not append HTML debug blocks because that corrupts the format; use `debug=false` by default, log server-side, add debug only inside an explicit JSON field when the user asked for it, or provide a separate `debug=true` human-readable HTML mode.
+
+Avoid the name `logs` for this control; Debug is broader and can include the whole execution report.
+
 ## Top-Level JSP Template
 
-Use HTML for production one-off JSPs. The default page is a preview/approval page; the `run=true` page does the work, times each step, logs exceptions, and prints stack traces inside `<pre>`.
+Use HTML for ordinary production one-off JSPs. The default page is a preview/approval page; the `run=true` page does the work and renders the full execution report visibly.
 
 ```jsp
 <%@ page contentType="text/html; charset=UTF-8" %>
@@ -88,10 +108,12 @@ try {
 
     long start = System.nanoTime();
     PearSimpleORM orm = Persistence.global().orm();
+    out.println("<h1>Run Report</h1>");
     out.println("<pre>");
     out.println(LOG + "env=" + ServerEnv.global().env + " server=" + ServerEnv.global().server);
 
     // Do the approved read/tool/write action here.
+    out.println(LOG + "step 1 ok: describe the result");
 
     out.println(LOG + "done in " + ((System.nanoTime() - start) / 1_000_000.0) + " ms");
     out.println("</pre>");
