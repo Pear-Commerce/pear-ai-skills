@@ -18,7 +18,7 @@ If no proven feasibility plan, PR, or route exists, first use the relevant feasi
 
 Start with:
 
-- `$pear-engineering-workflow` for worktree, review, test, and Pear repo rules
+- `$pear-engineering-workflow` for worktree, review, test, and Pear repo rules; follow its worktree decision before editing any repo files
 - `$pear-proxy` when moving any `LoggedJurl`/`JurlProxyFallback` route into production
 - `$pear-pr-review-flow` before creating or updating the PR
 

@@ -34,14 +34,24 @@ Do not accept every suggestion by default. If a comment conflicts with `$pear-en
 
 ## Concurrent Worktrees
 
-When creating or updating a PR while the user's main checkout or another Codex thread may be active in the same repo, use a sibling git worktree instead of sharing the working directory:
+When creating, updating, or responding to feedback on a PR, use a sibling git worktree instead of sharing the user's main working directory. Treat primary checkouts such as `$HOME/api.pearcommerce.com`, `$HOME/admin.pearcommerce.com`, and `$HOME/offers.pearcommerce.com` as shared/user checkouts by default, even when they are clean and even when they already have the PR branch checked out. Only edit the current checkout directly when it is already a task-owned worktree for this exact PR/thread, or when the user explicitly tells you to use that checkout.
+
+For a new PR branch:
 
 ```bash
 git fetch origin master --prune
 git worktree add -b codex/<short-task-name> ../<repo-name>-<short-task-name> origin/master
 ```
 
-Commit, push, and open the PR from that worktree. Do not stash, reset, rebase, or clean the user's main checkout to prepare PR work. If the branch already exists, choose a unique `codex/` branch name or add the worktree for the existing branch in a distinct sibling directory.
+For an existing PR branch:
+
+```bash
+BRANCH="$(gh pr view PR_NUMBER --json headRefName --jq .headRefName)"
+git fetch origin "$BRANCH" --prune
+git worktree add --detach ../<repo-name>-<short-task-name> "origin/$BRANCH"
+```
+
+Commit, verify, and push PR updates from that worktree. If using the detached form because the branch is checked out elsewhere, push with `git push origin HEAD:"$BRANCH"`. If the local branch is not checked out in another worktree, a normal branch worktree is fine too. Do not stash, reset, rebase, or clean the user's main checkout to prepare PR work. If the branch is user-authored, shared, or unsafe to update from a detached worktree, stop and report the risk instead of editing the primary checkout.
 
 ## Pre-PR Cleanup Gate
 
@@ -233,6 +243,7 @@ Before sending the final response after creating or materially updating a Codex-
 - the intended engineering reviewers are requested; for new non-draft Codex PRs in Pear engineering repos, this means the known Pear engineering reviewer set unless the user asked for a narrower set
 - Copilot was requested and verified through the PR timeline, not only `gh pr view`
 - after any material PR update, the PR branch was rebased against the latest base branch, or the final response states why it was unsafe or unnecessary
+- after any material PR update, the final response names the worktree path used, or states the explicit user instruction/risk reason for editing the current checkout
 - a recurring review-watch automation was created or updated for the PR; include the automation id/name, or state why no automation was created
 - the user's auto-fix and auto-land preferences were captured for the recurring watcher; if not, the watcher is report-only for those actions and the final response asks for approval
 - if the PR is now ready under the landing rules, it was merged/closed, user approval to merge is needed, or the exact landing blocker is stated

@@ -82,14 +82,42 @@ Keep request shape coherent. API/XHR routes should use browser profile plus expl
 
 ## Concurrent Repo Work
 
-Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for docs or tiny changes. This is mandatory: treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.
+Before editing a repo, explicitly choose the worktree. Do this before the first `apply_patch`, IDE edit, formatter, generated-code command, or test command that might write files.
+
+Run:
+
+```bash
+pwd
+git status --short --branch
+git worktree list --porcelain
+```
+
+Use a sibling worktree on a `codex/` branch for the task unless the current checkout is already a task-owned worktree for this exact thread. A task-owned worktree means its path and branch clearly match the current task/retailer/PR and it was created for this Codex task. The primary checkout, such as `$HOME/api.pearcommerce.com`, `$HOME/admin.pearcommerce.com`, or `$HOME/offers.pearcommerce.com`, is a shared/user checkout by default even when it is clean, even when it is already on a `codex/` branch, and even when the same PR branch is being updated. Do not treat a clean primary checkout as "dedicated" unless the user explicitly tells you to edit that checkout.
+
+If `git status --short --branch` shows staged, unstaged, untracked, generated, or unknown files, do not edit there. Treat every existing change as someone else's active work and create/use a sibling worktree, even for docs or tiny changes. Do not stash, reset, rebase, clean, or otherwise rearrange the user's checkout to make room.
 
 ```bash
 git fetch origin master --prune
 git worktree add -b codex/<short-task-name> ../<repo-name>-<short-task-name> origin/master
 ```
 
-Edit, test, commit, push, and open the PR from that worktree. Do not stash, reset, rebase, or clean the user's main checkout to make room. Only edit the current checkout directly when it is clean and clearly dedicated to this task. Use unique task names; remove only worktrees you no longer need.
+Edit, test, commit, push, and open the PR from that worktree. Use unique task names; remove only worktrees you no longer need.
+
+For an existing PR update, first resolve the PR head branch and use a worktree for that branch instead of editing the primary checkout:
+
+```bash
+BRANCH="$(gh pr view PR_NUMBER --json headRefName --jq .headRefName)"
+git fetch origin "$BRANCH" --prune
+git worktree add --detach ../<repo-name>-<short-task-name> "origin/$BRANCH"
+```
+
+Make the PR update in that detached worktree, then push back to the PR branch with:
+
+```bash
+git push origin HEAD:"$BRANCH"
+```
+
+If the branch is not checked out anywhere else and a normal branch worktree is more convenient, `git worktree add ../<repo-name>-<short-task-name> "$BRANCH"` is also fine. If the PR branch is user-authored, shared, or unsafe to update from a detached worktree, stop and report the risk instead of editing the primary checkout.
 
 When updating an existing PR branch with latest `master`, `main`, or another PR base, rebase the branch onto the base tip and force-push with lease after verification. Do not use `git merge origin/master`, `git merge origin/main`, or any update-branch flow that creates a merge commit. If the branch is shared or unsafe to rewrite, stop and ask/report instead of making a merge commit. For stacked PRs, rebase and push the parent first, then rebase each child onto the updated parent.
 
