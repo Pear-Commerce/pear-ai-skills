@@ -4,7 +4,7 @@ Last refreshed: 2026-05-17 against `origin/master` at `8497dea611`.
 
 Long full-e2e sample refreshed the same day against speedup branch `f97e685c0d` on base `8487cee193`.
 
-Run from the relevant `api.pearcommerce.com` worktree. The Gradle `test` task sets `ENV=CI`, but the MySQL/Snowflake env vars below keep the selected scripts pointed at the shared devdb-style backing services used for local verification.
+Run from the relevant `api.pearcommerce.com` worktree. Default any Gradle verification that touches Spring/Pear resources, SimpleORM, real entity rows, UPC resolver scripts, AppConfig, Snowflake, or live retailer data to this shared devdb-style backing service. The Gradle `test` task sets `ENV=CI`, but the MySQL/Snowflake env vars below keep the selected scripts pointed at the shared devdb-style backing services used for local verification instead of empty/local MySQL. Pure compile and pure unit tests can run without this prefix.
 
 ## Environment Prefix
 

@@ -59,6 +59,19 @@ This guidance is different from dead behavior. Remove stale helpers, duplicate D
 
 In `api.pearcommerce.com`, any JUnit test that needs Spring-managed beans, method-parameter `@Autowired`, `awsAppConfigUtil`, `Persistence`, `Resources`, or the Pear app test context should usually extend `BasePearScript` because it loads the Spring/Pear test context. If a test sees null `Persistence.global()`, missing `Resources`, or uninitialized autowired collaborators, first check whether it should be based on `BasePearScript`. Keep pure unit tests plain, but do not add ad hoc Spring annotations or manual context setup when `BasePearScript` is the repo pattern. Make Spring-backed tests deterministic by creating required SimpleORM rows in the test instead of assuming CI seed data contains them.
 
+In `api.pearcommerce.com`, default Gradle tests that load Spring, SimpleORM, `Resources`, AppConfig, Snowflake, UPC resolution scripts, vendors, or real entity data to the shared dev DB, not local MySQL. Prefix those `./gradlew test`, `testCI`, or similar commands with:
+
+```bash
+MYSQL_CREDENTIALS_SECRET=prod-db-10-2025 \
+MYSQL_HOST=analytics-database.pearcommerce.com \
+MYSQL_HOST_READ=analytics-database.pearcommerce.com \
+MYSQL_HOST_WRITE=analytics-database.pearcommerce.com \
+SNOWFLAKE_CREDENTIALS_SECRET=snowflake-2025-12-01 \
+./gradlew test --tests ...
+```
+
+Pure compile checks and pure unit tests that do not touch Pear resources can run without the DB prefix. If a local test or app page is missing vendors, users, UPC imports, resolver rows, or auth-related data, suspect an accidental local-DB run before debugging feature code.
+
 ## Concurrent Repo Work
 
 Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for docs or tiny changes. This is mandatory: treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.
@@ -84,7 +97,7 @@ Consider browser E2E for user-facing admin/offers/API-backed flows, especially U
 
 For Chrome/unpacked extension work, treat `manifest.json` versioning as part of the change. Bump the manifest `version` whenever extension behavior changes, verify Chrome is loading the path you edited (for example the profile's extension details or Secure Preferences path), reload the extension in that profile, and confirm `chrome://extensions` shows the new version. If the version does not change after reload, you probably edited a different checkout than the one Chrome has loaded; sync or patch the loaded path explicitly before retesting.
 
-For local dashboard work, inspect IntelliJ run configs before starting services. In `api.pearcommerce.com`, mirror `SpringBootTomcat` and always use the shared dev DB unless the user explicitly asks for a disposable local DB. Gradle example:
+For local dashboard work, inspect IntelliJ run configs before starting services. In `api.pearcommerce.com`, mirror `SpringBootTomcat` and always use the shared dev DB unless the user explicitly asks for a disposable local DB. Never start `:bootRun` with bare `./gradlew :bootRun`; use the env prefix and verify startup logs include `MYSQL_HOST=analytics-database.pearcommerce.com`. Gradle example:
 
 ```bash
 ENV=LOCAL \
@@ -99,7 +112,7 @@ SNOWFLAKE_CREDENTIALS_SECRET=snowflake-2025-12-01 \
 ./gradlew :bootRun
 ```
 
-Do not let `:bootRun` fall into empty/local MySQL by accident. For `admin.pearcommerce.com`, use the existing npm/gulp/browser-sync workflow. If delegating startup/browser work, pass these expectations to the subagent.
+Do not let `:bootRun` fall into empty/local MySQL by accident. If login, vendor pages, UPC imports, or other seeded data look empty/missing, first check whether the API was started without the dev-DB prefix. For `admin.pearcommerce.com`, use the existing npm/gulp/browser-sync workflow. If delegating startup/browser work, pass these expectations to the subagent.
 
 Before browser checks, reuse already-running API/admin processes when available; otherwise start from repo patterns, track sessions, and stop only processes you started. When feasible, verify:
 

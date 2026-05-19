@@ -22,7 +22,7 @@ This combines the former graph-change and local devdb verification workflows. If
    ```bash
    ./gradlew compileJava -PnoLint --console=plain
    ```
-   Prefer a targeted `testCI --tests ... -PnoLint --console=plain` run for the changed code as well.
+   Prefer a targeted `testCI --tests ... -PnoLint --console=plain` run for the changed code as well. If the Gradle test loads Spring/Pear resources, SimpleORM, real entities, UPC resolver scripts, AppConfig, Snowflake, or live retailer data, prefix it with the shared devdb env from `references/devdb-sample.md`; do not let it fall back to local MySQL. Pure compile and pure unit tests can run without the DB prefix.
 6. Supplement narrow checks with local devdb coverage before calling UPC resolution behavior done. This is especially important for image comparison, TinEye, direct/trusted candidates, known item details, retailer source caps, resolver scheduling/gating, retailer UPC feasibility scripts, or any change that could alter the selected item ID.
 
 ## Local Devdb Verification
