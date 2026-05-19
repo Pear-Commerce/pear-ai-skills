@@ -84,7 +84,9 @@ Usually set:
 
 Logo and display:
 
-- Find the best real retailer logo and upload it to S3 through the repo's normal logo/assets flow.
+- Find the best real retailer logo and upload it to S3 through the repo's normal logo/assets flow. This is mandatory for production retailer setup, not best-effort.
+- Do not leave a direct third-party logo URL, local file path, data URL, or runtime migration upload as the production value. If local credentials, CI, or the workstation cannot upload, use a temporary script or `devops/jsp.sh` on a live box to perform the upload through Pear infrastructure, then hardcode the resulting Pear asset URL.
+- After uploading, verify the Pear asset URL returns HTTP 200 and an image content type, remove any temporary upload script/JSP/test, and use only that uploaded URL in the migration.
 - Set `style.logo`, `logoUrl`, `buttonColor`, and `logoType` as well as practical.
 - Choose `logoType` based on the asset shape, usually `SQUARE` for square/rectangular marks and `ROUND` only when the logo is naturally circular.
 
