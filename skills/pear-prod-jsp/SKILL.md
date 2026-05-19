@@ -14,6 +14,7 @@ Use a temporary JSP when the useful execution context is the live Pear server: p
 - Every one-off production JSP must render a no-parameter preview with exactly what will happen and a `Run` button that reloads with `run=true`. The no-parameter path must have zero side effects.
 - The `Run` button is approval for every JSP. Codex may open the preview page, but must not bypass the button by opening `run=true` directly. If the user asks Codex to proceed from the preview page, click the visible `Run` button rather than constructing a run URL.
 - The preview page's `Run` button must visibly enter a loading state when clicked: disable the button on submit and replace or augment its label with a small spinner, since production JSP requests often take a while.
+- After calling `devops/jsp.sh` for a JSP you created or loaded, always open the printed public JSP URL in a real browser with no query parameters. Do this in addition to any curl/SSM compile checks, and do not click `Run` unless the user approves it.
 - Run the compile/deploy preview without `--single` when the no-parameter path is side-effect-free; this fans the JSP out to every server, so a later browser request can land on any backend and still find the JSP. Use `--single` only when invoking side effects from the helper path, which should usually be avoided in favor of the browser `Run` button.
 - By default, make the helpful execution report visible: title, steps, timings, context, stack traces, and verification notes are the point of most JSPs. Do not add a `debug` parameter or collapse that report. Use `output=raw` only when the user needs a formal artifact without the human report.
 - Be explicit about environment. `jsp.sh` defaults to `PROD` when `-e` is omitted, so pass `-e PROD`, `-e TEST`, or the intended env deliberately.
@@ -169,7 +170,7 @@ Inside loops, catch expected per-item `RuntimeException`s only when continuing i
 devops/jsp.sh -j /tmp/descriptive-prod-read.jsp -e PROD
 ```
 
-6. Open the printed URL in the browser with no query parameters. Confirm the preview page shows the plan and `Run` button.
+6. Always open the printed URL in a real browser with no query parameters. Confirm the preview page shows the plan and `Run` button. A shell `curl`, SSM localhost check, or helper output is useful verification but does not replace opening the browser preview.
 7. Stop at the preview page until the user approves by pressing `Run` or asks Codex to press the visible button. Do not navigate directly to `?run=true` to bypass the button. For formal outputs, verify both the normal `run=true` page and the `run=true&output=raw` artifact after the run.
 8. Capture and summarize the run report, timings, errors, remote URL, S3 source key, and follow-up verification when useful.
 
