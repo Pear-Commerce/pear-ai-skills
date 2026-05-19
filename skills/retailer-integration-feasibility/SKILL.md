@@ -1,6 +1,6 @@
 ---
 name: retailer-integration-feasibility
-description: Coordinate Pear retailer onboarding feasibility for store importers, UPC/item ID resolvers, and store-level or online availability scanners in api.pearcommerce.com. Use when given a retailer name or URL and asked to assess or build a retailer integration, create AvailabilityUpdater/recomputer support, create ItemIdInfoResolver/UPC resolution support, import Store.SStore data, or produce Java @Script feasibility probes that use Chrome discovery, JurlProxyFallback, and proxies without running in CI.
+description: Coordinate Pear retailer onboarding feasibility for store importers, UPC/item ID resolvers, and store-level or online availability scanners in api.pearcommerce.com. Use when given a retailer name or URL and asked to assess or build/implement a retailer integration, create AvailabilityUpdater/recomputer support, create scanning support, create ItemIdInfoResolver/UPC resolution support, import Store.SStore data, or produce Java @Script feasibility probes that use Chrome discovery, JurlProxyFallback, and proxies without running in CI. For create/implement requests, prove the route with focused feasibility skills and then use retailer-production-integration so the end state is production classes, not leftover plan files.
 ---
 
 # Retailer Integration Feasibility
@@ -20,6 +20,14 @@ Use the focused skills for the actual implementation loops:
 - `$retailer-store-import-feasibility` for store locators and store importers
 
 When the user asks to graduate a proven feasibility route into production classes, or asks to create/update an `AvailabilityUpdater`, `UPCRetailerZipAvailabilityRecomputer`, `BatchAvailabilityUpdater`, `ItemIdInfoResolver`, or the necessary `RetailPartner` setup migration, use `$retailer-production-integration`.
+
+When the user asks to "create an updater", "create scanning", "create a resolver", "create availability", or similar for retailer Y, treat the request as production work:
+
+- use the appropriate focused feasibility skill first to prove the route when no passing plan already exists
+- then immediately use `$retailer-production-integration` to build the production classes, migration, and production `@Script`
+- end with the production classes and delete the temporary feasibility plan files after their useful code has moved
+
+When the user asks to "implement retailer Y", run the needed feasibility surfaces first, then use `$retailer-production-integration` for the implementation pass. The desired end state is the built retailer integration, not both production classes and `test/com/pear/retailerFeasibility/**` plan files, unless the user explicitly asks to keep a research artifact.
 
 If the user asks for all three, work in this order: UPC resolution, availability, then store import last. Full store imports are usually one-off, slower, and easier to defer; do the smallest store/context discovery needed for availability, such as choosing a visible store id from Chrome or a quick locator response, then return to the complete `Store.SStore` import after the item-id and buyability routes are proven. If no store-scoped inventory route exists, do not stop there: try to prove live online availability access from PDP/product/search/cart routes that expose current stock/out-of-stock state, price, and a buyability/add-to-cart signal. This is useful for avoiding dead PDP/checkout links, even though it is not inventory access. Do not mark online availability as passing from stock text alone if the live page/API disables buy/add-to-cart or the cart route rejects the item.
 

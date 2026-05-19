@@ -9,6 +9,8 @@ Use this skill to prove that Pear can take a UPC and product name, find the reta
 
 When the user asks to create/update a production `ItemIdInfoResolver`, production `RetailPartner` setup migration, or graduate a proven UPC/item-id feasibility route into production, use `$retailer-production-integration`.
 
+For "create a resolver for retailer Y" requests with no proven plan, use this skill first to prove the UPC/item-id route, then immediately use `$retailer-production-integration` to build the production resolver/migration/tests. The final PR should contain production code, not both production code and leftover `test/com/pear/retailerFeasibility/**` plan files, unless the user explicitly asks to preserve a research artifact.
+
 ## Production-Runnable Requirement
 
 The route is feasible only when the Java code can replay it from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. Search-engine snippets, cached pages, indexed PDP text, copied DevTools payloads, hardcoded fixtures, screenshots, or demo snapshots may help diagnose a route, but they must not make a passing resolver `@Script`.

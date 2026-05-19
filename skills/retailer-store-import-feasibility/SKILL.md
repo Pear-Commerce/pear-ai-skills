@@ -9,6 +9,8 @@ Use this skill to prove that Pear can load a retailer's stores with stable store
 
 When the user asks to create/update production store import methods on a `UPCRetailerZipAvailabilityRecomputer`, production `RetailPartner` setup migration, or graduate proven store import feasibility into production, use `$retailer-production-integration`.
 
+For "create a store importer" or "implement retailer Y" requests with no proven plan, use this skill first to prove the store route, then immediately use `$retailer-production-integration` to build the production store import methods/migration/tests. The final PR should contain production code, not both production code and leftover `test/com/pear/retailerFeasibility/**` plan files, unless the user explicitly asks to preserve a research artifact.
+
 ## Production-Runnable Requirement
 
 The route is feasible as a Java store-loading path only when Java can fetch retailer-owned live endpoints or documents from Pear production-like boxes using `JurlProxyFallback` and proxy-backed egress. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress.

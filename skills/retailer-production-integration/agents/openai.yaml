@@ -1,4 +1,4 @@
 interface:
   display_name: "Retailer Production Integration"
   short_description: "Graduate retailer feasibility into production classes"
-  default_prompt: "Use $retailer-production-integration to create or productionize RetailPartner migrations, ItemIdInfoResolver classes, UPCRetailerZipAvailabilityRecomputer availability updaters, BatchAvailabilityUpdater classes, production @Script tests, and PR follow-through from a proven retailer feasibility plan."
+  default_prompt: "Use $retailer-production-integration after focused feasibility to create or productionize RetailPartner migrations, ItemIdInfoResolver classes, UPCRetailerZipAvailabilityRecomputer availability updaters, BatchAvailabilityUpdater classes, production @Script tests, and PR follow-through. For create/implement retailer requests, graduate and delete temporary plan files so the PR ends with production classes."

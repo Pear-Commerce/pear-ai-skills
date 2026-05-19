@@ -9,6 +9,8 @@ Use this skill to prove that Pear can take a store id plus retailer item id/UPC 
 
 When the user asks to create/update production `UPCRetailerZipAvailabilityRecomputer` availability updaters, `BatchAvailabilityUpdater` classes, or `RetailPartner` setup migrations, or asks to graduate a proven availability feasibility route into production, use `$retailer-production-integration`.
 
+For "create an updater", "create scanning", "create availability", or similar retailer Y requests with no proven plan, use this skill first to prove the availability route, then immediately use `$retailer-production-integration` to build the production recomputer/batch updater/migration/tests. The final PR should contain production code, not both production code and leftover `test/com/pear/retailerFeasibility/**` plan files, unless the user explicitly asks to preserve a research artifact.
+
 ## Production-Runnable Requirement
 
 The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.

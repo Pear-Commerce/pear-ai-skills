@@ -1,6 +1,6 @@
 ---
 name: retailer-production-integration
-description: Create, modify, wire, or productionize Pear retailer integration classes in api.pearcommerce.com, including UPCRetailerZipAvailabilityRecomputer availability updaters, BatchAvailabilityUpdater classes, ItemIdInfoResolver classes, RetailPartner setup migrations, store imports, and @Script production verification after a retailer feasibility plan proves usable routes.
+description: Create, modify, wire, or productionize Pear retailer integration classes in api.pearcommerce.com, including UPCRetailerZipAvailabilityRecomputer availability updaters, BatchAvailabilityUpdater classes, ItemIdInfoResolver classes, RetailPartner setup migrations, store imports, and @Script production verification after a retailer feasibility plan proves usable routes. Use after focused feasibility when the user asks to create updater/scanning/resolver/store-import support for retailer Y or to implement retailer Y; the end state should be production classes, not both production classes and plan files.
 ---
 
 # Retailer Production Integration
@@ -12,7 +12,7 @@ Use this skill when the user asks to create, update, wire, or productionize any 
 - `ItemIdInfoResolver` subclasses
 - `RetailPartner` setup migrations and store import wiring needed by those classes
 
-If no proven feasibility plan, PR, or route exists, first use the relevant feasibility skill unless the user explicitly asks for a disabled skeleton. Production code should be based on live, proxy-backed routes that already passed feasibility, not on local Chrome, local curl, local app, `NO_PROXY`, copied payloads, screenshots, or fixtures.
+If no proven feasibility plan, PR, or route exists, first use the relevant feasibility skill unless the user explicitly asks for a disabled skeleton. For requests phrased as "create an updater", "create scanning", "create a resolver", "create availability", or "implement retailer Y", the feasibility work is the route-finding phase and this skill is the implementation phase. Production code should be based on live, proxy-backed routes that already passed feasibility, not on local Chrome, local curl, local app, `NO_PROXY`, copied payloads, screenshots, or fixtures.
 
 ## Required Skills
 
@@ -41,6 +41,8 @@ Turn a proven retailer feasibility scan into production code:
 7. Add an `@Script` production verification test that can rerun the original route checks.
 8. Delete the feasibility plan files after their useful code and rerun logic have moved into production tests/classes.
 9. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
+
+End state for create/implement requests: production resolver/updater/batch/store/migration classes plus production `@Script` coverage. Do not leave both those production classes and `test/com/pear/retailerFeasibility/**` plan files in the PR unless the user explicitly asks to preserve a research artifact.
 
 ## Class Goals
 
