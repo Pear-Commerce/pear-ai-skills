@@ -34,15 +34,22 @@ Turn a proven retailer feasibility scan into production code:
 
 1. Read the existing `test/com/pear/retailerFeasibility/**/<Retailer>Plan.java` and `*PlanTest.java`.
 2. Find nearby production patterns with `rg` before adding new abstractions.
-3. Add an idempotent `@SimpleORMDataMigration` that lazily creates or updates the `RetailPartner` row.
-4. Create the `ItemIdInfoResolver`, moving live route code and DTOs out of the plan.
-5. Create the `UPCRetailerZipAvailabilityRecomputer`, moving availability and store import logic out of the plan.
-6. Create a `BatchAvailabilityUpdater` only when it is efficient and justified.
-7. Add an `@Script` production verification test that can rerun the original route checks.
-8. Delete the feasibility plan files after their useful code and rerun logic have moved into production tests/classes.
-9. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
+3. Create or reuse a retailer-owned module package such as `src/com/pear/<retailer>/`.
+4. Add an idempotent `@SimpleORMDataMigration` in that module that lazily creates or updates the `RetailPartner` row.
+5. Create the `ItemIdInfoResolver`, moving live route code and DTOs out of the plan.
+6. Create the `UPCRetailerZipAvailabilityRecomputer`, moving availability and store import logic out of the plan.
+7. Create a `BatchAvailabilityUpdater` only when it is efficient and justified.
+8. Add an `@Script` production verification test that can rerun the original route checks.
+9. Delete the feasibility plan files after their useful code and rerun logic have moved into production tests/classes.
+10. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
 
 End state for create/implement requests: production resolver/updater/batch/store/migration classes plus production `@Script` coverage. Do not leave both those production classes and `test/com/pear/retailerFeasibility/**` plan files in the PR unless the user explicitly asks to preserve a research artifact.
+
+## Retailer Module Layout
+
+Keep retailer-specific production code together. For a new standalone retailer, create a package like `src/com/pear/<retailer>/` and put the retailer client/API helpers, DTOs, `ItemIdInfoResolver`, `UPCRetailerZipAvailabilityRecomputer`, optional `BatchAvailabilityUpdater`, store import artifact helpers, and retailer-specific `@SimpleORMDataMigration` class in that package. Prefer a `<Retailer>DataImports` class in the same module for setup and future retailer migrations instead of adding new retailer setup methods to broad catch-all classes such as `DataImports`.
+
+Do not scatter new retailer classes across `com.pear.itemurlupdater`, `com.pear.upcresolution`, and `com.pear.admin` just because their base classes live there. Import the base classes into the retailer package. Put the production `@Script` test in the matching `test/com/pear/<retailer>/` package unless an existing platform module already has a stronger local convention.
 
 ## Class Goals
 
@@ -56,7 +63,9 @@ End state for create/implement requests: production resolver/updater/batch/store
 
 ## RetailPartner Migration
 
-Retailer setup is part of productionization. Add an idempotent `@SimpleORMDataMigration` in the closest existing data-import home, such as a country/platform data import class under `src/com/pear/itemurlupdater/**`, or `src/com/pear/admin/DataImports.java` when that is the existing local pattern.
+Retailer setup is part of productionization. Add an idempotent `@SimpleORMDataMigration` in a retailer-owned data import class, usually `src/com/pear/<retailer>/<Retailer>DataImports.java`. If the retailer is part of an existing shared platform module, use that platform's data import class. Avoid adding new standalone retailer setup methods to broad catch-all classes such as `src/com/pear/admin/DataImports.java`.
+
+Keep migration method names stable after merge because `DataMigrationRecord` keys off method name. If moving a not-yet-merged PR migration into a better module, preserve the method name unless there is a deliberate reason to make it a new migration.
 
 Use lazy create/update:
 
