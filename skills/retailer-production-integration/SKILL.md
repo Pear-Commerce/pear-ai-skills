@@ -85,7 +85,7 @@ Usually set:
 - `live = true` once the production integration is intended to run
 - `partnerType = PartnerType.NONE` unless a real partner/API/pixel relationship exists
 - `itemUpdateConfiguration = new ItemUpdaterConfiguration()` when absent
-- `itemUpdateConfiguration.itemUpdaterClass` when the availability updater is not discovered purely by `retailerEnums()`
+- `itemUpdateConfiguration.itemUpdaterClass` only when no updater is discovered by `retailerEnums()` or when cleaning a known stale/default value; do not treat it as taking precedence over `retailerEnums()` discovery
 - `itemAvailabilityDependsOnZip = true` for store-specific availability checks, `false` for location-independent checks
 - `locationAgnosticShipToHome = true` when ship-to-home availability exists and does not vary by location
 - `availabilitySharedImagesAndIds = null` for a standalone retailer unless it intentionally shares a platform resolver/updater
@@ -126,6 +126,12 @@ Move live request/parsing code from the plan into the resolver. Return `SRetaile
 ## Availability Recomputer Rules
 
 New availability updater classes should extend `UPCRetailerZipAvailabilityRecomputer`. In user-facing prose this is the availability updater; in code use the actual base class name.
+
+Registration:
+
+- Implement `retailerEnums()` on the updater with the retailer enum(s). `UPCRetailerZipAvailabilityRecomputer.getInstance(...)` discovers updater classes from `retailerEnums()` and that discovery is the primary production registration path.
+- `RetailPartner.itemUpdateConfiguration.itemUpdaterClass` is metadata/fallback cleanup for blank, stale, or generic defaults. It is useful to keep tidy, but it does not outrank a matching `retailerEnums()` updater. PR descriptions and tests should not imply stale `itemUpdaterClass` metadata would block `retailerEnums()` discovery.
+- Production tests should assert `UPCRetailerZipAvailabilityRecomputer.getInstance(enum)` returns the intended updater. Do not rely on `itemUpdaterClass` alone as proof the production updater is registered.
 
 Implement availability checks as store-id based going forward:
 
