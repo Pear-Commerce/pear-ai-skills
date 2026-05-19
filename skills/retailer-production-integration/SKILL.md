@@ -129,6 +129,7 @@ URL methods:
 - `getPdpUrl(...)` should first build a deterministic PDP URL from `SItemDataWrapper.getItemId()` plus known retailer URL strings/patterns. If item id alone is insufficient, have the resolver set `SRetailerItemData.secondaryId` to the stable slug/SKU/catalog id needed for URL construction, then build from `itemId` + `secondaryId`.
 - Do not default to `Optional.ofNullable(itemData.getSRetailerItemData()).map(data -> data.url).orElseGet(itemData::getLink)` as the primary PDP strategy. `SRetailerItemData.url`, `UPCRetailerData.linkUrl`, and `itemData.getLink()` are fallback evidence only after deterministic id-based construction is impossible or unavailable.
 - If no stable id-based PDP pattern exists, use the resolved URL as a fallback and document why URL reconstruction cannot be done from stored ids.
+- Availability recompute methods should not persist PDP URLs. Never call `availability.setPDPUrlSavedFromAvailabilityCheck(...)`, including with `result.productUrl`, `getPdpUrl(...)`, `StringUtils.defaultIfBlank(result.productUrl, getPdpUrl(...))`, resolver URLs, or link fallbacks. Keep PDP URL construction in `getPdpUrl(...)`/resolver data, and let availability scans focus on availability fields.
 - `getAtcUrl(...)` builds add-to-cart/direct-to-cart links.
 - `supportsMultipleAddToCart(...)` means `getAtcUrl(...)` can accept multiple items and build one link containing all of them.
 - Ignore `getUrlForConfiguration(...)`; do not design the integration around it.
