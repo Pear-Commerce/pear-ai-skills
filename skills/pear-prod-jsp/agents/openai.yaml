@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pear Prod JSP"
+  short_description: "Run one-off Pear JSPs on live servers safely"
+  default_prompt: "Use $pear-prod-jsp to prepare and run a one-off Pear production JSP for a live read, S3/R2 tool action, job trigger, or approved database write."
