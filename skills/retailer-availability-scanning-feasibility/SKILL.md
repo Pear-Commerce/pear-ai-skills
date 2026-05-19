@@ -113,7 +113,7 @@ Inside `recomputeAvailability`, read the item id from `item.getOrCreateRetailerD
 - `urza.shipToHomeStatus` when supported
 - `urza.price` when exposed
 
-Do not persist PDP URLs from availability recompute. Never call `availability.setPDPUrlSavedFromAvailabilityCheck(...)`, including with `result.productUrl`, `getPdpUrl(...)`, `StringUtils.defaultIfBlank(result.productUrl, getPdpUrl(...))`, resolver URLs, or link fallbacks. Keep PDP URL behavior in `getPdpUrl(...)` and resolver data; availability scans should update stock and price signals only.
+Do not persist PDP URLs from availability recompute. Never call `availability.setPDPUrlSavedFromAvailabilityCheck(...)`, including with `result.productUrl`, `getPdpUrl(...)`, `StringUtils.defaultIfBlank(result.productUrl, getPdpUrl(...))`, resolver URLs, or link fallbacks. Do not add or retain shared post-recompute auto-fill blocks that persist `getPdpUrl(...)` onto the availability. Keep PDP URL behavior in `getPdpUrl(...)` and resolver data; availability scans should update stock and price signals only.
 
 Use `Status.AVAILABLE`, `Status.UNAVAILABLE`, `Status.UNKNOWN`, and `Status.INVALID` intentionally. Avoid returning `UNKNOWN` for a known blocked request without documenting that it is a proxy/session failure.
 
