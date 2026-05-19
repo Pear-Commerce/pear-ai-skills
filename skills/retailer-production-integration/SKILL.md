@@ -203,7 +203,7 @@ Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or
 - `RetailPartner.getAvailabilityUpdater(...)` returns the intended recomputer.
 - batch updater behavior when one is added.
 
-For PDP URL fixes, include an abridged resolution-to-availability script instead of only a pure URL-helper unit test. The script should:
+For PDP URL fixes, strongly prefer an abridged resolution-to-availability script instead of only a pure URL-helper unit test. Treat this as the expected production `@Script` proof whenever the change touches PDP URL reconstruction, saved URL fallback removal, platform URL translation, or `secondaryId` handoff behavior; if you do not add it, explain why the shorter test still covers the production data path. The script should:
 
 - build resolver-like `SRetailerItemData` containing `itemId`, `secondaryId`, and the resolver's `url`
 - manually seed direct `UPCRetailerData` / `SItemDataWrapper` on a `UPC` for `retailer.enumName`
