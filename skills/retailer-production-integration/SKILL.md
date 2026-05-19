@@ -203,14 +203,14 @@ Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or
 - `RetailPartner.getAvailabilityUpdater(...)` returns the intended recomputer.
 - batch updater behavior when one is added.
 
-For PDP URL fixes, strongly prefer an abridged resolution-to-availability script instead of only a pure URL-helper unit test. Treat this as the expected production `@Script` proof whenever the change touches PDP URL reconstruction, saved URL fallback removal, platform URL translation, or `secondaryId` handoff behavior; if you do not add it, explain why the shorter test still covers the production data path. The script should:
+For PDP URL fixes, strongly prefer an abridged resolution-to-availability `@Script` instead of only a pure URL-helper unit test. Treat this as the expected production proof whenever the change touches PDP URL reconstruction, saved URL fallback removal, platform URL translation, or `secondaryId` handoff behavior; if you do not add it, explain why the shorter test still covers the production data path. The script should:
 
-- build resolver-like `SRetailerItemData` containing `itemId`, `secondaryId`, and the resolver's `url`
+- call the real `ItemIdInfoResolver` directly when feasible, or otherwise build resolver-like `SRetailerItemData` containing `itemId`, `secondaryId`, and the resolver's `url`
 - manually seed direct `UPCRetailerData` / `SItemDataWrapper` on a `UPC` for `retailer.enumName`
 - construct `UPCRetailerZipAvailability`, including a stale/wrong saved PDP URL when guarding against saved-url fallback
-- call the availability updater URL path, or the shortest availability scan path that reaches it, and assert the final URL
-- cover both new/current and legacy retailer examples for shared-platform updaters or retailers with historical URL formats
-- lazily create or in-memory construct test `RetailPartner`, `UPC`, and `UPCRetailerData` as needed, but do not depend on unguaranteed shared seed rows
+- run the shortest real availability scan path that reaches the updater, then assert statuses and the final URL from the updater
+- cover both new/current and legacy `RetailPartner` enum rows when the retailer has historical rows, shared-platform updaters, or historical URL formats
+- lazily create or in-memory construct test `RetailPartner`, `UPC`, and `UPCRetailerData` rows as needed, but do not depend on unguaranteed shared seed rows
 - explicitly prove the updater does not read platform fallback data or saved availability URLs when the intended source is direct retailer `UPCRetailerData`
 
 Reuse the plan test's sample UPCs, names, store ids, expected item ids, expected URLs, proxy route assertions, and comments where practical. Keep the test out of CI with `@Script`.
