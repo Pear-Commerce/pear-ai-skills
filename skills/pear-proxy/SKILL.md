@@ -19,6 +19,10 @@ For routes discovered in Chrome, especially retailer search, PDP, inventory, car
 
 If a request works in local Chrome but Java replay is flaky or blocked, try `.asChrome()` before broadening the proxy ladder, copying large header sets by hand, or declaring the route infeasible. Keep `.asChrome()` in the final code when it was part of the proven production path; do not remove it just because a copied cURL has fewer headers.
 
+When `.asChrome()` or ordinary header replay still differs from Chrome, try a real TLS/browser profile with `LoggedJurl.withBrowserProfile(...)`. This is especially important for routes that are sensitive to TLS/HTTP2 fingerprinting, Akamai/DataDome-style checks, or proxy types whose names say they require a browser profile, such as `PROXYRACK_STATIC_REQUIRES_BROWSER_PROFILE`. Prefer `ChromeShim.getMostRecentChromeRelease().getBrowserProfile()` on production-like boxes. If local script/dev data has no `BrowserProfileConfiguration`, do not skip the tactic: use a documented long-lived captured Chrome profile or checked-in TLS-client profile as a feasibility fallback, and comment that production should use the latest DB-backed Chrome profile when present.
+
+Do not blindly stack `.asChrome()` document-navigation headers with hand-copied CORS/API headers. For API/XHR routes, either use `.asChrome()` with `ChromeOptions` when v2 is available, or use `withBrowserProfile(...)` plus explicit `accept`, `sec-fetch-*`, `referer`, and custom API headers so the request has one coherent browser shape. If a provider such as Scrapfly receives duplicate `accept`, `referer`, or `sec-fetch-*` values, split the experiment into separate browser-profile and provider-header paths before judging the proxy.
+
 ## Proxy Types (JurlProxyFallback.Type enum)
 
 Direct → `NO_PROXY`  

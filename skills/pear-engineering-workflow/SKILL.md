@@ -72,6 +72,14 @@ SNOWFLAKE_CREDENTIALS_SECRET=snowflake-2025-12-01 \
 
 Pure compile checks and pure unit tests that do not touch Pear resources can run without the DB prefix. If a local test or app page is missing vendors, users, UPC imports, resolver rows, or auth-related data, suspect an accidental local-DB run before debugging feature code.
 
+## Browser Profiles For HTTP Work
+
+For scraper, resolver, availability, store-locator, or API-client work using `LoggedJurl`/`JurlProxyFallback`, remember that browser-like headers are not always enough. If `.asChrome()` and copied Chrome headers still produce 403/429s, bot shells, empty app responses, or behavior that differs from local Chrome, try `LoggedJurl.withBrowserProfile(...)` to reproduce Chrome's TLS/HTTP2 fingerprint.
+
+Prefer `ChromeShim.getMostRecentChromeRelease().getBrowserProfile()` on production-like boxes, especially with proxy types that explicitly require a browser profile. If local script/dev data has no `BrowserProfileConfiguration`, do not prematurely mark the route impossible: for feasibility probes, use a documented long-lived captured/check-in Chrome TLS profile as a fallback and note that production should use the latest DB-backed profile when present.
+
+Keep request shape coherent. API/XHR routes should use browser profile plus explicit CORS/API headers when `.asChrome()` v1 adds document-navigation headers that conflict with the copied request. Avoid sending duplicate `accept`, `referer`, or `sec-fetch-*` values through proxy providers; split browser-profile and provider-header experiments if needed.
+
 ## Concurrent Repo Work
 
 Before editing a repo, run `git status --short`. If it prints anything at all, use a sibling worktree on a `codex/` branch for the task, even for docs or tiny changes. This is mandatory: treat staged, unstaged, untracked, generated, and unknown files as someone else's active work. Also use a worktree whenever the user or another Codex thread may be using the checkout, even if status is currently clean.

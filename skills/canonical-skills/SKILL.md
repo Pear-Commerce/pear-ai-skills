@@ -102,7 +102,11 @@ Tell the user Claude may need a restart before it sees newly synced skills.
 
 ## Creating or Updating Skills
 
-All Pear skill creation and edits start in the canonical repo.
+All Pear skill creation and edits start in the canonical repo. This is mandatory: whenever a user asks to create, edit, update, modify, inspect-and-fix, sync, or push a skill, or whenever you are about to edit any `SKILL.md`, first use this `canonical-skills` workflow even if another task-specific skill also applies.
+
+Do not make an installed or repo-local skill copy the source of truth. Installed copies under `$HOME/.codex/skills`, Claude Desktop, or app repos are mirrors. If you accidentally edited a mirror first, treat it as a scratch diff: port the change into `$HOME/pear-ai-skills`, commit and push the canonical repo, then run the installer to sync the mirror back before the final response.
+
+Do not end a skill-editing turn with only local or installed-copy changes unless pushing is genuinely blocked. The normal done state for skill edits is: canonical repo updated, committed, pushed to `Pear-Commerce/pear-ai-skills`, synced into installed targets, and verified by comparing the touched installed `SKILL.md` files against the canonical files. If any part cannot be completed, say exactly which part is blocked and why.
 
 1. Bootstrap tools and pull the canonical repo first:
    ```bash

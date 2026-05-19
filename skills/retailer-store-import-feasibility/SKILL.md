@@ -7,6 +7,14 @@ description: Discover, implement, and verify Pear retailer store import feasibil
 
 Use this skill to prove that Pear can load a retailer's stores with stable store ids and location data.
 
+## Production-Runnable Requirement
+
+The route is feasible as a Java store-loading path only when Java can fetch retailer-owned live endpoints or documents from Pear production-like boxes using `JurlProxyFallback` and proxy-backed egress. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress.
+
+A passing live store-import probe must use a proxy-backed `JurlProxyFallback.Type`; do not include `Type.NO_PROXY` in final passing feasibility scripts, importer code, or proxy ladders unless the user explicitly asks for local-only discovery. If a route appears to work directly from the local machine, immediately replay the same retailer-owned endpoint through production-like proxy types such as `STATIC`, ISP/residential pools, provider static pools, Unblocker, ZenRows, or Scrapfly before marking it feasible. If no proxy type can replay the route, keep the Java probe disabled and document the direct-local discovery separately.
+
+Store imports are the one surface where an explicitly approved browser-assisted one-off artifact can still be useful when every Java/proxy route is blocked, because store lists are reference data rather than real-time scans. Mark that as browser-assisted extraction, preserve rerun notes, and do not present it as a production-runnable Java/proxy route.
+
 ## Repo Anchors
 
 Check these first:
@@ -26,7 +34,7 @@ Read `references/store-extraction-patterns.md` when choosing a full-estate store
 
 ## Discovery Order
 
-If `WebContent/META-INF/<retailer>/EXTRACTION.md` already exists, read it before fresh discovery and treat it as the preferred rerun plan unless the live site proves it stale. Then explore in local Chrome before coding:
+If `WebContent/META-INF/<retailer>/EXTRACTION.md` already exists, read it before fresh discovery and treat it as the preferred rerun plan unless the live site proves it stale. Then explore in local Chrome before coding, but treat local browser and direct local HTTP success as route discovery only:
 
 1. Open the retailer's store locator and complete normal user flows: search by zip, use location, select state/province/city, click load-more/next, and switch pickup/delivery/planning modes.
 2. Inspect Network for JSON, GraphQL, Algolia/search-index, locator, or store-detail APIs.
@@ -82,6 +90,8 @@ Use `JurlProxyFallback` for live HTTP:
 
 Default browser-discovered store routes to `new LoggedJurl().asChrome()` so Java sends a browser-like header profile. If a plain `LoggedJurl` gets 403/429, hangs, returns a bot shell, or differs from local Chrome, add `.asChrome()` before expanding the proxy list or switching extraction strategies. Keep `.asChrome()` on the final route when it is part of the proven production replay.
 
+If `.asChrome()` still fails, or if the route is a JSON/XHR endpoint where `.asChrome()` adds conflicting document headers, try `LoggedJurl.withBrowserProfile(...)` with explicit locator/API headers. Browser profiles reproduce Chrome's TLS/HTTP2 fingerprint and can unlock store-locator APIs that block ordinary Java/proxy traffic. Prefer `ChromeShim.getMostRecentChromeRelease().getBrowserProfile()` on production-like boxes; if local feasibility scripts have no `BrowserProfileConfiguration`, use a documented long-lived captured/check-in Chrome profile fallback only for the probe and note that production should use the latest DB-backed profile when available.
+
 ```java
 return new JurlProxyFallback(
     List.of(Type.STATIC, Type.SMARTPROXY_STATIC, Type.SOAX_STATIC, Type.NETNUT_STATIC, Type.DATAIMPULSE_STATIC, Type.UNBLOCKER),
@@ -113,6 +123,8 @@ For one-off store imports that fetch many independent store detail pages, run pa
 
 If `STATIC` is the correct store route but has intermittent transient failures, it is acceptable to try `STATIC` up to about 10 times and count that as one cheap production-ready proxy option before falling through to a small known-good fallback. Keep exhaustive proxy sweeps planning-only; the final store script should use the proven list plus cache rather than rediscovering every proxy on each run.
 
+If no `STATIC` or cheap static/provider-static route works, always check Android app calls before declaring store import impossible or settling for expensive/heavy proxy routes such as `UNBLOCKER`, Scrapfly ASP, or ZenRows render. Inspect APK/XAPK strings and app traffic for store locator, store-detail, store-selection, fulfillment, APIM/gateway, GraphQL, public app headers, and stable parameter names, then replay any candidate retailer-owned request through a proxy-backed Java route when possible.
+
 For Azure/APIM-style APIs, public long-lived subscription keys sometimes work either as the `Ocp-Apim-Subscription-Key` header or as a `subscription-key` query parameter. If a route works in Chrome/curl but proxied Java returns an APIM "missing subscription key" response, try sending the traced key both ways, comment where it came from, and bump the cache key before declaring the proxy blocked.
 
 For IBM/WCS storefronts, the visible store-locator page may be blocked by Incapsula/Distil while underlying AJAX views still work. Inspect rendered HTML and JS assets for `wc.service.declare(...)`, `StoreLocator`, `AjaxStoreLocatorSearch`, `EStoreStoreLocatorResultsView`, and similar route names. Try those endpoints directly with the same `storeId`, `catalogId`, and `langId` constants from the page, then add the postcode/city parameters seen in JavaScript such as `storeAddressSearch_zipCode` or `storeAddressSearch_city`. If the AJAX endpoint returns JSON wrapped in a JavaScript comment, strip `/* ... */`, parse the `searchResults` string, and use a production proxy list proven on that endpoint. Do not discard the route just because the human HTML document is blocked.
@@ -128,6 +140,8 @@ Try and document the first working option:
 - ZenRows: `ZENROWS_DATACENTER_SCRAPE`, `ZENROWS_RESIDENTIAL_SCRAPE`, then render variants
 - Scrapfly: `SCRAPEFLY_DATACENTER_RENDER_GEO`, `SCRAPEFLY_RESIDENTAL_RENDER_GEO`, or ASP render variants for heavier bot protection
 
+Before accepting an expensive/heavy proxy as the only workable route, or before calling the route impossible, check Android app calls/APK strings for a mobile locator, store-detail, fulfillment, or APIM endpoint that can be replayed through `STATIC` or another cheap proxy-backed type.
+
 If an API works in Chrome but fails from Java through this ladder, try the full document/rendered page or a state/city HTML route before giving up.
 
 ## Creative Recovery
@@ -138,13 +152,13 @@ Do not stop after the first visible page of stores. Check hidden pagination, laz
 
 Leadformance-style store locators may expose full country or region directories as paginated HTML with one `LocalBusiness` `application/ld+json` block per store. Crawl the directory pages, follow `rel=next` or stable `?page=N` pagination until no stores remain, and sanitize raw control characters such as literal carriage returns before parsing JSON-LD. This can be more durable than a blocked locator API, and the resulting normalized `Store.SStore` list should still be written to both `current.json` and a dated JSON artifact.
 
-For store imports, a valid feasibility path is a one-off JavaScript snippet run in a local browser session when bot detection blocks Java/proxy HTTP but the site loads normally in Chrome. Use the snippet to read retailer-owned page state, embedded JSON, map markers, fetch/XHR responses already present in the page, or rendered DOM store cards, then normalize the result into `Store.SStore` JSON artifacts under `WebContent/META-INF/<retailer>/`. Keep the snippet in the plan/test comment or nearby notes, document that it is a browser-assisted one-off extraction, and still include an `@Script` probe that validates the saved artifact shape, dedupe, required fields, and comparison target. Do not use this browser one-off tactic as proof for real-time UPC resolution or availability scanning.
+For store imports, an explicitly approved fallback feasibility path can be a one-off JavaScript snippet run in a local browser session when bot detection blocks every Java/proxy HTTP route but the site loads normally in Chrome. Use the snippet to read retailer-owned page state, embedded JSON, map markers, fetch/XHR responses already present in the page, or rendered DOM store cards, then normalize the result into `Store.SStore` JSON artifacts under `WebContent/META-INF/<retailer>/`. Keep the snippet in the plan/test comment or nearby notes, document that it is a browser-assisted one-off extraction rather than a production-runnable Java/proxy route, and still include an `@Script` probe that validates the saved artifact shape, dedupe, required fields, and comparison target. Do not use this browser one-off tactic as proof for real-time UPC resolution or availability scanning.
 
 When a browser one-off uses server-rendered app state, inspect late hydration scripts as well as obvious globals. React/URQL sites may serialize useful data in strings such as `globalThis.__URQL_DATA__`, where each entry's `data` field is itself JSON. Parse that payload, dedupe on the fulfillment id that availability will need, and preserve the Chrome snippet/rerun route in the plan. This is especially useful when render proxies return HTTP 200 but only hydrate to a generic app shell.
 
 Validate every proxy-rendered HTTP 200 before caching it as a store success. Bot products such as Cloudflare/Forter may return pages titled `Checking Connection`, `Just a moment`, JavaScript-disabled shells, or generic app shells that do not contain the expected store JSON even though the status is 200. Treat those as failed proxy attempts by returning `null` or throwing inside `goThen`, include expected-content checks there, and bump the `extraCacheKey` after adding a new challenge/body validator so old cached shells do not mask the fix.
 
-If Java/proxy store detail fetching gets bogged down and the user permits a one-off browser extraction, it is acceptable to skip the Java live fetch for the store importer and commit the browser-rerunnable snippet plus the extracted store list with the plan. This is store-import-only guidance because stores are effectively one-off reference data; do not apply it to real-time UPC resolution or availability scanning. The snippet should be durable enough that someone can rerun it a year later: include the start URL, extraction date, endpoint/source shape, normalization rules, concurrency limit, known dead links, and what console output to copy. If the user specifically scopes the change to only `<Retailer>Plan.java` and `<Retailer>PlanTest.java`, keep all helper DTOs, constants, extracted JSON, dead-link notes, and validation nested inside those two files rather than creating production classes or `WebContent` artifacts. Because large JSON text blocks can exceed Java's constant-pool string limit, split embedded JSON into multiple chunks and join at runtime. The `@Script` should validate the embedded list count, duplicate store ids, required address/zip/coordinate fields, known sample stores, and documented dead/redirecting sitemap URLs. Keep the browser snippet bounded at 5-10 concurrent detail fetches.
+If Java/proxy store detail fetching gets bogged down and the user permits a one-off browser extraction, it is acceptable to skip the Java live fetch for the store importer and commit the browser-rerunnable snippet plus the extracted store list with the plan. This is store-import-only guidance because stores are effectively one-off reference data; do not apply it to real-time UPC resolution or availability scanning, and do not label it as a production-runnable proxy route. The snippet should be durable enough that someone can rerun it a year later: include the start URL, extraction date, endpoint/source shape, normalization rules, concurrency limit, known dead links, and what console output to copy. If the user specifically scopes the change to only `<Retailer>Plan.java` and `<Retailer>PlanTest.java`, keep all helper DTOs, constants, extracted JSON, dead-link notes, and validation nested inside those two files rather than creating production classes or `WebContent` artifacts. Because large JSON text blocks can exceed Java's constant-pool string limit, split embedded JSON into multiple chunks and join at runtime. The `@Script` should validate the embedded list count, duplicate store ids, required address/zip/coordinate fields, known sample stores, and documented dead/redirecting sitemap URLs. Keep the browser snippet bounded at 5-10 concurrent detail fetches.
 
 When a new tactic is useful, add it to this skill or `references/repo-tactics.md` before wrapping up. Capture the source shape, required headers/proxies, id choice, normalization gotcha, and how the `@Script` probe proves completeness.
 

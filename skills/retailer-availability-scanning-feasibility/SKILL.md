@@ -9,15 +9,19 @@ Use this skill to prove that Pear can take a store id plus retailer item id/UPC 
 
 ## Production-Runnable Requirement
 
-The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome exploration, DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.
+The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.
+
+A passing availability probe must always use a proxy-backed `JurlProxyFallback.Type`; do not include `Type.NO_PROXY` in final passing feasibility scripts, updater code, or proxy ladders unless the user explicitly asks for local-only discovery. If a route appears to work directly from the local machine, immediately replay the same retailer-owned endpoint through production-like proxy types such as `STATIC`, ISP/residential pools, provider static pools, Unblocker, ZenRows, or Scrapfly before marking it feasible. If no proxy type can replay the route, keep the code disabled and document the direct-local discovery separately.
 
 A passing availability probe must fetch current status and price live at script runtime. Prefer the supplied store id plus item id/UPC and prove that the store id affects the response when the retailer supports pickup or local inventory. If no store-scoped route exists but the site exposes current online stock/price that can send shoppers to a non-dead PDP or checkout path, make that probe pass as online availability access instead: the method may accept a nullable/placeholder store id, must assert the item id/UPC/PDP, current in-stock/out-of-stock signal, price when exposed, and a live buyability signal showing the PDP/add-to-cart/buy route is actually actionable. Stock text alone is not enough if the page disables the buy/add-to-cart button or the cart endpoint rejects the item. The script must comment that the route proves online availability but not store-level inventory. If all live routes are blocked or session-bound in a way Java cannot replay, keep the code, disable the probe, and document the blocker instead of substituting demo data. Before giving up, keep iterating through retailer-owned alternatives: inventory APIs, PDP documents after store-context setup, cart/add-to-cart validation, fulfillment endpoints, GraphQL variants, mobile/app-adjacent APIs, rendered documents, app decompilation when appropriate, and every relevant proxy/header combination.
 
 For buyability, the real user path matters. When a Java replay can fetch live stock/price but the cart endpoint is opaque, session-heavy, or intentionally hard to replay, use local Chrome during discovery to verify the actual PDP/store context the shopper sees. Check more than one relevant store/postal context when store context exists, confirm the buy/add-to-cart button is visible and enabled for the sampled item, and when practical click through far enough to see the cart/add confirmation without completing checkout. Capture the Chrome-observed store contexts and result in the `@Script` comments. Keep the runtime Java route honest: the passing probe should still fetch live status/price from retailer-owned pages/endpoints, and the comments must distinguish Chrome user-path validation from production store-level inventory access.
 
-During planning/discovery, before declaring a live route blocked, enumerate the currently available `JurlProxyFallback.Type` values from `src/com/pear/http/JurlProxyFallback.java` and run a bounded one-off probe across every relevant non-local, non-deprecated proxy type. Include static, ISP/residential, geo variants, BrightData unblockers, ZenRows scrape/render, Scrapfly scrape/render/ASP, and provider-specific static pools. Skip only types that are explicitly local, deprecated/invalid, retailer-specific for another retailer, or documented as requiring a browser profile incompatible with Java. Record the tested type list and the response signal in the disabled probe/comment.
+During planning/discovery, before declaring a live route blocked, enumerate the currently available `JurlProxyFallback.Type` values from `src/com/pear/http/JurlProxyFallback.java` and run a bounded one-off probe across every relevant non-local, non-deprecated proxy type. Include static, ISP/residential, geo variants, BrightData unblockers, ZenRows scrape/render, Scrapfly scrape/render/ASP, and provider-specific static pools. Skip `NO_PROXY`, explicitly local types, deprecated/invalid types, retailer-specific types for another retailer, or types documented as requiring a browser profile incompatible with Java. Record the tested type list and the response signal in the disabled probe/comment.
 
 Do not put exhaustive proxy sweeps in the final real-time availability `@Script` or production updater path. Once discovery identifies the proxy type(s) that work, the runnable script should use a small ordered list of those known-good types, with a modest retry count and cache strategy appropriate for production. If `STATIC` is the right path but has intermittent transient failures, it is acceptable to try `STATIC` up to about 10 times and count that as one cheap production-ready proxy option before falling through to the next known-good proxy. If a script repeatedly reaches a late proxy before succeeding, treat the earlier failures as pruning evidence and move/remove those proxies unless logs show they sometimes return valid store-specific status/price evidence. If no proxy works, disable the live probe with the exhaustive planning results instead of making every test run burn through all proxies again.
+
+If no `STATIC` or cheap static/provider-static route works, always check Android app calls before declaring availability impossible or settling for expensive/heavy proxy routes such as `UNBLOCKER`, Scrapfly ASP, or ZenRows render. Inspect APK/XAPK strings and app traffic for product availability, cart, fulfillment, store-selection, APIM/gateway, GraphQL, public app headers, and stable parameter names, then replay any candidate retailer-owned request through a proxy-backed Java route.
 
 ## Repo Anchors
 
@@ -37,7 +41,7 @@ Read `references/repo-tactics.md` when choosing a static updater vs batch update
 
 ## Discovery Order
 
-Explore in local Chrome before coding:
+Explore in local Chrome before coding, but treat local browser and direct local HTTP success as route discovery only:
 
 1. Select a real store through the site's normal location/store UI.
 2. Open the PDP for a sample product with a known UPC and item id.
@@ -112,6 +116,8 @@ Use `JurlProxyFallback` for live HTTP:
 
 Default browser-discovered inventory, PDP, cart, and price/buyability routes to `new LoggedJurl().asChrome()` so Java sends a browser-like header profile. If a plain `LoggedJurl` gets blocked, times out, returns a bot/app shell, or fails while Chrome succeeds, retry with `.asChrome()` before escalating to heavier proxies or declaring availability infeasible. Keep `.asChrome()` on the final scanner/script route when it is part of the proven production replay.
 
+If `.asChrome()` still fails, especially on XHR/cart/inventory APIs that reject document-navigation headers or appear TLS-fingerprint sensitive, try `LoggedJurl.withBrowserProfile(...)` with the explicit API headers traced from Chrome. Browser profiles can be the difference between a blocked shell and a real price/stock response even when the header list is otherwise correct. Prefer `ChromeShim.getMostRecentChromeRelease().getBrowserProfile()` on production-like boxes; if local feasibility scripts have no `BrowserProfileConfiguration`, use a documented long-lived captured/check-in Chrome profile fallback only for the probe and comment that production should use the latest DB-backed profile when available.
+
 ```java
 Tuple2<Status, BigDecimal> result = new JurlProxyFallback(
     List.of(Type.STATIC, Type.UNBLOCKER, Type.ZENROWS_DATACENTER_SCRAPE, Type.ZENROWS_DATACENTER_RENDER),
@@ -156,6 +162,8 @@ Try and document the first working option, but do not stop at this short list if
 - `UNBLOCKER`, plus geo/state variants if location matters
 - ZenRows scrape/render, especially for Akamai or client-rendered JSON routes
 - Scrapfly render/ASP render for heavier bot protection
+
+Before accepting an expensive/heavy proxy as the only workable route, or before calling the route impossible, check Android app calls/APK strings for a mobile availability, cart, fulfillment, or APIM endpoint that can be replayed through `STATIC` or another cheap proxy-backed type.
 
 If the inventory API is blocked through all proxies, try the rendered PDP document, add-to-cart validation, cart availability endpoint, or store-selection request sequence.
 
