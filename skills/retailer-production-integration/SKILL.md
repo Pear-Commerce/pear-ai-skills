@@ -42,6 +42,16 @@ Turn a proven retailer feasibility scan into production code:
 8. Delete the feasibility plan files after their useful code and rerun logic have moved into production tests/classes.
 9. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
 
+## Class Goals
+
+`RetailPartner` setup migrations register the retailer in Pear's data model. Their goal is to create or complete the retailer row, enum wiring, ecommerce URL, display assets, color, and availability/import flags without overwriting meaningful non-default data that may already exist.
+
+`ItemIdInfoResolver` classes translate Pear product identity into retailer product identity. Their goal is to take a UPC and, when needed, product name/brand context, then return the retailer item id, PDP URL, and supporting product metadata with enough UPC evidence for UPCResoGraph to trust the match. They should not own availability scanning unless the retailer route truly combines identity and stock.
+
+`UPCRetailerZipAvailabilityRecomputer` subclasses compute current buyability for an already-resolved retailer item in a location context. Their goal is to use store-id-based checks for local inventory, separate shipping checks when present, produce correct `IN_STORE` and/or `SHIP_TO_HOME` statuses, expose PDP/add-to-cart URLs, and provide the retailer store import methods needed for those checks.
+
+`BatchAvailabilityUpdater` classes are throughput-oriented companions for bulk availability refreshes. Their goal is to reuse the same availability semantics as the recomputer while reducing request cost for many item/store checks, either through a real batch endpoint or a simple delegating implementation when all underlying inventory calls use static/cheap proxy routes.
+
 ## RetailPartner Migration
 
 Retailer setup is part of productionization. Add an idempotent `@SimpleORMDataMigration` in the closest existing data-import home, such as a country/platform data import class under `src/com/pear/itemurlupdater/**`, or `src/com/pear/admin/DataImports.java` when that is the existing local pattern.
