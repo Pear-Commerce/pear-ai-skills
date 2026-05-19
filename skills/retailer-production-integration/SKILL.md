@@ -110,6 +110,8 @@ For direct successful UPC/item-id routes from the feasibility plan, prefer a dir
 - `isUPCResoGraphDataSource()` remains `true`
 - `canCheckInStock(...)` returns `false` unless the resolver truly performs stock checks
 
+Make `requiresName()` match the actual live route inputs, not just the method signature you happened to copy from the plan. If `_resolveItemIdInfo(...)`, a client helper, or search route consumes `item.name()`, `buildLikelyNameOrBrandSearchTerm(...)`, or any name/brand hint to find candidates, `requiresName()` must be `true` and the production `@Script` test should use multiple UPC/name pairs. If the route is exact-UPC/barcode-only, `requiresName()` can be `false`, but do not pass a name-shaped parameter through the client API; keep the helper signature UPC-only and add a no-name resolver assertion so reviewers can trust the contract.
+
 Move live request/parsing code from the plan into the resolver. Return `SRetailerItemData` with item id, name, image, price, UPC evidence, and retailer source when available. Set `secondaryId` when the retailer needs a second stable product slug/SKU/catalog id to reconstruct PDP or add-to-cart URLs; do not force availability updaters to depend on a scraped `url` string when stable ids can build the URL. Validate UPC evidence with `UPC.isAUPCMatch(...)` or equivalent normalization. For production code, keep passing routes proxy-backed and do not include `Type.NO_PROXY`.
 
 ## Availability Recomputer Rules
@@ -173,6 +175,7 @@ Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or
 - `RetailPartner.forEnumName(...)` resolves the migrated retailer.
 - `ItemIdInfoResolver.getInstance(...)` returns the new resolver.
 - multiple UPC/name pairs resolve to expected item ids and URLs.
+- `requiresName()` matches the resolver implementation: name-dependent routes are tested with names, and `requiresName=false` routes are tested with at least one UPC that has no name set.
 - `getStoresForZip(...)` or `getAllStores(...)` returns real stores.
 - the original live store scraping/import code can be rerun, even if production uses the JSON artifact.
 - in-store availability sets `IN_STORE` status when store-specific inventory exists.

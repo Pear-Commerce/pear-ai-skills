@@ -110,6 +110,8 @@ Populate `SRetailerItemData` fields when available:
 
 For resolver search text, prefer existing helpers like `buildLikelyNameOrBrandSearchTerm(item)`.
 
+When graduating to an `ItemIdInfoResolver`, make the eventual `requiresName()` value match the proven route. If the route searches by name/brand, calls a helper that builds a name search term, or passes `item.name()`/a name hint into the client method to find candidates, `requiresName()` must be `true`. If the route is exact-UPC/barcode-only, do not keep a name parameter in the production client API just because the feasibility helper had one; use a UPC-only signature and add a no-name resolver test.
+
 ## Jurl Pattern
 
 Use `JurlProxyFallback` for live HTTP and preserve browser headers only when they matter:
