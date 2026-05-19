@@ -1,6 +1,6 @@
 ---
 name: pear-engineering-workflow
-description: Pear engineering workflow for editing, reviewing, debugging, or implementing in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, worktrees, db.sh real-data checks, dev-DB startup, PearEntity serialization, and browser E2E verification.
+description: Pear engineering workflow for editing, reviewing, debugging, or implementing in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, worktrees, db.sh real-data checks, production JSP probes for live JVM/service/controller checks, dev-DB startup, PearEntity serialization, and browser E2E verification.
 ---
 
 # Pear Engineering Workflow
@@ -98,6 +98,14 @@ When updating an existing PR branch with latest `master`, `main`, or another PR 
 When data would clarify behavior, edge cases, IDs, ownership, or UI state, query `db.sh` instead of guessing. Prefer the safest relevant env, usually `db.sh -e test`; use production only when requested or clearly required. Default to read-only queries and summarize facts instead of dumping broad output.
 
 For live server logs, use `devops/logs.sh -e <env>`. For UPC resolution, `devops/logs.sh -e upc-resolution --single` streams one server instead of threading all UPC-resolution instances together.
+
+## Live Java Instance Probes
+
+Use `pear-prod-jsp` when the answer requires code running inside a live Pear Java server rather than a local JVM or SQL query. Good fits include live `Resources`/`Persistence`, Spring beans, AppConfig/secrets/IAM, process-local caches, in-memory registries, browser profiles, proxy behavior, service methods, job helpers, or controller-adjacent code that only makes sense with the production classpath and runtime state.
+
+Prefer `db.sh` for pure data questions, local tests for pure code questions, and real HTTP/browser requests for endpoint routing, filters, auth, serialization, and user-visible behavior. Reach for a JSP when you need to call or inspect live Java methods directly. If a controller is involved, be explicit about what is being validated: use the real endpoint for request/response behavior; use a JSP to get Spring beans or call service/controller methods only when the live app context itself is the important part.
+
+When this applies, load and follow `pear-prod-jsp`: no-parameter preview with a `Run` button, no side effects on the preview path, deploy the preview without `--single`, show the full human run report on `run=true`, use `output=raw` only for formal artifacts, avoid secrets/customer dumps in source or output, and capture the run URL plus S3 source key. Treat controller/service/job calls that may write database rows, S3/R2, cache, queues, or downstream systems as writes/triggers and require the approval path from `pear-prod-jsp` before running them.
 
 ## End-To-End Checks
 

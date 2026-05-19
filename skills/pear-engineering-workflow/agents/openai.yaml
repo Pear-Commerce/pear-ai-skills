@@ -1,4 +1,4 @@
 interface:
   display_name: "Pear Engineering Workflow"
-  short_description: "Pear repo worktrees, review, data, browser checks, and safe Offers deploys"
-  default_prompt: "Use $pear-engineering-workflow when editing Pear repos so you isolate concurrent work, check review guidance, rebase PR branches instead of creating merge commits, use real data context, verify browser paths, and route Offers production assets through CI instead of local uploads."
+  short_description: "Pear repo worktrees, review, data, JSP probes, browser checks, and safe Offers deploys"
+  default_prompt: "Use $pear-engineering-workflow when editing Pear repos so you isolate concurrent work, check review guidance, rebase PR branches instead of creating merge commits, use real data context, use production JSP probes for live JVM checks when needed, verify browser paths, and route Offers production assets through CI instead of local uploads."
