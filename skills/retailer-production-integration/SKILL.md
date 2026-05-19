@@ -123,6 +123,8 @@ Make `requiresName()` match the actual live route inputs, not just the method si
 
 Move live request/parsing code from the plan into the resolver. Return `SRetailerItemData` with item id, name, image, price, UPC evidence, and retailer source when available. Set `secondaryId` when the retailer needs a second stable product slug/SKU/catalog id to reconstruct PDP or add-to-cart URLs; do not force availability updaters to depend on a scraped `url` string when stable ids can build the URL. Validate UPC evidence with `UPC.isAUPCMatch(...)` or equivalent normalization. For production code, keep passing routes proxy-backed and do not include `Type.NO_PROXY`.
 
+When `secondaryId` is introduced for URL reconstruction, keep resolver outputs internally consistent: set `secondaryId` and also set `url` using the same helper/slug inputs so stored resolver data, review fixtures, and availability URL generation agree. If an updater should later read `secondaryId`, call the deterministic URL builder with `secondaryId`, not with a re-derived value that could drift.
+
 ## Availability Recomputer Rules
 
 New availability updater classes should extend `UPCRetailerZipAvailabilityRecomputer`. In user-facing prose this is the availability updater; in code use the actual base class name.
@@ -145,6 +147,8 @@ URL methods:
 
 - `getPdpUrl(...)` should first build a deterministic PDP URL from `SItemDataWrapper.getItemId()` plus known retailer URL strings/patterns. If item id alone is insufficient, have the resolver set `SRetailerItemData.secondaryId` to the stable slug/SKU/catalog id needed for URL construction, then build from `itemId` + `secondaryId`.
 - Do not default to `Optional.ofNullable(itemData.getSRetailerItemData()).map(data -> data.url).orElseGet(itemData::getLink)` as the primary PDP strategy. `SRetailerItemData.url`, `UPCRetailerData.linkUrl`, and `itemData.getLink()` are fallback evidence only after deterministic id-based construction is impossible or unavailable.
+- For retailer-specific PDP links, read direct retailer item data first: `item.getRetailerDataIfPresent(retailer.enumName, false, true)` or the closest local pattern. Do not silently fall back to `item.getPlatformDataIfPresent(retailer.availabilitySharedImagesAndIds)` from `getPdpUrl(...)` / `getPdpUrlRetailer(...)`; platform-shared data can carry the wrong sibling retailer's merchant id, option id, slug, store context, or saved URL. Only use shared-platform data when the user explicitly asks for that behavior or the integration's contract truly says the direct retailer row is absent, and then document and test the translation.
+- Do not fall back to `availability.getPDPUrlSavedFromAvailabilityCheck()` when deterministic URL reconstruction from stored item data is available. A saved availability URL is often the stale thing being fixed, especially for platform retailers where old scans stored merchant-scoped query params.
 - If no stable id-based PDP pattern exists, use the resolved URL as a fallback and document why URL reconstruction cannot be done from stored ids.
 - Availability recompute methods should not persist PDP URLs. Never call `availability.setPDPUrlSavedFromAvailabilityCheck(...)`, including with `result.productUrl`, `getPdpUrl(...)`, `StringUtils.defaultIfBlank(result.productUrl, getPdpUrl(...))`, resolver URLs, or link fallbacks. Do not add or retain shared post-recompute auto-fill blocks that persist `getPdpUrl(...)` onto the availability. Keep PDP URL construction in `getPdpUrl(...)`/resolver data, and let availability scans focus on availability fields.
 - `getAtcUrl(...)` builds add-to-cart/direct-to-cart links.
@@ -198,6 +202,16 @@ Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or
 - if `locationAgnosticShipToHome = true`, the ship-to-home test should not pass a `storeId`.
 - `RetailPartner.getAvailabilityUpdater(...)` returns the intended recomputer.
 - batch updater behavior when one is added.
+
+For PDP URL fixes, include an abridged resolution-to-availability script instead of only a pure URL-helper unit test. The script should:
+
+- build resolver-like `SRetailerItemData` containing `itemId`, `secondaryId`, and the resolver's `url`
+- manually seed direct `UPCRetailerData` / `SItemDataWrapper` on a `UPC` for `retailer.enumName`
+- construct `UPCRetailerZipAvailability`, including a stale/wrong saved PDP URL when guarding against saved-url fallback
+- call the availability updater URL path, or the shortest availability scan path that reaches it, and assert the final URL
+- cover both new/current and legacy retailer examples for shared-platform updaters or retailers with historical URL formats
+- lazily create or in-memory construct test `RetailPartner`, `UPC`, and `UPCRetailerData` as needed, but do not depend on unguaranteed shared seed rows
+- explicitly prove the updater does not read platform fallback data or saved availability URLs when the intended source is direct retailer `UPCRetailerData`
 
 Reuse the plan test's sample UPCs, names, store ids, expected item ids, expected URLs, proxy route assertions, and comments where practical. Keep the test out of CI with `@Script`.
 
