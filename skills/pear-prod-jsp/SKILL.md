@@ -7,12 +7,13 @@ description: Run one-off JSPs on live Pear api.pearcommerce.com servers for prod
 
 ## Overview
 
-Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Default to read-only diagnostics and tool actions; treat database writes as a separate approved operation.
+Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Every production one-off JSP must default to a no-parameter preview page with a user-visible plan and a `Run` button; real work belongs behind `run=true`.
 
 ## Required Safety
 
-- Ask for explicit user approval before running any JSP that writes to the database. This includes `save`, `saveAsync`, `saveAsyncWithBackpressure`, `delete`, `queuedForDeletion`, association writes, `JDBCUtil.executeUpdate`, SQL `UPDATE`/`INSERT`/`DELETE`, schema changes, and job/service triggers that are expected to write database rows.
-- Use `--single` for any side effect unless the task truly needs to run once per instance. Without `--single`, `devops/jsp.sh` can execute the helper on every running instance in the environment.
+- Every one-off production JSP must render a no-parameter preview with exactly what will happen and a `Run` button that reloads with `run=true`. The no-parameter path must have zero side effects.
+- For database writes, the preview page is the approval surface. Codex may open the preview page, but must not click `Run` or open `run=true` unless the user explicitly approves in chat or clicks the button themselves. Database writes include `save`, `saveAsync`, `saveAsyncWithBackpressure`, `delete`, `queuedForDeletion`, association writes, `JDBCUtil.executeUpdate`, SQL `UPDATE`/`INSERT`/`DELETE`, schema changes, and job/service triggers that are expected to write database rows.
+- Run the compile/deploy preview without `--single` when the no-parameter path is side-effect-free; this fans the JSP out to every server, so a later browser request can land on any backend and still find the JSP. Use `--single` only when invoking side effects from the helper path, which should usually be avoided in favor of the browser `Run` button.
 - Be explicit about environment. `jsp.sh` defaults to `PROD` when `-e` is omitted, so pass `-e PROD`, `-e TEST`, or the intended env deliberately.
 - Make DB writes idempotent and narrow: hard-code or parameterize exact IDs, verify old values before changing them, print skips, and ensure a second hit of the random JSP URL cannot duplicate work.
 - Prefer `Persistence.global().orm()`/entity `save` over direct SQL so PearSimpleORM hooks, history, and cache behavior run normally. If direct SQL is necessary, state the cache/ORM bypass risk in the approval request.
@@ -55,10 +56,10 @@ Useful patterns seen in history:
 
 ## Top-Level JSP Template
 
-Use `text/plain` for one-off runs so stack traces and progress are readable in curl output. Use HTML only when visual inspection is the point, and wrap errors in `<pre>`.
+Use HTML for production one-off JSPs. The default page is a preview/approval page; the `run=true` page does the work, times each step, logs exceptions, and prints stack traces inside `<pre>`.
 
 ```jsp
-<%@ page contentType="text/plain; charset=UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" %>
 <%@ page import="com.pear.config.Persistence" %>
 <%@ page import="com.pear.config.Resources" %>
 <%@ page import="com.pear.config.ServerEnv" %>
@@ -67,17 +68,36 @@ Use `text/plain` for one-off runs so stack traces and progress are readable in c
 
 <%
 String LOG = "[prod-jsp-example] ";
+boolean run = "true".equalsIgnoreCase(String.valueOf(request.getParameter("run")));
 try {
+    if (!run) {
+%>
+        <h1>Ready to run</h1>
+        <p>This JSP will:</p>
+        <ol>
+            <li>Describe step one and its exact target IDs/counts.</li>
+            <li>Describe step two and whether it writes DB, S3/R2, cache, or only reads.</li>
+        </ol>
+        <form method="get">
+            <input type="hidden" name="run" value="true">
+            <button type="submit">Run</button>
+        </form>
+<%
+        return;
+    }
+
+    long start = System.nanoTime();
     PearSimpleORM orm = Persistence.global().orm();
+    out.println("<pre>");
     out.println(LOG + "env=" + ServerEnv.global().env + " server=" + ServerEnv.global().server);
-    out.flush();
 
-    // Do the read/tool action here.
+    // Do the approved read/tool/write action here.
 
-    out.println(LOG + "done");
+    out.println(LOG + "done in " + ((System.nanoTime() - start) / 1_000_000.0) + " ms");
+    out.println("</pre>");
 } catch (Throwable e) {
     Resources.global().logger.error(LOG + "failed", e);
-    out.println(ExceptionUtils.getStackTrace(e));
+    out.println("<h2>Error</h2><pre>" + ExceptionUtils.getStackTrace(e) + "</pre>");
 }
 %>
 ```
@@ -86,26 +106,27 @@ Inside loops, catch expected per-item `RuntimeException`s only when continuing i
 
 ## Workflow
 
-1. Classify the run as read-only, external write, DB write, or job trigger. If any DB write is possible, stop for approval before running.
-2. If changing rows, first run or prepare a read-only preview that prints exact target IDs/counts/current values. Prefer a `boolean execute = false` dry run in the JSP, then switch it to `true` only after approval.
+1. Classify the run as read-only, external write, DB write, or job trigger.
+2. Write the JSP so the no-parameter path only prints a preview/plan and `Run` button. Include exact target IDs/counts/current values, expected writes, idempotency guards, and verification steps.
 3. Create the JSP as a scratch file, usually under `/tmp`, unless the user wants a persistent repo JSP.
 4. Keep imports minimal, but use real Pear helpers (`Persistence.global().orm()`, `S3Util`, `SpringApplicationContextProvider`, `JDBCUtil`, `JSON`, `Parallel`) instead of local reimplementations.
-5. Run with an explicit env and `--single`:
+5. Deploy/compile with an explicit env and no `--single`, relying on the no-parameter side-effect-free preview:
 
 ```bash
-devops/jsp.sh -j /tmp/descriptive-prod-read.jsp -e PROD --single
+devops/jsp.sh -j /tmp/descriptive-prod-read.jsp -e PROD
 ```
 
-6. Capture and summarize the printed remote URL, S3 source key when visible, output, and any exception stack. If the run wrote DB rows, verify with a follow-up read-only query/JSP.
+6. Open the printed URL in the browser with no query parameters. Confirm the preview page shows the plan and `Run` button.
+7. For read-only/tool-only tasks, click `Run` or navigate to `?run=true` when the user asked you to complete the run. For DB-writing tasks, stop at the preview page until the user explicitly approves or manually clicks `Run`.
+8. Capture and summarize the run report, timings, errors, remote URL, and S3 source key when visible. If the run wrote DB rows, verify with a follow-up read-only query/JSP.
 
 ## DB Write Approval
 
-Before running a DB-writing JSP, ask the user for approval in this shape:
+Before exposing the `Run` button for a DB-writing JSP, the preview page must include these fields:
 
 ```text
-This JSP will write to the production database. Approval needed before I run it.
 Env:
-Command:
+Run URL:
 Tables/entities:
 Selection:
 Mutation:
@@ -114,7 +135,7 @@ Idempotency/old-value guard:
 Verification:
 ```
 
-Do not run until the user explicitly approves this exact write/run. If the JSP changes after approval, ask again.
+Do not click `Run` or open `run=true` yourself until the user explicitly approves this exact write/run. If the JSP changes after approval, ask again.
 
 Dry-run guard pattern:
 
