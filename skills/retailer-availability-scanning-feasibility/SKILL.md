@@ -7,6 +7,8 @@ description: Discover, implement, and verify Pear retailer availability scanning
 
 Use this skill to prove that Pear can take a store id plus retailer item id/UPC and return stock status and price. Store-level inventory is ideal, but it is not the only useful success mode: if the retailer exposes live online ecommerce stock/out-of-stock state and price for a PDP/cart/search result that lets a shopper check out, that is valid availability access. Treat that as different from store-level inventory access, document the limitation clearly, and still move the retailer forward when the route is production-runnable.
 
+When the user asks to create/update production `UPCRetailerZipAvailabilityRecomputer` availability updaters, `BatchAvailabilityUpdater` classes, or `RetailPartner` setup migrations, or asks to graduate a proven availability feasibility route into production, use `$retailer-production-integration`.
+
 ## Production-Runnable Requirement
 
 The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.

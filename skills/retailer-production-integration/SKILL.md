@@ -1,0 +1,178 @@
+---
+name: retailer-production-integration
+description: Create, modify, wire, or productionize Pear retailer integration classes in api.pearcommerce.com, including UPCRetailerZipAvailabilityRecomputer availability updaters, BatchAvailabilityUpdater classes, ItemIdInfoResolver classes, RetailPartner setup migrations, store imports, and @Script production verification after a retailer feasibility plan proves usable routes.
+---
+
+# Retailer Production Integration
+
+Use this skill when the user asks to create, update, wire, or productionize any Pear retailer production integration class:
+
+- `UPCRetailerZipAvailabilityRecomputer` subclasses, often referred to as availability updaters
+- `BatchAvailabilityUpdater` subclasses
+- `ItemIdInfoResolver` subclasses
+- `RetailPartner` setup migrations and store import wiring needed by those classes
+
+If no proven feasibility plan, PR, or route exists, first use the relevant feasibility skill unless the user explicitly asks for a disabled skeleton. Production code should be based on live, proxy-backed routes that already passed feasibility, not on local Chrome, local curl, local app, `NO_PROXY`, copied payloads, screenshots, or fixtures.
+
+## Required Skills
+
+Start with:
+
+- `$pear-engineering-workflow` for worktree, review, test, and Pear repo rules
+- `$pear-proxy` when moving any `LoggedJurl`/`JurlProxyFallback` route into production
+- `$pear-pr-review-flow` before creating or updating the PR
+
+Use focused feasibility skills as needed to understand the source plan:
+
+- `$retailer-upc-resolution-feasibility`
+- `$retailer-availability-scanning-feasibility`
+- `$retailer-store-import-feasibility`
+
+## Operating Goal
+
+Turn a proven retailer feasibility scan into production code:
+
+1. Read the existing `test/com/pear/retailerFeasibility/**/<Retailer>Plan.java` and `*PlanTest.java`.
+2. Find nearby production patterns with `rg` before adding new abstractions.
+3. Add an idempotent `@SimpleORMDataMigration` that lazily creates or updates the `RetailPartner` row.
+4. Create the `ItemIdInfoResolver`, moving live route code and DTOs out of the plan.
+5. Create the `UPCRetailerZipAvailabilityRecomputer`, moving availability and store import logic out of the plan.
+6. Create a `BatchAvailabilityUpdater` only when it is efficient and justified.
+7. Add an `@Script` production verification test that can rerun the original route checks.
+8. Delete the feasibility plan files after their useful code and rerun logic have moved into production tests/classes.
+9. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
+
+## RetailPartner Migration
+
+Retailer setup is part of productionization. Add an idempotent `@SimpleORMDataMigration` in the closest existing data-import home, such as a country/platform data import class under `src/com/pear/itemurlupdater/**`, or `src/com/pear/admin/DataImports.java` when that is the existing local pattern.
+
+Use lazy create/update:
+
+- load with `RetailPartner.forEnumName(enumName)`
+- create only when missing
+- set any unset fields needed for the integration
+- do not overwrite non-default fields that may have been changed by another migration, admin action, or user
+
+Required fields:
+
+- `name`
+- `enumName`
+- `ecommerceUrl`
+
+Usually set:
+
+- `live = true` once the production integration is intended to run
+- `partnerType = PartnerType.NONE` unless a real partner/API/pixel relationship exists
+- `itemUpdateConfiguration = new ItemUpdaterConfiguration()` when absent
+- `itemUpdateConfiguration.itemUpdaterClass` when the availability updater is not discovered purely by `retailerEnums()`
+- `itemAvailabilityDependsOnZip = true` for store-specific availability checks, `false` for location-independent checks
+- `locationAgnosticShipToHome = true` when ship-to-home availability exists and does not vary by location
+- `availabilitySharedImagesAndIds = null` for a standalone retailer unless it intentionally shares a platform resolver/updater
+- `servicesEverywhere = false` and `servicesEverywhereCanada = false` for now unless the user or existing platform pattern says otherwise
+
+Logo and display:
+
+- Find the best real retailer logo and upload it to S3 through the repo's normal logo/assets flow.
+- Set `style.logo`, `logoUrl`, `buttonColor`, and `logoType` as well as practical.
+- Choose `logoType` based on the asset shape, usually `SQUARE` for square/rectangular marks and `ROUND` only when the logo is naturally circular.
+
+Leave unset/false unless specifically needed:
+
+- `instacartId`
+- `instacartCategory`
+- `unata`
+- `doordashId`
+- `isVendor`
+
+## ItemIdInfoResolver Rules
+
+For direct successful UPC/item-id routes from the feasibility plan, prefer a direct resolver:
+
+- `canResolveDirectly()` returns `true`
+- `canGenerateCandidates()` returns `false`
+- `allowImageTinEyeDirectCompare()` returns `false`
+- `requiresName()` returns `true` only when the route needs the UPC's name/brand text to search
+- `isItemDetailsSource()` returns `false`
+- `isUPCResoGraphDataSource()` remains `true`
+- `canCheckInStock(...)` returns `false` unless the resolver truly performs stock checks
+
+Move live request/parsing code from the plan into the resolver. Return `SRetailerItemData` with item id, PDP URL, name, image, price, UPC evidence, and retailer source when available. Validate UPC evidence with `UPC.isAUPCMatch(...)` or equivalent normalization. For production code, keep passing routes proxy-backed and do not include `Type.NO_PROXY`.
+
+## Availability Recomputer Rules
+
+New availability updater classes should extend `UPCRetailerZipAvailabilityRecomputer`. In user-facing prose this is the availability updater; in code use the actual base class name.
+
+Implement availability checks as store-id based going forward:
+
+- `canUseStoreId(...)` should return `true` for new production availability recomputers; it means Pear will use store-id-based checks.
+- `recomputeAvailability(...)` should use the supplied `storeId` for pickup/local inventory checks.
+- Set `inStoreStatus` only when the retailer returns a store-specific pickup/in-store result or the in-stock result changes with store.
+- Set `shipToHomeStatus` only when the retailer returns a separate shipping/ecommerce availability result.
+- Do not mirror in-store status into ship-to-home or ship-to-home status into in-store.
+
+URL methods:
+
+- `getPdpUrl(...)` should build the PDP from `UPCRetailerData`/resolved item data where possible.
+- `getAtcUrl(...)` builds add-to-cart/direct-to-cart links.
+- `supportsMultipleAddToCart(...)` means `getAtcUrl(...)` can accept multiple items and build one link containing all of them.
+- Ignore `getUrlForConfiguration(...)`; do not design the integration around it.
+- `supportsOnTheFlyAvailabilityCheck(...)` is unused; implement the required override only to satisfy the abstract class/local pattern.
+
+Store import methods:
+
+- Put store import logic in `getStoresForZip(...)` and/or `getAllStores(...)`.
+- `canImportStoresFromRetailer(...)` returns `true` when those methods are implemented.
+- `storeImportCountryCodes(...)` should return the country codes where the retailer operates.
+- Do not override `determineCountryCodes(...)` unless the user asks; it should usually derive from `storeImportCountryCodes(...)` and retailer fields.
+- Treat `canUseStoreIdAndDatabaseContainsRetailerImportedStores(...)` as final infrastructure; do not override or change it during retailer production work.
+
+It is acceptable to load stores from the normalized JSON artifact produced during feasibility for the first production pass because it is fast and stable. Keep the original live store scraping code in the `@Script` production test so the store list can be regenerated and verified later.
+
+Do not touch infrastructure helpers unless the task is explicitly about infrastructure:
+
+- `addUnsavedAvailabilitiesToResolveInBackground(...)`
+- `sendComputeRequest(...)`
+- `submitToAvailabilitiesService(...)`
+- `submitToAvailabilitiesSqs(...)`
+- `realtimeAvailabilities()`
+- `getCurrentPreprocessQueueLength()`
+- `ON_BOX_RETAILER_IDS()`
+- `copyFields(...)`
+- updater `getInstance(...)`, `getClass(...)`, `getDefinedClass(...)`, and `initReflections()`
+
+## BatchAvailabilityUpdater Rules
+
+Create a batch updater only when one of these is true:
+
+- the retailer supports efficient batched lookups
+- inventory scanning uses only static/cheap proxy types, especially all `STATIC`
+
+If the availability recomputer already uses all-static proxies and per-item/per-store checks are acceptable, prefer a delegating batch updater that calls the recomputer rather than duplicating logic. Otherwise, implement a true `BatchAvailabilityUpdater` only when the retailer API returns many item/store records per request or another existing batch pattern closely matches.
+
+## Production @Script Test
+
+Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or `test/com/pear/upcresolution/**` following nearby patterns. The test should cover:
+
+- `RetailPartner.forEnumName(...)` resolves the migrated retailer.
+- `ItemIdInfoResolver.getInstance(...)` returns the new resolver.
+- multiple UPC/name pairs resolve to expected item ids and URLs.
+- `getStoresForZip(...)` or `getAllStores(...)` returns real stores.
+- the original live store scraping/import code can be rerun, even if production uses the JSON artifact.
+- in-store availability sets `IN_STORE` status when store-specific inventory exists.
+- ship-to-home availability sets `SHIP_TO_HOME` status when separate shipping availability exists.
+- if `locationAgnosticShipToHome = true`, the ship-to-home test should not pass a `storeId`.
+- `RetailPartner.getAvailabilityUpdater(...)` returns the intended recomputer.
+- batch updater behavior when one is added.
+
+Reuse the plan test's sample UPCs, names, store ids, expected item ids, expected URLs, proxy route assertions, and comments where practical. Keep the test out of CI with `@Script`.
+
+## Completion
+
+Before opening the PR:
+
+- remove the superseded feasibility plan files once production classes/tests contain the reusable logic
+- run focused tests or explain why they could not run
+- run the Pear engineering cleanup pass
+- ensure no passing production code uses `Type.NO_PROXY`
+- summarize required proxy types, store import source, item-id route, availability route, and whether batch updating was added
+- create/update and monitor the PR with `$pear-pr-review-flow`

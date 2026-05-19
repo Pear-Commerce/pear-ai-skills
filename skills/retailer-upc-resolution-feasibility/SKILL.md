@@ -7,6 +7,8 @@ description: Discover, implement, and verify Pear UPC-to-retailer-item-ID resolu
 
 Use this skill to prove that Pear can take a UPC and product name, find the retailer's item id and PDP URL, and verify the result belongs to the target UPC.
 
+When the user asks to create/update a production `ItemIdInfoResolver`, production `RetailPartner` setup migration, or graduate a proven UPC/item-id feasibility route into production, use `$retailer-production-integration`.
+
 ## Production-Runnable Requirement
 
 The route is feasible only when the Java code can replay it from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. Search-engine snippets, cached pages, indexed PDP text, copied DevTools payloads, hardcoded fixtures, screenshots, or demo snapshots may help diagnose a route, but they must not make a passing resolver `@Script`.
