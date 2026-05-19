@@ -7,14 +7,14 @@ description: Run one-off JSPs on live Pear api.pearcommerce.com servers for prod
 
 ## Overview
 
-Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Every production one-off JSP must default to a no-parameter preview page with a user-visible plan and a `Run` button; real work belongs behind `run=true`. The normal run page should be a useful execution report: title, summary, steps, timings, context, errors, stack traces, and verification details. Only hide or collapse that report when the user explicitly asked the JSP to render a formal output contract such as JSON, CSV, or very particular HTML.
+Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Every production one-off JSP must default to a no-parameter preview page with a user-visible plan and a `Run` button; real work belongs behind `run=true`. The normal run page should be a useful execution report: title, summary, steps, timings, context, errors, stack traces, and verification details. When the JSP has a formal output contract such as JSON, CSV, or very particular HTML, render that formal output at the top of the normal run page and offer `output=raw` for the artifact alone.
 
 ## Required Safety
 
 - Every one-off production JSP must render a no-parameter preview with exactly what will happen and a `Run` button that reloads with `run=true`. The no-parameter path must have zero side effects.
 - For database writes, the preview page is the approval surface. Codex may open the preview page, but must not click `Run` or open `run=true` unless the user explicitly approves in chat or clicks the button themselves. Database writes include `save`, `saveAsync`, `saveAsyncWithBackpressure`, `delete`, `queuedForDeletion`, association writes, `JDBCUtil.executeUpdate`, SQL `UPDATE`/`INSERT`/`DELETE`, schema changes, and job/service triggers that are expected to write database rows.
 - Run the compile/deploy preview without `--single` when the no-parameter path is side-effect-free; this fans the JSP out to every server, so a later browser request can land on any backend and still find the JSP. Use `--single` only when invoking side effects from the helper path, which should usually be avoided in favor of the browser `Run` button.
-- By default, make the helpful execution report visible: title, steps, timings, context, stack traces, and verification notes are the point of most JSPs. Move that report into Debug only when the user asked for a formal output contract that would be harmed by extra HTML/text.
+- By default, make the helpful execution report visible: title, steps, timings, context, stack traces, and verification notes are the point of most JSPs. Do not add a `debug` parameter or collapse that report. Use `output=raw` only when the user needs a formal artifact without the human report.
 - Be explicit about environment. `jsp.sh` defaults to `PROD` when `-e` is omitted, so pass `-e PROD`, `-e TEST`, or the intended env deliberately.
 - Make DB writes idempotent and narrow: hard-code or parameterize exact IDs, verify old values before changing them, print skips, and ensure a second hit of the random JSP URL cannot duplicate work.
 - Prefer `Persistence.global().orm()`/entity `save` over direct SQL so PearSimpleORM hooks, history, and cache behavior run normally. If direct SQL is necessary, state the cache/ORM bypass risk in the approval request.
@@ -57,22 +57,15 @@ Useful patterns seen in history:
 
 ## Formal Output Exception
 
-Use this only when the user asked for a formal output contract, such as JSON, CSV, a specific table, or a particular HTML artifact. Ordinary operational JSPs should keep the full execution report visible as the main output.
+Use this only when the user asked for a formal output contract, such as JSON, CSV, a specific table, or a particular HTML artifact. Ordinary operational JSPs should keep the full execution report as the main output.
 
-For formal human-readable HTML/table reports, prefer this `run=true` structure:
+For formal-output JSPs, prefer this structure:
 
-1. The requested formal output first, or alone if the user asked for exact output.
-2. Optional Debug section after it containing the normal helpful execution report: title/summary, steps, timings, stack traces, server/env context, raw IDs, and verification details.
+1. No-parameter preview: explain the formal output, show the `Run` button for the normal `run=true` page, and include an optional direct `curl` command for `run=true&output=raw`.
+2. `run=true`: render the formal output at the top, then render the full normal execution report underneath with steps, timings, context, errors, stack traces, and verification notes. Do not collapse this report by default.
+3. `run=true&output=raw`: return only the formal artifact. For JSON or CSV, set the matching response content type and do not append HTML.
 
-For these formal-output JSPs, support a `debug` query parameter:
-
-- Missing, `debug=true`, or `debug=expanded`: render Debug open by default, unless that would violate the formal output contract.
-- `debug=collapse` or `debug=collapsed`: render Debug inside `<details>` collapsed by default.
-- `debug=false`, `debug=0`, or `debug=none`: omit Debug entirely. Still show a terse top-level failure message if the JSP failed; do not hide that failure occurred.
-
-For formal HTML/table JSPs, default the Run button to `debug=collapse` only when the requested output should lead. For strict machine-readable output such as JSON or CSV, do not append HTML debug blocks because that corrupts the format; use `debug=false` by default, log server-side, add debug only inside an explicit JSON field when the user asked for it, or provide a separate `debug=true` human-readable HTML mode.
-
-Avoid the name `logs` for this control; Debug is broader and can include the whole execution report.
+Use `output=raw`, not `debug=false`, because the parameter changes the response shape rather than toggling visibility. Build raw links from `request.getRequestURI()` or another relative path so they reload the same public JSP path; `request.getRequestURL()` may resolve to internal `127.0.0.1:8080` behind the proxy.
 
 ## Top-Level JSP Template
 
@@ -129,7 +122,7 @@ Inside loops, catch expected per-item `RuntimeException`s only when continuing i
 ## Workflow
 
 1. Classify the run as read-only, external write, DB write, or job trigger.
-2. Write the JSP so the no-parameter path only prints a preview/plan and `Run` button. Include exact target IDs/counts/current values, expected writes, idempotency guards, and verification steps.
+2. Write the JSP so the no-parameter path only prints a preview/plan and `Run` button. Include exact target IDs/counts/current values, expected writes, idempotency guards, and verification steps. If there is a formal output contract, include a direct `output=raw` URL or `curl` command too.
 3. Create the JSP as a scratch file, usually under `/tmp`, unless the user wants a persistent repo JSP.
 4. Keep imports minimal, but use real Pear helpers (`Persistence.global().orm()`, `S3Util`, `SpringApplicationContextProvider`, `JDBCUtil`, `JSON`, `Parallel`) instead of local reimplementations.
 5. Deploy/compile with an explicit env and no `--single`, relying on the no-parameter side-effect-free preview:
@@ -139,7 +132,7 @@ devops/jsp.sh -j /tmp/descriptive-prod-read.jsp -e PROD
 ```
 
 6. Open the printed URL in the browser with no query parameters. Confirm the preview page shows the plan and `Run` button.
-7. For read-only/tool-only tasks, click `Run` or navigate to `?run=true` when the user asked you to complete the run. For DB-writing tasks, stop at the preview page until the user explicitly approves or manually clicks `Run`.
+7. For read-only/tool-only tasks, click `Run` or navigate to `?run=true` when the user asked you to complete the run. For formal outputs, verify both the normal `run=true` page and the `run=true&output=raw` artifact. For DB-writing tasks, stop at the preview page until the user explicitly approves or manually clicks `Run`.
 8. Capture and summarize the run report, timings, errors, remote URL, and S3 source key when visible. If the run wrote DB rows, verify with a follow-up read-only query/JSP.
 
 ## DB Write Approval
