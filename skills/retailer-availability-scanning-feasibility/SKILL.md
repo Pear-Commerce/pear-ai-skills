@@ -105,6 +105,8 @@ protected void recomputeAvailability(
 )
 ```
 
+For `getPdpUrl(...)`, first try to build the retailer PDP from `item.getOrCreateRetailerData(retailer.enumName).getItemId()` and known URL strings/patterns. If item id alone is not enough, have the resolver store the second stable value in `SRetailerItemData.secondaryId` and build from `itemId` plus `secondaryId`. Do not make `SRetailerItemData.url`, `UPCRetailerData.linkUrl`, or `SItemDataWrapper.getLink()` the primary strategy; those are fallbacks only when deterministic URL construction is impossible or unavailable.
+
 Inside `recomputeAvailability`, read the item id from `item.getOrCreateRetailerData(retailer.enumName).getItemId()`, request the retailer route, and set:
 
 - `urza.inStoreStatus`

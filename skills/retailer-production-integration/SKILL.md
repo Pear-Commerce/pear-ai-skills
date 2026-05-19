@@ -110,7 +110,7 @@ For direct successful UPC/item-id routes from the feasibility plan, prefer a dir
 - `isUPCResoGraphDataSource()` remains `true`
 - `canCheckInStock(...)` returns `false` unless the resolver truly performs stock checks
 
-Move live request/parsing code from the plan into the resolver. Return `SRetailerItemData` with item id, PDP URL, name, image, price, UPC evidence, and retailer source when available. Validate UPC evidence with `UPC.isAUPCMatch(...)` or equivalent normalization. For production code, keep passing routes proxy-backed and do not include `Type.NO_PROXY`.
+Move live request/parsing code from the plan into the resolver. Return `SRetailerItemData` with item id, name, image, price, UPC evidence, and retailer source when available. Set `secondaryId` when the retailer needs a second stable product slug/SKU/catalog id to reconstruct PDP or add-to-cart URLs; do not force availability updaters to depend on a scraped `url` string when stable ids can build the URL. Validate UPC evidence with `UPC.isAUPCMatch(...)` or equivalent normalization. For production code, keep passing routes proxy-backed and do not include `Type.NO_PROXY`.
 
 ## Availability Recomputer Rules
 
@@ -126,7 +126,9 @@ Implement availability checks as store-id based going forward:
 
 URL methods:
 
-- `getPdpUrl(...)` should build the PDP from `UPCRetailerData`/resolved item data where possible.
+- `getPdpUrl(...)` should first build a deterministic PDP URL from `SItemDataWrapper.getItemId()` plus known retailer URL strings/patterns. If item id alone is insufficient, have the resolver set `SRetailerItemData.secondaryId` to the stable slug/SKU/catalog id needed for URL construction, then build from `itemId` + `secondaryId`.
+- Do not default to `Optional.ofNullable(itemData.getSRetailerItemData()).map(data -> data.url).orElseGet(itemData::getLink)` as the primary PDP strategy. `SRetailerItemData.url`, `UPCRetailerData.linkUrl`, and `itemData.getLink()` are fallback evidence only after deterministic id-based construction is impossible or unavailable.
+- If no stable id-based PDP pattern exists, use the resolved URL as a fallback and document why URL reconstruction cannot be done from stored ids.
 - `getAtcUrl(...)` builds add-to-cart/direct-to-cart links.
 - `supportsMultipleAddToCart(...)` means `getAtcUrl(...)` can accept multiple items and build one link containing all of them.
 - Ignore `getUrlForConfiguration(...)`; do not design the integration around it.
