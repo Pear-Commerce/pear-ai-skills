@@ -178,7 +178,7 @@ out.println("updated id=" + id);
 ```
 
 ## Common Actions
-When lifting older archived JSPs, convert hard-coded `preview`, `writeChange`, or direct request-param execution into the standard no-param preview plus `run=true` button flow. Keep the useful parts: exact IDs, old values, row counts, per-item results, timings, and errors.
+When lifting older archived JSPs, convert hard-coded `preview`, `writeChange`, `if (true)`, or direct request-param execution into the standard no-param preview plus `run=true` button flow. Keep the useful parts: exact IDs, old values, row counts, per-item results, timings, and errors. See `references/deep-history-common-actions.md` for older Alex/Eric patterns such as AppConfig diffs, Snowflake reads, thread dumps, Redis checkpoints, ManagedResourcesConfig jobs, retailer endpoint probes, scraper-user seeding, request-header codegen, OCR/barcode probes, and recipe imports.
 
 Live ORM read:
 
