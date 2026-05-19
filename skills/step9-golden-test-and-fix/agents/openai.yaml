@@ -1,0 +1,4 @@
+interface:
+  display_name: "Step9 Golden Test and Fix"
+  short_description: "Residential Step9 golden runs with fix/review loop"
+  default_prompt: "Use $step9-golden-test-and-fix to run residential Step9 golden tests, fix failures with xhigh subagents, and verify artifact curl parity."

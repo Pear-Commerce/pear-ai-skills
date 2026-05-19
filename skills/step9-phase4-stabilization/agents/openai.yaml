@@ -1,0 +1,3 @@
+display_name: "Step9 Phase 4 Stabilization"
+short_description: "Supervise Step9 gold runs and enforce Phase 4 parity guardrails."
+default_prompt: "Use the Step9 Phase 4 stabilization workflow to supervise the active run, update the tracker from fresh evidence, and preserve all value-matching and Phase 1-3 guardrails."
