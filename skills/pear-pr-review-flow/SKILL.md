@@ -20,11 +20,10 @@ Use this skill whenever the user mentions a PR or asks to create, update, review
 When Codex authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by:
 
 ```text
-Thanks,
-Codex
+- Codex
 ```
 
-Do not duplicate the signoff if it is already present. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
+Do not duplicate the signoff if it is already present. Treat both the current `- Codex` signoff and legacy `Thanks,\nCodex` signoff as existing Codex authorship signatures when checking whether a PR/comment/reply is Codex-authored or already signed. When adding a new signoff, always use `- Codex`. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
 
 ## Review Reply Tone
 
@@ -143,8 +142,7 @@ PR is ready for review: [repo #PR](PR_URL)
 
 Could I get reviews when you have a minute?
 
-Thanks,
-Codex
+- Codex
 ```
 
 If the PR is urgent, a hotfix, or already landed, say that plainly and include the deploy or merge status if known.
@@ -202,7 +200,7 @@ Interpret explicit requests like "handle comments as they come in", "keep fixing
 The recurring task should:
 
 - watch only explicitly named PRs, or open PRs related to the current thread that were authored or materially written by Codex
-- identify Codex-authored PRs by the PR body or Codex-authored comments ending with exactly `Thanks,\nCodex`
+- identify Codex-authored PRs by the PR body or Codex-authored comments ending with either the current `- Codex` signature or the legacy `Thanks,\nCodex` signature
 - inspect every GitHub feedback source on each pass: all review threads whether unresolved, resolved, or outdated; flat PR review comments; top-level issue/PR comments; requested-changes reviews; reviewdog/github-actions bot comments; Copilot feedback; check annotations when available; timeline review requests; approvals; mergeability; branch status; and required checks
 - do not treat Copilot as the only reviewer. Actionable comments from any author, including `github-actions`, `reviewdog`, humans, and Codex self-review comments, must be evaluated and either addressed or explicitly answered
 - when auto-fix is approved, make the smallest clean code change for every actionable comment that has not already been handled by a later Codex reply or code change, rebase the PR branch against the latest base branch, run focused checks, amend the existing branch commit, and force-push with lease
