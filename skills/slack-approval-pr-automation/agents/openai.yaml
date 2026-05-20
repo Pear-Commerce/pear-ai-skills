@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slack Approval PR Automation"
+  short_description: "Create staged Slack-to-PR automations"
+  default_prompt: "Use $slack-approval-pr-automation to create a lightweight Slack watcher that escalates approved work to heavyweight PR automation."
