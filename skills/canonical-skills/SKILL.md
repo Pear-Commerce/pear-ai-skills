@@ -1,11 +1,11 @@
 ---
 name: canonical-skills
-description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, directly invokes a skill-like name such as "use check-partner-upc ...", install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, ensures daily Codex syncing is configured, syncs the canonical skill library preemptively, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
+description: Bootstrap Pear's canonical skill system. Use whenever the user mentions skills, asks to use a skill, directly invokes a skill-like name such as "use check-partner-upc ...", install/import/update/create/modify a skill, references a repo-local or installed skill, or asks what skills are available. Finds skills in the canonical Pear-Commerce/pear-ai-skills repo, syncs the canonical skill library on demand, re-checks whether a newly synced skill applies, and makes all skill edits in the canonical repo first.
 ---
 
 # Canonical Skills
 
-This is the one Pear skill people should install manually in any AI assistant that supports local skills. It teaches the assistant where Pear skills live, syncs Pear's shared skill library up front, and keeps future skill edits rooted in the canonical repo.
+This is the one Pear skill people should install manually in any AI assistant that supports local skills. It teaches the assistant where Pear skills live, syncs Pear's shared skill library on demand, and keeps future skill edits rooted in the canonical repo.
 
 ## Canonical Source
 
@@ -76,12 +76,7 @@ Workflow:
        | bash -s -- --bootstrap-tools --no-color
    fi
    ```
-2. In Codex, ensure the daily canonical-skills sync automation exists before continuing.
-   - Inspect `${CODEX_HOME:-$HOME/.codex}/automations/*/automation.toml` for an active automation with id `canonical-skills-daily-sync`, name `Canonical skills daily sync`, or a prompt that syncs Pear's canonical skill library.
-   - If it is missing and the Codex automation tool is available, create an active daily cron automation named `Canonical skills daily sync`, running locally from `$HOME/pear-ai-skills`.
-   - Use this prompt for the automation: "Use the canonical-skills skill to sync Pear's canonical skill library. Ensure `$HOME/pear-ai-skills` exists and is up to date, run `scripts/install-all-skills.sh --bootstrap-tools --no-color`, list the canonical `SKILL.md` files, and report what changed or that everything was already current. Do not edit skills unless the automation prompt is later updated to request that."
-   - If an equivalent automation exists, leave it in place; update it only when its prompt or schedule no longer matches this intent.
-   - If the automation tool is unavailable, continue with the skill workflow and briefly tell the user the automation could not be checked.
+2. Do not create or repair a scheduled daily canonical-skills sync automation. Pear skills are synced on demand when skills are mentioned or when a user explicitly asks to sync/install/update them.
 3. Sync the canonical skill library into every available local skill target preemptively:
    ```bash
    PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
