@@ -51,7 +51,7 @@ Examples: move SQL escaping toward `TextUtil.escapeSql`/`JDBCUtil`; file paths t
 
 ### Streams And Collection Transforms
 
-Use streams/array pipelines for transformation, filtering, grouping, deduping, sorting, projecting, joining, flattening, and bounded slicing when they make dataflow clearer. Keep loops for `ResultSet` scanning, side-effect-heavy saves/updates, resource lifetimes, retry/early return, interruption, per-item exception classification, and request short-circuiting.
+Use streams/array pipelines for value-producing transformation, filtering, grouping, deduping, sorting, projecting, joining, flattening, and bounded slicing when they make dataflow clearer. Prefer loops for side effects and mutation, especially saves/updates, `ResultSet` scanning, resource lifetimes, retry/early return, interruption, per-item exception classification, and request short-circuiting. Do not replace a clear loop with `stream().forEach(...)` just to look stream-shaped.
 
 Good stream-shaped examples:
 
@@ -81,6 +81,7 @@ Checklist:
 - Count passes in hot paths. Avoid repeated map/collect chains, redundant sorts, and stream/loop mixtures that scan the same data repeatedly.
 - `stream().toList()` is immutable; use `collect(Streams.toList())` or another mutable collector when callers mutate.
 - Use lazy `findFirst()` or a loop with `break` for "try inputs until one works." Do not collect all HTTP/search responses when the first match should stop the search.
+- Avoid `stream().forEach(...)` as the default for mutation or side effects. Use a loop when the point is "do this action for each item"; use a stream when the pipeline has a clear output such as a collection, map, grouped structure, joined string, future set, or bounded projection.
 - Do not mutate source collections inside streams. Error Prone checks this.
 - Treat `parallelStream()` as hidden common-pool async work. Avoid it by default in availability recomputes, UPC resolution, warm-data/cache loaders, common endpoints, and code already inside a named pool. Prefer sequential streams, batching, `Streams.parallelMap`, or explicit executors.
 - Streams are not presumed faster than loops. Use the form that makes cost and dataflow easiest to review.
@@ -401,7 +402,7 @@ const recipeUrls = [...document.querySelectorAll("url loc")].map(loc => loc.inne
 Use these while scanning:
 
 - New utility: search same behavior, move general code to existing helper/module, keep domain-specific names specific, add low-level tests.
-- Loop: stream/pipeline for pure transforms; keep loop for side effects, `ResultSet`, resources, early exit, exceptions, or ordered async. Avoid `parallelStream`; count hot-path passes.
+- Loop: stream/pipeline for pure transforms with clear outputs; keep loop for side effects, mutation, `ResultSet`, resources, early exit, exceptions, or ordered async. Avoid `stream().forEach(...)` as the default side-effect shape; avoid `parallelStream`; count hot-path passes.
 - Async: find executor/queue/pool/promise owner; make executor explicit; make failure/wait semantics visible; check SQS/SNS/Lambda concurrency/retry/delete; use repo helpers; batch same-table writes; extract sync work, not future wrappers.
 - Fetch/load: check columns/entities and predicates; group lookups; reuse futures/results; dedupe by domain key; prefer bulk/cache-aware loads; avoid bypassing broken paths; dirty caches after direct updates.
 - Jurl/external HTTP: distinguish failed fetch from cacheable no-data; keep cacheability validation in `goThen`; remember only non-null `goThen` returns are success, while `null`/throw are failed attempts; use typed DTO/body/query helpers; key cache by content identity, not incidental auth; whitelist success/no-result cases when retries are high.
