@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tech Errors Watcher"
+  short_description: "Watch Datadog tech errors with PR approval"
+  default_prompt: "Use $tech-errors-watcher to start or repair the lightweight Slack watcher for #tech_errors and #tech_errors_high_priority."
