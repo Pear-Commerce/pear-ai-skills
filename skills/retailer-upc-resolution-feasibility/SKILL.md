@@ -108,6 +108,8 @@ Populate `SRetailerItemData` fields when available:
 - `description`
 - `secondaryId` for SKU or variant id when useful
 
+Keep `itemId` compact. Do not set `SRetailerItemData.itemId` to a full `http://` or `https://` PDP URL just because the route found a link. Store the retailer's stable product id, SKU, slug, variant id, or path fragment in `itemId`; store the full PDP in `url`; and use `secondaryId` for the extra stable slug/SKU/catalog value needed to rebuild the URL. A URL-shaped `itemId` is a last-resort exception only when the retailer exposes no stable id or id-plus-secondary-id combination, and the disabled/passing probe must document that exception explicitly.
+
 For resolver search text, prefer existing helpers like `buildLikelyNameOrBrandSearchTerm(item)`.
 
 When graduating to an `ItemIdInfoResolver`, make the eventual `requiresName()` value match the proven route. If the route searches by name/brand, calls a helper that builds a name search term, or passes `item.name()`/a name hint into the client method to find candidates, `requiresName()` must be `true`. If the route is exact-UPC/barcode-only, do not keep a name parameter in the production client API just because the feasibility helper had one; use a UPC-only signature and add a no-name resolver test.
