@@ -1,0 +1,3 @@
+directory:
+  placement: "auxiliary"
+  reason: "Reusable helper for building Slack watcher and PR approval automations."
