@@ -36,7 +36,7 @@ Read recent #tech-log messages, including bot messages. For each in-scope failur
 
 Scan recent merged PRs for likely culprits before posting. Use the failing run head SHA, failure file/test names, compiler symbols, `git log`, `git blame`, and recent merged PR metadata to identify the PR most likely to have introduced the break. Prefer PRs merged after the last known green master run or shortly before the failing run. If one culprit is reasonably clear, include the PR link and author in the Slack reply. Resolve the GitHub author to a Slack user with `slack_search_users` by name/email/login when possible and tag them with `<@USERID>`. If mapping is uncertain, name the GitHub author without tagging. Do not tag multiple people unless the evidence is genuinely shared.
 
-Post one concise Slack thread reply on the failure message with:
+Post one concise Slack thread reply on the failure message. Start the reply with `Automatic reply triggered by $tech-log-test-failure-watcher.` Then include:
 - the failing job/test/build step
 - the important error text or stack frame, paraphrased when long
 - the likely root cause
