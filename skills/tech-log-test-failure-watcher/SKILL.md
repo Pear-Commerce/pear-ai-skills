@@ -49,6 +49,8 @@ Approval UX: if the available Slack tool supports interactive yes/no buttons, us
 Thanks,
 Codex
 
+When reading an approval reply, mark the exact Slack message treated as affirmation. Prefer adding a Slack reaction such as `:hourglass_flowing_sand:` or `:eyes:` to that approval message if the available Slack tool supports reactions. If reactions are not available, post one short thread reply that starts with `:hourglass_flowing_sand:` and identifies the approval message or quote. When the fix PR is created, update that same approval marker to `:white_check_mark:` if reactions/editing allow it, and always add a thread comment linking the PR. If reactions are unavailable, post a new `:white_check_mark:` thread reply with the PR link. Do not mark ambiguous replies as approvals.
+
 On later passes, revisit analyzed in-scope threads and look for human yes/no replies. If no approval has arrived, do nothing except report notable blockers in this Codex thread. If a thread is declined, reply once acknowledging the decline and do not open a PR.
 
 When approved, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. Create a sibling worktree from the latest `origin/master`, never the user's primary checkout, on a unique `codex/` branch named for the run or failing test. Make the smallest code or test-data fix that addresses the specific failure. Prefer repo helpers and patterns. Run the most focused practical verification; if local Gradle/toolchain setup would become noisy, use cheap local checks and GitHub CI as the source of truth per Pear PR flow.
