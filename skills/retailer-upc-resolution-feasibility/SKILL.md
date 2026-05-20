@@ -108,7 +108,7 @@ Populate `SRetailerItemData` fields when available:
 - `description`
 - `secondaryId` for SKU or variant id when useful
 
-Keep `itemId` compact. Do not set `SRetailerItemData.itemId` to a full `http://` or `https://` PDP URL just because the route found a link. Store the retailer's stable product id, SKU, slug, variant id, or path fragment in `itemId`; store the full PDP in `url`; and use `secondaryId` for the extra stable slug/SKU/catalog value needed to rebuild the URL. A URL-shaped `itemId` is a last-resort exception only when the retailer exposes no stable id or id-plus-secondary-id combination, and the disabled/passing probe must document that exception explicitly.
+Always fill `SRetailerItemData.url` when the route returns a PDP link or when the PDP can be deterministically built from the parsed ids. Keep `itemId` compact. Do not set `SRetailerItemData.itemId` to a full `http://` or `https://` PDP URL just because the route found a link. Store the retailer's stable product id, SKU, slug, variant id, or path fragment in `itemId`; store the full PDP in `url`; and use `secondaryId` for the extra stable slug/SKU/catalog value needed to rebuild the URL. A URL-shaped `itemId` is a last-resort exception only when the retailer exposes no stable id or id-plus-secondary-id combination, and the disabled/passing probe must document that exception explicitly.
 
 For resolver search text, prefer existing helpers like `buildLikelyNameOrBrandSearchTerm(item)`.
 
@@ -187,7 +187,7 @@ Add focused JUnit methods annotated with both `@Test` and `@Script`; these are f
 - search by name returns candidates with item ids and URLs
 - PDP/detail fetch exposes UPC evidence
 - direct UPC route works when available
-- end-to-end resolver returns the expected `itemId` for the sample UPC/name
+- end-to-end resolver returns the expected compact `itemId` and expected `url` for the sample UPC/name
 
 If multiple live `@Script` probes in one class share proxy/cache state or retailer sessions with store and availability probes, annotate the class or methods with `@Execution(ExecutionMode.SAME_THREAD)` so JUnit parallelism does not make the feasibility suite flaky.
 
