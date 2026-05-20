@@ -4,6 +4,8 @@
 
 All Pear intern apps share one Google OAuth client. The shared auth service at `auth.intern.pearcommerce.com` owns the Google callback. Hosted apps never register their own Google redirect URIs — they only need to trust the signed token returned by the shared service.
 
+Never rotate or replace `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` while fixing a single app. Those credentials belong to `auth-intern` and changing them is a global auth change that can break every app using shared login. For app-specific auth failures, debug callback routing, cookies/state, hosted domain checks, and `AUTH_SHARED_SECRET` first. Only perform a Google OAuth client rotation when explicitly requested as a coordinated global auth operation.
+
 ---
 
 ## Stable Google Redirect URI
@@ -67,7 +69,7 @@ AUTH_SHARED_SECRET=<retrieve from Pear secrets store>
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 ```
 
-Use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared auth service while fixing a single app. If a callback reports `Bad shared auth token signature`, update only the affected app's Worker secret first.
+Use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared token secret while fixing a single app. If a callback reports `Bad shared auth token signature`, update only the affected app's Worker secret first.
 
 For Lightsail/Node apps, also add:
 

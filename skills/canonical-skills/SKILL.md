@@ -116,7 +116,9 @@ All Pear skill creation and edits start in the canonical repo. This is mandatory
 
 Do not make an installed or repo-local skill copy the source of truth. Installed copies under `$HOME/.codex/skills`, Claude Desktop, or app repos are mirrors. If you accidentally edited a mirror first, treat it as a scratch diff: port the change into `$HOME/pear-ai-skills`, commit and push the canonical repo, then run the installer to sync the mirror back before the final response.
 
-Do not end a skill-editing turn with only local or installed-copy changes unless pushing is genuinely blocked. The normal done state for skill edits is: canonical repo updated, committed, pushed to `Pear-Commerce/pear-ai-skills`, synced into installed targets, and verified by comparing the touched installed `SKILL.md` files against the canonical files. If any part cannot be completed, say exactly which part is blocked and why.
+Do not end a skill-editing turn with only local or installed-copy changes unless pushing is genuinely blocked. Skill edits must be committed and pushed to `Pear-Commerce/pear-ai-skills` in the same turn, immediately after the requested edit and any lightweight verification. Do not batch skill changes for a later turn, and do not leave canonical skill diffs sitting only in the local checkout.
+
+The normal done state for skill edits is: canonical repo updated, staged with only the intended skill files, committed, pushed to `Pear-Commerce/pear-ai-skills`, synced into installed targets, and verified by comparing the touched installed `SKILL.md` files against the canonical files. If any part cannot be completed, say exactly which part is blocked and why.
 
 1. Bootstrap tools and pull the canonical repo first:
    ```bash
@@ -140,7 +142,7 @@ Do not end a skill-editing turn with only local or installed-copy changes unless
    ```
 3. Create or edit `skills/<skill-name>/SKILL.md` in `$PEAR_AI_SKILLS_REPO`.
 4. Keep the skill concise, with clear YAML `name` and `description`. Add optional assistant metadata files, such as `agents/openai.yaml`, only when a target UI or assistant integration uses them. Do not create, require, or default skill icons; skill metadata should focus on names, descriptions, instructions, and target-specific prompts.
-5. Commit and push `Pear-Commerce/pear-ai-skills`.
+5. Immediately stage only the intended skill files, commit them, and push `Pear-Commerce/pear-ai-skills`. Do not sweep unrelated untracked skill directories or user edits into the commit.
 6. Copy the changed skill into any repo-local or installed copies that must stay in sync.
 7. For app repos other than `api.pearcommerce.com`, commit and push those synced copies directly after verification.
 8. For `api.pearcommerce.com`, use a `codex/` branch and open a pull request instead of pushing directly to `master`.

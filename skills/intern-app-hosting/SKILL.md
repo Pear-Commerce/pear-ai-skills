@@ -277,13 +277,15 @@ If this is happening, the score recovers on its own within minutes to hours. To 
 
 All apps use the shared Google OAuth client at `auth.intern.pearcommerce.com`. No app should register its own Google redirect URI.
 
+**Never rotate or replace the shared Google OAuth client secret while fixing an app.** `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` belong only to the shared `auth-intern` service and affect every intern app. If Google auth is failing for one app, leave the Google OAuth client alone; fix that app's callback, state/cookie handling, domain config, or `AUTH_SHARED_SECRET` instead. Only change `auth-intern` Google client credentials when the user explicitly asks for a global auth rotation and you have a coordinated rollout plan for all apps.
+
 Read `references/shared-auth-contract.md` for the full contract. The key points:
 
 - **Login start**: app redirects user to `https://auth.intern.pearcommerce.com/auth/google/start` with `return_to`, `state`, `nonce`, `hosted_domain`, `app_name`
 - **Callback**: shared auth service completes Google OAuth and redirects back to the app's callback URL with `state` and a signed `session_token`
 - **Validation**: app validates `state`, validates `session_token` using `AUTH_SHARED_SECRET`, checks nonce and `hosted_domain`, then creates a local session
 
-**Important: do not rotate or reinterpret `AUTH_SHARED_SECRET`.** The auth service and every hosted app must use the exact same byte string. When fixing one app, update only that app's secret unless the user explicitly asks for a shared rotation.
+**Important: do not rotate or reinterpret `AUTH_SHARED_SECRET`.** The auth service and every hosted app must use the exact same byte string. When fixing one app, update only that app's secret unless the user explicitly asks for a shared-token rotation.
 
 At Pear, the safe source for Worker secret setup is the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1`. Do not JSON-parse it, pick an inner field, trim quotes from it, or substitute a stale KV value. If stores disagree, treat the currently deployed auth service as the source of truth and verify candidate values against a fresh `session_token` before setting the app secret.
 
