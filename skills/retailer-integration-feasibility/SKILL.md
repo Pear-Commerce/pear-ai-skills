@@ -52,6 +52,8 @@ Before creating a new feasibility file, search for an existing retailer `*Plan.j
 
 When the user asks for production wiring, graduate the proven code into the existing owner area, usually `src/com/pear/itemurlupdater`, `src/com/pear/upcresolution`, `src/com/pear/jobs/retailer`, or a retailer-specific package already used by similar code.
 
+For retailer setup-only work, do not infer availability. Create the retailer row and display setup only. Do not add a static availability updater, dummy store importer, location-agnostic ship-to-home flag, or constant `AVAILABLE` statuses unless a focused availability feasibility probe already proved live buyability for the supplied item and mode.
+
 When creating the PR for a retailer feasibility pass, use a simple title:
 
 ```text

@@ -45,6 +45,8 @@ Turn a proven retailer feasibility scan into production code:
 
 End state for create/implement requests: production resolver/updater/batch/store/migration classes plus production `@Script` coverage. Do not leave both those production classes and `test/com/pear/retailerFeasibility/**` plan files in the PR unless the user explicitly asks to preserve a research artifact.
 
+For retailer setup-only requests, add only the `RetailPartner` setup, display assets, and fields that are actually proven. Do not add an availability updater, store importer, resolver, static store stub, `locationAgnosticShipToHome = true`, or other availability flags just to make the retailer look wired. If no live availability route has been proven, the production test should assert no updater is registered for the new enum.
+
 ## Retailer Module Layout
 
 Keep retailer-specific production code together. For a new standalone retailer, create a package like `src/com/pear/<retailer>/` and put the retailer client/API helpers, DTOs, `ItemIdInfoResolver`, `UPCRetailerZipAvailabilityRecomputer`, optional `BatchAvailabilityUpdater`, store import artifact helpers, and retailer-specific `@SimpleORMDataMigration` class in that package. Prefer a `<Retailer>DataImports` class in the same module for setup and future retailer migrations instead of adding new retailer setup methods to broad catch-all classes such as `DataImports`.
@@ -87,7 +89,7 @@ Usually set:
 - `itemUpdateConfiguration = new ItemUpdaterConfiguration()` when absent
 - `itemUpdateConfiguration.itemUpdaterClass` only when no updater is discovered by `retailerEnums()` or when cleaning a known stale/default value; do not treat it as taking precedence over `retailerEnums()` discovery
 - `itemAvailabilityDependsOnZip = true` for store-specific availability checks, `false` for location-independent checks
-- `locationAgnosticShipToHome = true` when ship-to-home availability exists and does not vary by location
+- `locationAgnosticShipToHome = true` only when a live ship-to-home availability route exists and does not vary by location; do not set it merely because the retailer has an ecommerce site
 - `availabilitySharedImagesAndIds = null` for a standalone retailer unless it intentionally shares a platform resolver/updater
 - `servicesEverywhere = false` and `servicesEverywhereCanada = false` for now unless the user or existing platform pattern says otherwise
 
@@ -131,6 +133,8 @@ When `secondaryId` is introduced for URL reconstruction, keep resolver outputs i
 
 New availability updater classes should extend `UPCRetailerZipAvailabilityRecomputer`. In user-facing prose this is the availability updater; in code use the actual base class name.
 
+Do not create a `UPCRetailerStaticAvailabilityRecomputer` subclass as a placeholder, as a PDP URL helper, or as a store-import stub. That base class has a final recompute method that writes fixed statuses, and its defaults are `AVAILABLE`; a new static updater therefore asserts item availability for every stored item unless carefully overridden. Use it only when live feasibility has proven fixed-status semantics for the retailer surface, or when maintaining a documented legacy integration. If availability is not proven yet, omit the updater entirely.
+
 Registration:
 
 - Implement `retailerEnums()` on the updater with the retailer enum(s). `UPCRetailerZipAvailabilityRecomputer.getInstance(...)` discovers updater classes from `retailerEnums()` and that discovery is the primary production registration path.
@@ -144,6 +148,7 @@ Implement availability checks as store-id based going forward:
 - Set `inStoreStatus` only when the retailer returns a store-specific pickup/in-store result or the in-stock result changes with store.
 - Set `shipToHomeStatus` only when the retailer returns a separate shipping/ecommerce availability result.
 - Do not mirror in-store status into ship-to-home or ship-to-home status into in-store.
+- Never return `AVAILABLE` from `inStoreStatus()` or `shipToHomeStatus()` just because the retailer is live, has a PDP, or accepts ecommerce orders generally. `AVAILABLE` requires live route proof for the supplied item id/UPC/PDP and fulfillment mode. If a mode is unsupported, return `INVALID`; if the route cannot currently be proven, do not register the updater.
 
 URL methods:
 
