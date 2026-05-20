@@ -34,11 +34,14 @@ Use Slack and GitHub to watch #tech-log (channel ID C062H588MJM) for Pear api.pe
 
 Read recent #tech-log messages, including bot messages. For each in-scope failure, read the Slack thread first and skip it if Codex has already posted a triage reply for that run or if a PR/fix flow is already linked in the thread. Extract the GitHub Actions run URL and inspect the run, failed jobs, annotations, and logs with GitHub tools or `gh`. Determine the concrete failing test/build step, the most likely code cause, and the smallest surgical fix. Do not edit code during this initial analysis.
 
+Scan recent merged PRs for likely culprits before posting. Use the failing run head SHA, failure file/test names, compiler symbols, `git log`, `git blame`, and recent merged PR metadata to identify the PR most likely to have introduced the break. Prefer PRs merged after the last known green master run or shortly before the failing run. If one culprit is reasonably clear, include the PR link and author in the Slack reply. Resolve the GitHub author to a Slack user with `slack_search_users` by name/email/login when possible and tag them with `<@USERID>`. If mapping is uncertain, name the GitHub author without tagging. Do not tag multiple people unless the evidence is genuinely shared.
+
 Post one concise Slack thread reply on the failure message with:
 - the failing job/test/build step
 - the important error text or stack frame, paraphrased when long
 - the likely root cause
 - the simplest surgical fix
+- the likely culprit PR and author tag when found
 - a yes/no approval ask
 
 Approval UX: if the available Slack tool supports interactive yes/no buttons, use them. If it only supports markdown messages, ask people to reply `yes` or `no` in the thread. Treat a clear yes from any human in the thread (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval to fix, open a PR, watch it, and merge it when ready. Treat a clear no/stop as a decline for that run. End Codex-authored Slack posts with:
