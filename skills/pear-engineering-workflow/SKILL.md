@@ -165,7 +165,7 @@ SNOWFLAKE_CREDENTIALS_SECRET=snowflake-2025-12-01 \
 ./gradlew :bootRun
 ```
 
-Do not let `:bootRun` fall into empty/local MySQL by accident. If login, vendor pages, UPC imports, or other seeded data look empty/missing, first check whether the API was started without the dev-DB prefix. For `admin.pearcommerce.com`, use the existing npm/gulp/browser-sync workflow. If delegating startup/browser work, pass these expectations to the subagent.
+Do not let `:bootRun` fall into empty/local MySQL by accident. If login, vendor pages, UPC imports, or other seeded data look empty/missing, first check whether the API was started without the dev-DB prefix. For `admin.pearcommerce.com`, use the existing npm/gulp/browser-sync workflow, and when starting or debugging local admin, verify the paired local API on `8080` was started with `PEAR_LOCAL_USER_ID=2` as well as the shared dev-DB env. The admin process does not consume `PEAR_LOCAL_USER_ID` directly; local admin login depends on the API auth fallback. If delegating startup/browser work, pass these expectations to the subagent.
 
 Before browser checks, reuse already-running API/admin processes when available; otherwise start from repo patterns, track sessions, and stop only processes you started. When feasible, verify:
 
