@@ -143,11 +143,18 @@ Consider browser E2E for user-facing admin/offers/API-backed flows, especially U
 
 For Chrome/unpacked extension work, treat `manifest.json` versioning as part of the change. Bump the manifest `version` whenever extension behavior changes, verify Chrome is loading the path you edited (for example the profile's extension details or Secure Preferences path), reload the extension in that profile, and confirm `chrome://extensions` shows the new version. If the version does not change after reload, you probably edited a different checkout than the one Chrome has loaded; sync or patch the loaded path explicitly before retesting.
 
-For local dashboard work, inspect IntelliJ run configs before starting services. In `api.pearcommerce.com`, mirror `SpringBootTomcat` and always use the shared dev DB unless the user explicitly asks for a disposable local DB. Never start `:bootRun` with bare `./gradlew :bootRun`; use the env prefix and verify startup logs include `MYSQL_HOST=analytics-database.pearcommerce.com`. Gradle example:
+For local dashboard work, inspect IntelliJ run configs before starting services. In `api.pearcommerce.com`, mirror `SpringBootTomcat` and always use the shared dev DB unless the user explicitly asks for a disposable local DB. Also set `PEAR_LOCAL_USER_ID=2` for local API starts so local auth can fall back to the Pear admin user when the browser has no valid `auth-token-v2` cookie. If using the repo helper, prefix it:
+
+```bash
+PEAR_LOCAL_USER_ID=2 ./devops/boot-run-from-intellij-config.py SpringBootTomcat
+```
+
+Never start `:bootRun` with bare `./gradlew :bootRun`; use the env prefix and verify startup logs include `MYSQL_HOST=analytics-database.pearcommerce.com` and process env includes `PEAR_LOCAL_USER_ID=2`. Gradle example:
 
 ```bash
 ENV=LOCAL \
 LOCAL_IP_ZIPCODE_OVERRIDE=55408 \
+PEAR_LOCAL_USER_ID=2 \
 MYSQL_CREDENTIALS_SECRET=prod-db-10-2025 \
 MYSQL_HOST=analytics-database.pearcommerce.com \
 MYSQL_HOST_READ=analytics-database.pearcommerce.com \
