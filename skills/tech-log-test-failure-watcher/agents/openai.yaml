@@ -1,0 +1,7 @@
+interface:
+  display_name: "Tech-log Test Watcher"
+  short_description: "Watch Slack CI failures and drive PR fixes"
+  default_prompt: "Use $tech-log-test-failure-watcher to start or repair the #tech-log test failure watcher."
+
+policy:
+  allow_implicit_invocation: true
