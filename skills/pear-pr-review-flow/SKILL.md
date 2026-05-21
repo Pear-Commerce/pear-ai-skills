@@ -189,6 +189,8 @@ When working on a Codex-authored PR, create a recurring review loop instead of r
 
 After a watcher verifies that the latest Copilot review produced no new comments, there are no unanswered actionable comments from any source, and required checks are green or only intentionally skipped/non-actionable, relax the cadence during weekends and off-hours instead of continuing a tight polling loop. Hourly checks are usually enough while the PR is quiet. If new actionable feedback, requested changes, failing checks, or mergeability problems appear, handle or report them promptly and tighten the cadence again while fixes or check reruns are active.
 
+PR watch automations should stay quiet overnight in the user's local timezone. Do not schedule PR watchers to run after 7:00pm or before 8:00am the next day. For normal quiet PR watchers, use a daytime-only weekly schedule such as `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU;BYHOUR=8,9,10,11,12,13,14,15,16,17,18;BYMINUTE=0`, which runs hourly from 8:00am through 6:00pm local time and then stays quiet overnight. Tighten or relax daytime polling only when the automation scheduler supports the same quiet window, and keep the overnight quiet window unless the user explicitly asks for around-the-clock monitoring.
+
 Before creating or updating the recurring loop, ask which autonomous actions the user wants unless the current conversation already clearly grants them. Use a concise question such as:
 
 ```text
