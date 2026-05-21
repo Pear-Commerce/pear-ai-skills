@@ -147,6 +147,24 @@ Could I get reviews when you have a minute?
 
 If the PR is urgent, a hotfix, or already landed, say that plainly and include the deploy or merge status if known.
 
+## Post-Merge Deploy And Sync
+
+When a PR workflow includes deploy or "sync to deploy" after merge, use the repo-native commands from `pear-engineering-workflow` rather than inventing deploy steps. From a clean, up-to-date checkout, run:
+
+```bash
+/Users/alexwyler/pear-scripts/sync-deploy-branch.sh
+```
+
+For `api.pearcommerce.com`, this syncs merged `master` into the API release-candidate deploy branch alias. For `admin.pearcommerce.com`, this syncs merged `master` into `deploy`, and that `deploy` branch push is the admin production deploy trigger.
+
+For API environment deploys, trigger GitHub Actions from `api.pearcommerce.com` with `zsh -lc` so the repo's Node/nvm tooling is available:
+
+```bash
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,pear-commerce-jobs'
+```
+
+Single-target shorthand: `dashboard` maps to `pear-commerce-dashboard`, `upc-resolution` maps to `pear-commerce-upc-resolution`, and `jobs` maps to `pear-commerce-jobs`. Monitor `deployment.yml` runs until the requested environments complete successfully, and report the run URLs or exact failure.
+
 ## Screenshot Evidence
 
 For user-facing admin, offers, dashboard, or extension changes, add screenshots or short videos to the PR when feasible. Cover each relevant state the reviewer needs to trust: loading, empty, success, error, disabled/no-extension, persisted/refreshed, and any manual override or warning state introduced by the PR. Prefer using the Chrome connector to drive the real local app/profile and capture screenshots manually from the browser flow. If Chrome is unavailable or live data is unstable, use a small local harness that renders the changed UI faithfully and say so in the PR. Host images somewhere reviewers can open, such as S3, and include concise captions in the PR body.

@@ -1,6 +1,6 @@
 ---
 name: pear-engineering-workflow
-description: Pear engineering workflow for editing, reviewing, debugging, or implementing in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, worktrees, db.sh real-data checks, production JSP probes for live JVM/service/controller checks, dev-DB startup, PearEntity serialization, and browser E2E verification.
+description: Pear engineering workflow for editing, reviewing, debugging, implementing, syncing deploy branches, or deploying in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, worktrees, db.sh real-data checks, production JSP probes for live JVM/service/controller checks, dev-DB startup, PearEntity serialization, deploy commands, and browser E2E verification.
 ---
 
 # Pear Engineering Workflow
@@ -136,6 +136,32 @@ Use `pear-prod-jsp` when the answer requires code running inside a live Pear Jav
 Prefer `db.sh` for pure data questions, local tests for pure code questions, and real HTTP/browser requests for endpoint routing, filters, auth, serialization, and user-visible behavior. Reach for a JSP when you need to call or inspect live Java methods directly. If a controller is involved, be explicit about what is being validated: use the real endpoint for request/response behavior; use a JSP to get Spring beans or call service/controller methods only when the live app context itself is the important part.
 
 When this applies, load and follow `pear-prod-jsp`: no-parameter preview with a `Run` button, no side effects on the preview path, deploy the preview without `--single`, show the full human run report on `run=true`, use `output=raw` only for formal artifacts, avoid secrets/customer dumps in source or output, and capture the run URL plus S3 source key. Treat controller/service/job calls that may write database rows, S3/R2, cache, queues, or downstream systems as writes/triggers and require the approval path from `pear-prod-jsp` before running them.
+
+## Deploy And Sync Commands
+
+When the user says "sync to deploy", run Pear's deploy-branch sync script from a clean, up-to-date checkout of the target repo:
+
+```bash
+/Users/alexwyler/pear-scripts/sync-deploy-branch.sh
+```
+
+For `api.pearcommerce.com`, this syncs `master` into the API release-candidate deploy branch alias, such as `deploy-YYYY-MM-DD-HH-MM`. For `admin.pearcommerce.com`, this syncs `master` into the `deploy` branch; that deploy-branch push is the admin production deploy trigger.
+
+When the user says "deploy" for API code, use the API repo's GitHub Actions deploy trigger, not a local build artifact. Run it from a clean, up-to-date `api.pearcommerce.com` checkout. In Codex shells, prefer `zsh -lc` so `nvm` exposes `node`, `npm`, and `npx` for `devops/env.sh`:
+
+```bash
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard'
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-upc-resolution'
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-jobs'
+```
+
+For a combined API deploy to dashboard, UPC resolution, and jobs:
+
+```bash
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,pear-commerce-jobs'
+```
+
+Short user phrases map naturally: "deploy to upc-resolution" means `-e pear-commerce-upc-resolution`; "deploy to dashboard" means `-e pear-commerce-dashboard`; "deploy to jobs" means `-e pear-commerce-jobs`. After triggering, monitor `deployment.yml` runs with `gh run list --workflow deployment.yml` or `gh run watch` until the requested environments complete successfully. Do not deploy Offers production from local artifacts; keep following the Offers deploy safety rules above.
 
 ## End-To-End Checks
 
