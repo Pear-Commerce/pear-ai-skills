@@ -47,7 +47,7 @@ New feature/domain helpers must default to Spring services with explicit constru
 
 Production API paths may serialize `PearEntity` objects through SimpleORM, which emits only `id` and `@SimpleORMField` fields. Plain public fields, `transient`, and `@JsonProperty` can pass local `ObjectMapper` tests yet disappear from real responses.
 
-For hydrated/computed/UI-only/response-only data, prefer explicit response DTOs. Add `@SimpleORMField` only for intentional DB schema/storage. Tests should exercise the endpoint response, DTO, or production serializer; avoid `new ObjectMapper()` entity tests unless that is the real call path.
+Strict rule: never put any value the client must receive on a `PearEntity` as a `transient` field. Treat `transient` as not JSON-serialized in real PearEntity API responses, even if a local Jackson/ObjectMapper test appears to include it or a `@JsonProperty` annotation is present. For hydrated/computed/UI-only/response-only data, use an explicit response DTO or response-shaping mapper. Add `@SimpleORMField` only for intentional DB schema/storage. Tests should exercise the endpoint response, DTO, or production serializer; avoid `new ObjectMapper()` entity tests unless that is the real call path.
 
 ## Serialized JSON DTOs
 

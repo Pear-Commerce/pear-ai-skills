@@ -59,6 +59,12 @@ public class MyEntity extends PearEntity { public Long id; ... }
 
 `onSave()` / `onLoad()` hooks called automatically around persistence operations.
 
+## Entity Response Serialization
+
+PearEntity response serialization is not ordinary Jackson field serialization. Production API paths may serialize entities through SimpleORM, which emits only `id` and `@SimpleORMField` fields.
+
+Strict rule: never put any value the client must receive on a `PearEntity` as `transient`. `transient` fields are not reliable JSON response fields, and `@JsonProperty` or a passing local `ObjectMapper` test does not make them safe in real PearEntity endpoint responses. Use an explicit response DTO or mapper for hydrated/computed/UI-only fields. Add `@SimpleORMField` only when the value is intentionally persisted schema.
+
 ## Delete
 
 ```java
