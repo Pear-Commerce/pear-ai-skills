@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slack Prod JSP Approval"
+  short_description: "Concise Slack approval before prod JSP runs"
+  default_prompt: "Use $slack-prod-jsp-approval to ask for clear approval and scope before a production JSP run."
