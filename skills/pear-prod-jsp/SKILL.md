@@ -18,6 +18,7 @@ Use a temporary JSP when the useful execution context is the live Pear server: p
 - Treat `devops/jsp.sh` output as the compile/load authority. It already copies the JSP into the live container and curls the no-parameter page with `pear_debug=true`; read that output for JSP compilation errors such as `Unable to compile class for JSP`. Do not create ad hoc shell scripts, `ec2-exec` wrappers, docker-curl helpers, or alternate compile-check paths for a JSP you just loaded. If the `jsp.sh` output is truncated, noisy, or inconclusive, rerun `devops/jsp.sh` on the JSP and inspect that output instead of inventing a second script.
 - Run the compile/deploy preview without `--single` when the no-parameter path is side-effect-free; this fans the JSP out to every server, so a later browser request can land on any backend and still find the JSP. Use `--single` only when invoking side effects from the helper path, which should usually be avoided in favor of the browser `Run` button.
 - By default, make the helpful execution report visible: title, steps, timings, context, stack traces, and verification notes are the point of most JSPs. Do not add a `debug` parameter or collapse that report. Use `output=raw` only when the user needs a formal artifact without the human report.
+- For long-running migrations, broad loops, resolver/import batches, or anything likely to outlive a comfortable browser request, emit progress to both the response and server logs. Use a stable `LOG` prefix plus `System.out.println(...)` or `Resources.global().logger.info(...)` at run start, each major phase, periodic item milestones, errors, and run finish so `devops/logs.sh` can track the job even if the browser disconnects.
 - Be explicit about environment. `jsp.sh` defaults to `PROD` when `-e` is omitted, so pass `-e PROD`, `-e TEST`, or the intended env deliberately.
 - Make runs idempotent and narrow when there is any chance of duplicate work: hard-code or parameterize exact IDs, verify old values before changing them, print skips, and ensure a second hit of the random JSP URL cannot duplicate work.
 - When changing ORM-backed rows, prefer `Persistence.global().orm()`/entity `save` over direct SQL so PearSimpleORM hooks, history, and cache behavior run normally. If direct SQL is necessary, state the cache/ORM bypass risk on the preview page.
@@ -122,6 +123,11 @@ Use HTML for ordinary production one-off JSPs. The default page is a preview/app
 <%
 String LOG = "[prod-jsp-example] ";
 boolean run = "true".equalsIgnoreCase(String.valueOf(request.getParameter("run")));
+java.util.function.Consumer<String> progressLog = message -> {
+    String line = LOG + message;
+    System.out.println(line);
+    Resources.global().logger.info(line);
+};
 try {
     if (!run) {
 %>
@@ -144,11 +150,14 @@ try {
     out.println("<h1>Run Report</h1>");
     out.println("<pre>");
     out.println(LOG + "env=" + ServerEnv.global().env + " server=" + ServerEnv.global().server);
+    progressLog.accept("run-start env=" + ServerEnv.global().env + " server=" + ServerEnv.global().server);
 
     // Do the run action here.
     out.println(LOG + "step 1 ok: describe the result");
+    progressLog.accept("step-1-ok");
 
     out.println(LOG + "done in " + ((System.nanoTime() - start) / 1_000_000.0) + " ms");
+    progressLog.accept("run-finish elapsedMs=" + ((System.nanoTime() - start) / 1_000_000));
     out.println("</pre>");
 } catch (Throwable e) {
     Resources.global().logger.error(LOG + "failed", e);
@@ -162,7 +171,7 @@ Inside loops, catch expected per-item `RuntimeException`s only when continuing i
 ## Workflow
 
 1. Decide the run purpose, target scope, and whether a formal `output=raw` artifact is needed.
-2. Write the JSP so the no-parameter path only prints a preview/plan and `Run` button. Include exact target IDs/counts/current values, expected actions, idempotency guards, and verification steps. If there is a formal output contract, include a direct `output=raw` URL or `curl` command too.
+2. Write the JSP so the no-parameter path only prints a preview/plan and `Run` button. Include exact target IDs/counts/current values, expected actions, idempotency guards, and verification steps. If the run is long or touches many items, include response progress lines and server-side progress logs with a stable prefix suitable for `devops/logs.sh`. If there is a formal output contract, include a direct `output=raw` URL or `curl` command too.
 3. Create the JSP as a scratch file, usually under `/tmp`, unless the user wants a persistent repo JSP.
 4. Keep imports minimal, but use real Pear helpers (`Persistence.global().orm()`, `S3Util`, `SpringApplicationContextProvider`, `JDBCUtil`, `JSON`, `Parallel`) instead of local reimplementations.
 5. Deploy/compile with an explicit env and no `--single`, relying on the no-parameter side-effect-free preview:
