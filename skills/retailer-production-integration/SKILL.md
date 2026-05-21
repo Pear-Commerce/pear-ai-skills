@@ -18,7 +18,7 @@ If no proven feasibility plan, PR, or route exists, first use the relevant feasi
 
 Start with:
 
-- `$pear-engineering-workflow` for worktree, review, test, and Pear repo rules; follow its worktree decision before editing any repo files
+- `$pear-engineering-workflow` for worktree, pre-PR review, test, and Pear repo rules; follow its worktree decision before editing any repo files
 - `$pear-proxy` when moving any `LoggedJurl`/`JurlProxyFallback` route into production
 - `$pear-pr-review-flow` before creating or updating the PR
 
@@ -41,11 +41,16 @@ Turn a proven retailer feasibility scan into production code:
 7. Create a `BatchAvailabilityUpdater` only when it is efficient and justified.
 8. Add an `@Script` production verification test that can rerun the original route checks.
 9. Delete the feasibility plan files after their useful code and rerun logic have moved into production tests/classes.
-10. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
+10. Run the pre-PR Pear engineering review gate below.
+11. Use `$pear-pr-review-flow` to create, update, and monitor the PR.
 
 End state for create/implement requests: production resolver/updater/batch/store/migration classes plus production `@Script` coverage. Do not leave both those production classes and `test/com/pear/retailerFeasibility/**` plan files in the PR unless the user explicitly asks to preserve a research artifact.
 
 For retailer setup-only requests, add only the `RetailPartner` setup, display assets, and fields that are actually proven. Do not add an availability updater, store importer, resolver, static store stub, `locationAgnosticShipToHome = true`, or other availability flags just to make the retailer look wired. If no live availability route has been proven, the production test should assert no updater is registered for the new enum.
+
+## Pre-PR Pear Engineering Review
+
+Before creating retailer integration PRs, run `$pear-engineering-workflow`'s PR-improvement/review checklist on at least one representative completed retailer integration. For multi-retailer work, choose the most complete or highest-risk slice first, fix findings there, then apply the same review lessons across the remaining retailer PR branches before opening PRs. This review happens before `$pear-pr-review-flow`.
 
 ## Retailer Module Layout
 
