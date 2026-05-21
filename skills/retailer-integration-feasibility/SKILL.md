@@ -33,6 +33,8 @@ If the user asks for all three, work in this order: UPC resolution, availability
 
 For availability status planning, classify by location dependence rather than endpoint naming. A result that changes when store, zip, fulfillment node, or location context changes is the future `IN_STORE` signal even if the retailer calls the endpoint delivery, collection, fulfillment, or availability. A separate non-location-dependent ecommerce/global stock signal is the future `SHIP_TO_HOME` signal. If both exist, document both mappings; if only the global ecommerce signal exists, document `SHIP_TO_HOME` support and `IN_STORE` unsupported.
 
+When the future `SHIP_TO_HOME` signal is non-location-dependent, include `locationAgnosticShipToHome = true` in the production notes. This flag lets Pear reuse ship-to-home availability without recomputing it per store. For hybrid retailers, keep `itemAvailabilityDependsOnZip = true` when `IN_STORE` varies by store and also set `locationAgnosticShipToHome = true` when `SHIP_TO_HOME` is global. Leave the flag false when shipping/delivery availability depends on store, zip, region, fulfillment node, cart context, or selected location.
+
 For all live Java feasibility surfaces, local Chrome, local curl, local app, and `Type.NO_PROXY` success from a developer laptop are discovery evidence only, not proof, because the local IP is not Pear datacenter/proxy egress. Passing `@Script` probes and production-oriented resolver/updater/importer paths must use proxy-backed `JurlProxyFallback.Type` values and must exclude `Type.NO_PROXY` unless the user explicitly asks for local-only discovery. Store imports may use an explicitly approved browser-assisted one-off artifact when every Java/proxy route is blocked, but document that as reference-data extraction rather than a production-runnable Java/proxy route.
 
 If no `STATIC` or cheap static/provider-static route works for any surface, always check Android app calls before declaring the surface impossible or settling for expensive/heavy proxy routes such as `UNBLOCKER`, Scrapfly ASP, or ZenRows render, and app barcode/APIM strings are a reusable tactic when they can be replayed through a proxy. Inspect APK/XAPK strings and app traffic for mobile search, barcode, product, availability, cart, fulfillment, store-locator, APIM/gateway, GraphQL, public app headers, and stable parameter names.
@@ -81,7 +83,7 @@ Every combined `@Script` probe class should start with a compact comment like:
  * FEASIBILITY SUMMARY
  * Stores: PASS via store-locator JSON; STATIC works; 312 stores; sample storeId=123.
  * UPC resolution: PASS via name search + PDP embedded GTIN; UNBLOCKER required; sample UPC=...
- * Availability: PASS online-only via live product JSON stock/price plus enabled add-to-cart; maps to SHIP_TO_HOME; no location-dependent IN_STORE route found.
+ * Availability: PASS online-only via live product JSON stock/price plus enabled add-to-cart; maps to SHIP_TO_HOME; set locationAgnosticShipToHome=true; no location-dependent IN_STORE route found.
  */
 ```
 

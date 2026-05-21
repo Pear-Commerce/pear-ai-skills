@@ -88,8 +88,8 @@ Usually set:
 - `partnerType = PartnerType.NONE` unless a real partner/API/pixel relationship exists
 - `itemUpdateConfiguration = new ItemUpdaterConfiguration()` when absent
 - `itemUpdateConfiguration.itemUpdaterClass` only when no updater is discovered by `retailerEnums()` or when cleaning a known stale/default value; do not treat it as taking precedence over `retailerEnums()` discovery
-- `itemAvailabilityDependsOnZip = true` when any production availability signal varies by store, zip, fulfillment node, or location context; `false` only when every supported availability signal is location-independent
-- `locationAgnosticShipToHome = true` only when a live ship-to-home/ecommerce availability route exists and does not vary by store, zip, fulfillment node, or location context; do not set it merely because the retailer has an ecommerce site
+- `itemAvailabilityDependsOnZip = true` when any production availability signal varies by store, zip, fulfillment node, or location context; `false` only when every supported availability signal is location-independent.
+- `locationAgnosticShipToHome = true` when the live `shipToHomeStatus` route exists and does not consume or vary by store, zip, fulfillment node, or location context. This is the flag that lets Pear reuse ship-to-home availability without rechecking it for every store. Set it for online-only retailers whose checker only writes global `SHIP_TO_HOME`; also set it for hybrid retailers where `IN_STORE` is location-dependent but `SHIP_TO_HOME` comes from a separate global ecommerce signal. Do not set it merely because the retailer has an ecommerce site, and do not set it when delivery/ship availability varies by store, zip, region, fulfillment node, cart context, or selected location.
 - `availabilitySharedImagesAndIds = null` for a standalone retailer unless it intentionally shares a platform resolver/updater
 - `servicesEverywhere = false` and `servicesEverywhereCanada = false` for now unless the user or existing platform pattern says otherwise
 
@@ -149,6 +149,7 @@ Implement availability checks as store-id based going forward:
 - When the endpoint returns explicit separate in-store/pickup and ship-to-home/delivery/ecommerce availability fields, set both statuses from their own fields.
 - When one result varies by store/location and another result does not vary by store/location, map the location-dependent result to `inStoreStatus` and the location-independent result to `shipToHomeStatus`.
 - When the only proven result is location-independent ecommerce availability, set `shipToHomeStatus` from that result and leave `inStoreStatus` `INVALID`.
+- When `shipToHomeStatus` is location-independent, make the checker able to compute that side without a store id and set `RetailPartner.locationAgnosticShipToHome = true` in the migration. Keep `itemAvailabilityDependsOnZip = true` if `inStoreStatus` still varies by store; use `itemAvailabilityDependsOnZip = false` only when every supported status is location-independent.
 - Do not mirror in-store status into ship-to-home or ship-to-home status into in-store.
 - Never return `AVAILABLE` from `inStoreStatus()` or `shipToHomeStatus()` just because the retailer is live, has a PDP, or accepts ecommerce orders generally. `AVAILABLE` requires live route proof for the supplied item id/UPC/PDP and fulfillment mode. If a mode is unsupported, return `INVALID`; if the route cannot currently be proven, do not register the updater.
 
@@ -210,7 +211,7 @@ Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or
 - in-store availability sets `IN_STORE` status when inventory varies by store/location, regardless of whether the upstream endpoint labels it pickup, delivery, collection, or fulfillment.
 - ship-to-home availability sets `SHIP_TO_HOME` status when a separate location-independent shipping/ecommerce signal exists, or when the only proven availability signal is location-independent ecommerce stock.
 - when both location-dependent and location-independent inventory signals exist, the test proves they map to `IN_STORE` and `SHIP_TO_HOME` separately.
-- if `locationAgnosticShipToHome = true`, the ship-to-home test should not pass a `storeId`.
+- if `locationAgnosticShipToHome = true`, the retailer setup test asserts it, and the ship-to-home recompute test should pass a blank/null `storeId` or prove that changing store ids does not change the ship-to-home status.
 - `RetailPartner.getAvailabilityUpdater(...)` returns the intended recomputer.
 - batch updater behavior when one is added.
 

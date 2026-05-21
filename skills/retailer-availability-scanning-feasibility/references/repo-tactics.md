@@ -95,6 +95,7 @@ Populate these fields:
 - Do not convert bot blocks into `UNAVAILABLE`; use exceptions or UNKNOWN with logging.
 - Keep in-store and ship-to-home separate. Some retailers intentionally set one side INVALID/UNKNOWN when the route does not support that mode.
 - Map in-store vs ship-to-home by location dependence, not only by endpoint labels. Inventory that changes by store, zip, fulfillment node, or location context is the `IN_STORE` signal. A separate global/location-independent ecommerce signal is the `SHIP_TO_HOME` signal. When both exist, set both from their own evidence; when only global ecommerce availability exists, set `SHIP_TO_HOME` and leave `IN_STORE` unsupported.
+- Set `RetailPartner.locationAgnosticShipToHome = true` when `SHIP_TO_HOME` comes from a location-independent signal. It allows Pear loaders and callers to reuse a null-store/null-zip ship-to-home availability instead of recomputing the same ecommerce status for every store. In hybrid integrations, this can be true while `itemAvailabilityDependsOnZip` is also true for the store-varying `IN_STORE` side.
 
 Examples:
 

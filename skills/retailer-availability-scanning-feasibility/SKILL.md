@@ -17,6 +17,8 @@ Classify Pear availability statuses by whether the inventory signal varies by st
 
 When a route exposes both a location-dependent inventory result and a location-independent ecommerce/global result, document both: the location-dependent result should become `inStoreStatus`, and the non-location-dependent result should become `shipToHomeStatus` in production. When the only proven route is location-independent online ecommerce stock/buyability, document it as `SHIP_TO_HOME` support with `IN_STORE` unsupported. Never mirror one fulfillment mode into the other without distinct live evidence.
 
+When the proven future `SHIP_TO_HOME` signal is location-independent, call out that production should set `RetailPartner.locationAgnosticShipToHome = true`. That flag matters even for hybrid retailers: `itemAvailabilityDependsOnZip` can stay `true` for store-varying `IN_STORE` checks while `locationAgnosticShipToHome = true` lets Pear reuse the global ship-to-home result instead of rechecking it for every store. Do not recommend the flag when delivery/ship availability varies by store, zip, region, fulfillment node, cart context, or selected location.
+
 ## Production-Runnable Requirement
 
 The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.
@@ -208,6 +210,7 @@ Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibili
 - or, for online availability access, a known item id/UPC/PDP returns a non-null live ecommerce status, price, and buyability/add-to-cart signal without pretending it is store-specific
 - if an availability result varies by store/location, the plan comments identify it as the future `IN_STORE` source, even when the retailer labels the endpoint delivery, collection, or fulfillment
 - if both location-dependent and location-independent availability signals exist, the plan records how production should map them separately to `IN_STORE` and `SHIP_TO_HOME`
+- if the future `SHIP_TO_HOME` signal is location-independent, the plan comments record that production should set `locationAgnosticShipToHome = true`
 - a known available item returns `AVAILABLE` when the sample is stable enough
 - a known unavailable item returns `UNAVAILABLE` when available
 - price is parsed when the retailer exposes store-specific price
