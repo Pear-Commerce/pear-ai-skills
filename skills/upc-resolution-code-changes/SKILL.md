@@ -14,16 +14,17 @@ This combines the former graph-change and local devdb verification workflows. If
 1. Use `pear-engineering-workflow` first for the normal Pear repo/worktree/review cleanup rules.
 2. Keep graph and resolver edits narrow. Prefer existing graph node patterns, app config toggles, `AWSAppConfigUtil` access, and existing score/candidate helpers over new one-off logic.
 3. For concurrency, resolver timing, queues, locks, or futures, also use `pear-concurrency`; do not cancel existing resolver work unless the user explicitly asked for cancellation semantics.
-4. Add or update focused deterministic tests for the exact behavior touched. Common anchors include:
+4. For UPC evidence validation, do not add direct string matching such as raw `equals`, `contains`, prefix/suffix checks, or hand-written no-country/no-check-digit comparisons. Use `UPC.isAUPCMatch(...)` as the primary gate. If retailer evidence may include compound MPN/UPC fields, labels, punctuation, or multiple identifiers, extract numeric candidate sections and call `UPC.isAUPCMatch(...)` on each plausible section through a named helper such as `upcEvidenceMatches(...)`.
+5. Add or update focused deterministic tests for the exact behavior touched. Common anchors include:
    - `UPCResolutionSpeedupTest`
    - `TineyeUtilTest`
    - targeted `UPCResoGraph*` tests or resolver tests for the touched node/resolver
-5. Run focused checks, at minimum:
+6. Run focused checks, at minimum:
    ```bash
    ./gradlew compileJava -PnoLint --console=plain
    ```
    Prefer a targeted `testCI --tests ... -PnoLint --console=plain` run for the changed code as well. If the Gradle test loads Spring/Pear resources, SimpleORM, real entities, UPC resolver scripts, AppConfig, Snowflake, or live retailer data, prefix it with the shared devdb env from `references/devdb-sample.md`; do not let it fall back to local MySQL. Pure compile and pure unit tests can run without the DB prefix.
-6. Supplement narrow checks with local devdb coverage before calling UPC resolution behavior done. This is especially important for image comparison, TinEye, direct/trusted candidates, known item details, retailer source caps, resolver scheduling/gating, retailer UPC feasibility scripts, or any change that could alter the selected item ID.
+7. Supplement narrow checks with local devdb coverage before calling UPC resolution behavior done. This is especially important for image comparison, TinEye, direct/trusted candidates, known item details, retailer source caps, resolver scheduling/gating, retailer UPC feasibility scripts, or any change that could alter the selected item ID.
 
 ## Local Devdb Verification
 

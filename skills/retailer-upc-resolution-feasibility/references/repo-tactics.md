@@ -29,6 +29,12 @@ Implement `_getItemIdInfoCandidates(...)` when the route is search-first or name
 
 If one candidate has matching UPC evidence, direct resolution is faster and less noisy than forcing graph search to rediscover it.
 
+## UPC Evidence Matching
+
+Do not validate UPC evidence with direct string matching. Avoid raw `equals`, `contains`, prefix/suffix checks, and hand-written no-country/no-check-digit comparisons against the target UPC. These checks miss valid GTIN variants and can accidentally accept unrelated numeric substrings.
+
+Use `UPC.isAUPCMatch(evidence, targetUpc)` as the primary evidence gate. If evidence is embedded in a compound field such as `mpn / itemId`, wrapped in labels, or mixed with other identifiers, extract numeric candidate sections and call `UPC.isAUPCMatch(...)` on each plausible section. Keep that in a named helper such as `upcEvidenceMatches(...)`, and test both a valid compound-field match and an unrelated-number non-match.
+
 ## Graph Search Behavior To Respect
 
 - `UPCResoGraphItemIdInfoResolvers` runs direct resolvers and candidate resolvers, skips duplicate resolver classes, and treats platform resolvers separately.
@@ -93,7 +99,7 @@ For variant-heavy retailers, store the product group id in `itemId` only if avai
 ## Validation Gotchas
 
 - UPC mismatch invalidates direct resolver results unless `trustMismatchedUPC()` returns true. Do not override this lightly.
-- UPCs hidden in image filenames can be missing country code or check digit. Normalize and compare with `UPC.isAUPCMatch(...)`.
+- UPCs hidden in image filenames can be missing country code or check digit. Extract numeric candidate sections and compare with `UPC.isAUPCMatch(...)`; do not rely on raw substring matching.
 - Some retailers return unrelated products for short UPC variants. Verify the "results for" or product data before trusting search output.
 - Some PDPs expose a product group UPC while variants have different UPCs. Check variant arrays, size selectors, or composed item maps.
 - A PDP URL may not change when size changes. Find the variant-specific API/search result URL if clickthrough needs the right size.

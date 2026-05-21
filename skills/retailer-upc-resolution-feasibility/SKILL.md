@@ -54,7 +54,15 @@ Explore in local Chrome before coding, but treat local browser and direct local 
 6. Inspect search and PDP Network requests for stable item ids, product ids, SKUs, canonical URLs, and UPC fields.
 7. If on-site search is poor, use search-engine `site:` discovery only to find candidate retailer URLs. The resolver still must fetch a retailer-owned live page/API and verify UPC evidence there.
 
-Never accept a name-only match as resolved. The Java test must confirm the target UPC with `UPC.isAUPCMatch(...)` or equivalent UPC normalization, or clearly mark the route incomplete.
+Never accept a name-only match as resolved. The Java test must confirm the target UPC with `UPC.isAUPCMatch(...)`, or clearly mark the route incomplete.
+
+## UPC Evidence Matching
+
+Do not validate UPC evidence with direct string matching such as raw `equals`, `contains`, prefix/suffix checks, or hand-written no-country/no-check-digit comparisons against the target UPC. Retailer evidence fields often contain UPCs in different GTIN lengths, missing country/check digits, leading-zero variants, or compound fields such as `mpn / itemId`. Raw string checks are both too strict for valid UPC variants and too loose for unrelated numeric substrings.
+
+Use `UPC.isAUPCMatch(evidence, targetUpc)` as the primary evidence gate. If the retailer field may contain labels, punctuation, multiple identifiers, or a combined MPN/UPC value, first extract the numeric sections from the field, then call `UPC.isAUPCMatch(...)` on each plausible section. Keep that logic in a named helper such as `upcEvidenceMatches(...)` and cover it with a positive compound-field case plus a negative unrelated-number case. Do not scatter ad hoc normalization or substring checks through search/PDP parsing code.
+
+If an existing Pear UPC helper cannot accept the exact evidence shape, adapt the evidence into clean numeric candidate tokens and then call the helper. Only add new normalization behavior behind a reusable UPC evidence helper with focused tests; do not make a resolver pass by comparing manually trimmed strings.
 
 ## Java Probe Shape
 
@@ -176,7 +184,7 @@ When the direct retailer domain is blocked or thin but the retailer is listed in
 
 When app decompilation or APK string extraction reveals API base URLs, route fragments, DTO names, or parameter names, reconstruct the most likely retailer-owned requests and test them through Java/proxies. Treat those strings as a map, not proof: the passing resolver still needs a live response that contains item id plus UPC evidence, and any required app headers, tokens, cookies, or device identifiers must be reproducible from production boxes.
 
-For mobile apps with barcode search, inspect the app listing and APK/XAPK static strings for scanner components, accepted barcode symbologies, feature flags, endpoint constants, and APIM/gateway hosts, and app barcode/APIM strings are a reusable tactic when they can be replayed through a proxy. If the app routes barcode scans into the same catalog/search service, replay an exact UPC as the app would send it, preserving stable app/web headers such as `channel`, `index`, `x-api-version`, `zoneid`, store/zone ids, and query parameter casing. Mobile/APIM search responses may expose UPC evidence under retailer-specific fields such as `mfPartNumber`, `mfPartNumber_ntk`, `mfPartNumberNtk`, `gtin`, or `upc` even when PDP HTML and public web search are blocked. Normalize those fields with `UPC.isAUPCMatch(...)` or an equivalent no-country/no-check-digit comparison, and still require item id plus live UPC evidence through a proxy-backed route.
+For mobile apps with barcode search, inspect the app listing and APK/XAPK static strings for scanner components, accepted barcode symbologies, feature flags, endpoint constants, and APIM/gateway hosts, and app barcode/APIM strings are a reusable tactic when they can be replayed through a proxy. If the app routes barcode scans into the same catalog/search service, replay an exact UPC as the app would send it, preserving stable app/web headers such as `channel`, `index`, `x-api-version`, `zoneid`, store/zone ids, and query parameter casing. Mobile/APIM search responses may expose UPC evidence under retailer-specific fields such as `mfPartNumber`, `mfPartNumber_ntk`, `mfPartNumberNtk`, `gtin`, or `upc` even when PDP HTML and public web search are blocked. Validate those fields with the UPC Evidence Matching rules above, and still require item id plus live UPC evidence through a proxy-backed route.
 
 When a new tactic is useful, or a creative route fails in a reusable way, update this skill or `references/repo-tactics.md` in the canonical skills repo before wrapping up, then sync/reinstall the skill. Capture how the route finds item ids, where UPC evidence lives, which proxy/header shape works, and how the `@Script` probe verifies the UPC match.
 
