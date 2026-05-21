@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slack Task Gate"
+  short_description: "Ask for yes/no approval before Codex does Slack-sourced work."
+  default_prompt: "Read the Slack context, ask the right person for a yes/no decision, require needed scope or IDs, and explain what Codex will do only if approved."
