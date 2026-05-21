@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when asked to start, restart, re-enable, inspect, recreate, modify, or push the Slack watcher that answers explicit Pear technical questions or bug reports from shared Slack channels.
 
-For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work after explicit approval, use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
+For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work after explicit approval, always use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
 
 ## Defaults
 
@@ -39,6 +39,23 @@ The watcher should be helpful without becoming Slack noise.
 - **Extra care in `#customer-success`:** only respond when the message is explicitly technical and about Pear product, data, or system behavior.
 - **Out of scope:** vague complaints without an investigable system/question, product planning, prioritization, status asks, announcements, launch coordination, sales/business questions, user access requests unless clearly technical, already-answered threads, messages from Codex, bot noise, resolved-only items, and anything where replying would likely add noise.
 - Prefer no Slack reply over a speculative reply. If confidence is low, tools are unavailable, or the investigation would require risky mutation, stay quiet unless a short clarification request would clearly help.
+
+## Pear PR Gate
+
+When a Slack investigation turns into any Pear PR operation, this gate is mandatory. It applies to creating a PR, making a draft PR real/ready, updating a PR branch, adding reviewers, requesting Copilot, watching a PR, or landing a PR. Short user phrases such as "make the PR real", "open the PR", "make it ready", "post the PR", "watch it", or "land it" count as PR operations.
+
+Before creating, readying, or updating a PR in a Pear repo:
+
+- load and follow `$pear-engineering-workflow`
+- load and follow `$pear-pr-review-flow`
+- use a sibling `codex/` worktree unless the current checkout is already task-owned for this exact PR/thread
+- complete the Pear engineering Pre-PR Cleanup Gate, including the PR-improvement guide, final diff cleanup, and focused verification or a clear statement that verification was blocked
+- create or update the PR with the Codex authorship signature when Codex authored the body
+- request individual engineering reviewers and GitHub Copilot through the PR review flow, verifying the Copilot request in the timeline when possible
+- create or update the PR-specific watch automation with the user's approved auto-fix/auto-land scope, or set it report-only if approval is absent
+- include the PR URL and reviewer/Copilot/watch status in the Slack thread reply or final user response
+
+Do not use raw GitHub connector/CLI PR creation or draft-to-ready changes as a shortcut around this gate. If any PR-flow step is unavailable, continue only as far as is safe and explicitly report the missing step.
 
 ## Watcher Prompt
 
@@ -84,7 +101,7 @@ Post at most one concise thread reply per item only when you have a useful, evid
 
 If confidence is low, tools are unavailable, the question is too ambiguous, or the investigation would require risky mutation, stay quiet in Slack unless a short clarification request would be clearly helpful. Prefer no reply over speculative noise.
 
-If a message explicitly asks for a code fix/PR and the root cause is concrete, ask for yes/no approval in the thread before making changes unless Alex already gave explicit approval in that thread. After approval, follow Pear engineering workflow and Pear PR review flow, use a sibling worktree from latest master, keep the fix surgical, and post only the PR link/final status in the original Slack thread.
+If a message explicitly asks for a code fix/PR and the root cause is concrete, ask for yes/no approval in the thread before making changes unless Alex already gave explicit approval in that thread. After approval, the Pear PR Gate from `$slack-technical-question-watcher` is mandatory before any Pear PR operation: load `$pear-engineering-workflow` and `$pear-pr-review-flow`, use a sibling worktree from latest master, complete the Pre-PR Cleanup Gate, keep the fix surgical, request individual engineering reviewers and GitHub Copilot, verify Copilot when possible, create or update a PR-specific watch automation with the approved auto-fix/auto-land scope, and post only the PR link/final status in the original Slack thread. If any PR-flow step is unavailable, say exactly which step is missing instead of silently skipping it.
 
 When no new unhandled in-scope messages are found, return a quiet heartbeat status only.
 ```
