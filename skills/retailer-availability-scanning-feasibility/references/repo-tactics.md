@@ -94,6 +94,7 @@ Populate these fields:
 - `INVALID`: item id/store id/UPC is invalid for this route or only Instacart id exists.
 - Do not convert bot blocks into `UNAVAILABLE`; use exceptions or UNKNOWN with logging.
 - Keep in-store and ship-to-home separate. Some retailers intentionally set one side INVALID/UNKNOWN when the route does not support that mode.
+- Map in-store vs ship-to-home by location dependence, not only by endpoint labels. Inventory that changes by store, zip, fulfillment node, or location context is the `IN_STORE` signal. A separate global/location-independent ecommerce signal is the `SHIP_TO_HOME` signal. When both exist, set both from their own evidence; when only global ecommerce availability exists, set `SHIP_TO_HOME` and leave `IN_STORE` unsupported.
 
 Examples:
 

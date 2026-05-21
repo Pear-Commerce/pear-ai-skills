@@ -88,8 +88,8 @@ Usually set:
 - `partnerType = PartnerType.NONE` unless a real partner/API/pixel relationship exists
 - `itemUpdateConfiguration = new ItemUpdaterConfiguration()` when absent
 - `itemUpdateConfiguration.itemUpdaterClass` only when no updater is discovered by `retailerEnums()` or when cleaning a known stale/default value; do not treat it as taking precedence over `retailerEnums()` discovery
-- `itemAvailabilityDependsOnZip = true` for store-specific availability checks, `false` for location-independent checks
-- `locationAgnosticShipToHome = true` only when a live ship-to-home availability route exists and does not vary by location; do not set it merely because the retailer has an ecommerce site
+- `itemAvailabilityDependsOnZip = true` when any production availability signal varies by store, zip, fulfillment node, or location context; `false` only when every supported availability signal is location-independent
+- `locationAgnosticShipToHome = true` only when a live ship-to-home/ecommerce availability route exists and does not vary by store, zip, fulfillment node, or location context; do not set it merely because the retailer has an ecommerce site
 - `availabilitySharedImagesAndIds = null` for a standalone retailer unless it intentionally shares a platform resolver/updater
 - `servicesEverywhere = false` and `servicesEverywhereCanada = false` for now unless the user or existing platform pattern says otherwise
 
@@ -144,9 +144,11 @@ Registration:
 Implement availability checks as store-id based going forward:
 
 - `canUseStoreId(...)` should return `true` for new production availability recomputers; it means Pear will use store-id-based checks.
-- `recomputeAvailability(...)` should use the supplied `storeId` for pickup/local inventory checks.
-- Set `inStoreStatus` only when the retailer returns a store-specific pickup/in-store result or the in-stock result changes with store.
-- Set `shipToHomeStatus` only when the retailer returns a separate shipping/ecommerce availability result.
+- `recomputeAvailability(...)` should use the supplied `storeId` whenever any inventory route varies by store, zip, fulfillment node, or location context.
+- Map statuses by the dependency of the inventory signal, not by the retailer's marketing label. If availability changes when the store/location context changes, set that result on `inStoreStatus`, even when the endpoint name says delivery, collection, fulfillment, or availability rather than "in store".
+- When the endpoint returns explicit separate in-store/pickup and ship-to-home/delivery/ecommerce availability fields, set both statuses from their own fields.
+- When one result varies by store/location and another result does not vary by store/location, map the location-dependent result to `inStoreStatus` and the location-independent result to `shipToHomeStatus`.
+- When the only proven result is location-independent ecommerce availability, set `shipToHomeStatus` from that result and leave `inStoreStatus` `INVALID`.
 - Do not mirror in-store status into ship-to-home or ship-to-home status into in-store.
 - Never return `AVAILABLE` from `inStoreStatus()` or `shipToHomeStatus()` just because the retailer is live, has a PDP, or accepts ecommerce orders generally. `AVAILABLE` requires live route proof for the supplied item id/UPC/PDP and fulfillment mode. If a mode is unsupported, return `INVALID`; if the route cannot currently be proven, do not register the updater.
 
@@ -205,8 +207,9 @@ Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or
 - `requiresName()` matches the resolver implementation: name-dependent routes are tested with names, and `requiresName=false` routes are tested with at least one UPC that has no name set.
 - `getStoresForZip(...)` or `getAllStores(...)` returns real stores.
 - the original live store scraping/import code can be rerun, even if production uses the JSON artifact.
-- in-store availability sets `IN_STORE` status when store-specific inventory exists.
-- ship-to-home availability sets `SHIP_TO_HOME` status when separate shipping availability exists.
+- in-store availability sets `IN_STORE` status when inventory varies by store/location, regardless of whether the upstream endpoint labels it pickup, delivery, collection, or fulfillment.
+- ship-to-home availability sets `SHIP_TO_HOME` status when a separate location-independent shipping/ecommerce signal exists, or when the only proven availability signal is location-independent ecommerce stock.
+- when both location-dependent and location-independent inventory signals exist, the test proves they map to `IN_STORE` and `SHIP_TO_HOME` separately.
 - if `locationAgnosticShipToHome = true`, the ship-to-home test should not pass a `storeId`.
 - `RetailPartner.getAvailabilityUpdater(...)` returns the intended recomputer.
 - batch updater behavior when one is added.

@@ -11,6 +11,12 @@ When the user asks to create/update production `UPCRetailerZipAvailabilityRecomp
 
 For "create an updater", "create scanning", "create availability", or similar retailer Y requests with no proven plan, use this skill first to prove the availability route, then immediately use `$retailer-production-integration` to build the production recomputer/batch updater/migration/tests. The final PR should contain production code, not both production code and leftover `test/com/pear/retailerFeasibility/**` plan files, unless the user explicitly asks to preserve a research artifact.
 
+## Fulfillment Status Mapping
+
+Classify Pear availability statuses by whether the inventory signal varies by store, zip, fulfillment node, or other location context, not by the retailer's label for the endpoint. If changing the supplied store/location changes the availability result for the same item, that result is the `IN_STORE` signal even when the endpoint is named delivery, collection, fulfillment, or availability. If the retailer returns explicit separate in-store/pickup and ship-to-home/delivery/ecommerce fields, preserve both and map each field to its matching status.
+
+When a route exposes both a location-dependent inventory result and a location-independent ecommerce/global result, document both: the location-dependent result should become `inStoreStatus`, and the non-location-dependent result should become `shipToHomeStatus` in production. When the only proven route is location-independent online ecommerce stock/buyability, document it as `SHIP_TO_HOME` support with `IN_STORE` unsupported. Never mirror one fulfillment mode into the other without distinct live evidence.
+
 ## Production-Runnable Requirement
 
 The route is feasible only when Java can compute availability in real time from Pear production-like boxes using `JurlProxyFallback`, the proxy ladder, and retailer-owned live endpoints or documents. Local Chrome, local curl, local app, or `Type.NO_PROXY` success from a developer laptop is discovery evidence, not proof, because the local IP is not Pear datacenter/proxy egress. DevTools payloads, search snippets, cached/indexed PDP text, screenshots, and hardcoded fixtures are discovery aids only; they must not make a passing availability `@Script`.
@@ -113,8 +119,8 @@ For updater URL behavior, strongly prefer an abridged resolver-to-availability `
 
 Inside `recomputeAvailability`, read the item id from `item.getOrCreateRetailerData(retailer.enumName).getItemId()`, request the retailer route, and set:
 
-- `urza.inStoreStatus`
-- `urza.shipToHomeStatus` when supported
+- `urza.inStoreStatus` from the location-dependent inventory signal, if one exists
+- `urza.shipToHomeStatus` from the separate location-independent shipping/ecommerce signal, if one exists
 - `urza.price` when exposed
 
 Set `AVAILABLE` only from live retailer evidence for the supplied item and fulfillment mode. Do not infer ship-to-home availability from the mere presence of an ecommerce PDP, and do not infer in-store availability from an imported store list. Unsupported modes should be `INVALID`; unproven modes should block production wiring rather than becoming a constant status.
@@ -200,6 +206,8 @@ Add JUnit methods annotated with both `@Test` and `@Script`; these are feasibili
 
 - a known store id plus item id/UPC returns a non-null status when store-level inventory is available
 - or, for online availability access, a known item id/UPC/PDP returns a non-null live ecommerce status, price, and buyability/add-to-cart signal without pretending it is store-specific
+- if an availability result varies by store/location, the plan comments identify it as the future `IN_STORE` source, even when the retailer labels the endpoint delivery, collection, or fulfillment
+- if both location-dependent and location-independent availability signals exist, the plan records how production should map them separately to `IN_STORE` and `SHIP_TO_HOME`
 - a known available item returns `AVAILABLE` when the sample is stable enough
 - a known unavailable item returns `UNAVAILABLE` when available
 - price is parsed when the retailer exposes store-specific price

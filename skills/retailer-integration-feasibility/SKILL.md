@@ -31,6 +31,8 @@ When the user asks to "implement retailer Y", run the needed feasibility surface
 
 If the user asks for all three, work in this order: UPC resolution, availability, then store import last. Full store imports are usually one-off, slower, and easier to defer; do the smallest store/context discovery needed for availability, such as choosing a visible store id from Chrome or a quick locator response, then return to the complete `Store.SStore` import after the item-id and buyability routes are proven. If no store-scoped inventory route exists, do not stop there: try to prove live online availability access from PDP/product/search/cart routes that expose current stock/out-of-stock state, price, and a buyability/add-to-cart signal. This is useful for avoiding dead PDP/checkout links, even though it is not inventory access. Do not mark online availability as passing from stock text alone if the live page/API disables buy/add-to-cart or the cart route rejects the item.
 
+For availability status planning, classify by location dependence rather than endpoint naming. A result that changes when store, zip, fulfillment node, or location context changes is the future `IN_STORE` signal even if the retailer calls the endpoint delivery, collection, fulfillment, or availability. A separate non-location-dependent ecommerce/global stock signal is the future `SHIP_TO_HOME` signal. If both exist, document both mappings; if only the global ecommerce signal exists, document `SHIP_TO_HOME` support and `IN_STORE` unsupported.
+
 For all live Java feasibility surfaces, local Chrome, local curl, local app, and `Type.NO_PROXY` success from a developer laptop are discovery evidence only, not proof, because the local IP is not Pear datacenter/proxy egress. Passing `@Script` probes and production-oriented resolver/updater/importer paths must use proxy-backed `JurlProxyFallback.Type` values and must exclude `Type.NO_PROXY` unless the user explicitly asks for local-only discovery. Store imports may use an explicitly approved browser-assisted one-off artifact when every Java/proxy route is blocked, but document that as reference-data extraction rather than a production-runnable Java/proxy route.
 
 If no `STATIC` or cheap static/provider-static route works for any surface, always check Android app calls before declaring the surface impossible or settling for expensive/heavy proxy routes such as `UNBLOCKER`, Scrapfly ASP, or ZenRows render, and app barcode/APIM strings are a reusable tactic when they can be replayed through a proxy. Inspect APK/XAPK strings and app traffic for mobile search, barcode, product, availability, cart, fulfillment, store-locator, APIM/gateway, GraphQL, public app headers, and stable parameter names.
@@ -79,7 +81,7 @@ Every combined `@Script` probe class should start with a compact comment like:
  * FEASIBILITY SUMMARY
  * Stores: PASS via store-locator JSON; STATIC works; 312 stores; sample storeId=123.
  * UPC resolution: PASS via name search + PDP embedded GTIN; UNBLOCKER required; sample UPC=...
- * Availability: PASS online-only via live product JSON stock/price plus enabled add-to-cart; no store-level inventory route found.
+ * Availability: PASS online-only via live product JSON stock/price plus enabled add-to-cart; maps to SHIP_TO_HOME; no location-dependent IN_STORE route found.
  */
 ```
 
