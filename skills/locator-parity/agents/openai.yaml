@@ -1,0 +1,4 @@
+interface:
+  display_name: "Locator Parity"
+  short_description: "Compare Angular and React product locators"
+  default_prompt: "Use $locator-parity to compare Angular and React product locators for a test offer ID."

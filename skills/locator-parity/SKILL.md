@@ -6,11 +6,8 @@ description: >
   (/react-product-locator/) for a given offer ID on test.offers.pearcommerce.com.
   Opens both locators side by side, adapts interactions to what's actually present
   for the specific offer, tests desktop and mobile, and prints a final parity report.
-triggers:
-  - locator-parity
-  - parity test
-  - compare locators
-  - react locator ready
+  Use when the user asks for locator parity, parity testing, comparing locators,
+  or checking whether the React locator is ready.
 ---
 
 # locator-parity
