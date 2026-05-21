@@ -15,6 +15,10 @@ When asked to update this skill from any in-repository or locally installed copy
 
 Use this skill whenever the user mentions a PR or asks to create, update, review, monitor, or land a PR. Before opening a Pear code PR, make sure `$pear-engineering-workflow` has run its cleanup/review-rules pass. Request the right PR reviewers without relying on broad teams, request GitHub Copilot in the way GitHub actually records, ask which autonomous review-loop actions the user wants, create the review-watch loop for Codex-authored PRs, and keep the PR review loop visible in Slack when the user wants that.
 
+Default new Codex-authored Pear PRs to ready-for-review, not draft. Use a draft PR only when the user explicitly asks for one, when a dependency branch is intentionally not ready, or when a blocker makes review misleading.
+
+For retailer integration PRs, run the `$pear-engineering-workflow` cleanup/review pass before creating or marking the PR ready. At least one retailer integration in a batch must get a Pear engineering self-review pass before any PRs in that batch are opened, and any materially different retailer path should get its own focused pass.
+
 ## Hard Trigger
 
 Any user mention of `PR`, `pull request`, `review`, `reviewers`, `Copilot`, `ready`, `real`, `draft`, `merge`, `land`, `watch`, or `monitor` for a Pear repository is enough to load this skill before taking GitHub actions. This includes short follow-ups such as "make the PR real", "make it ready", "add reviewers", "watch it", or "land it" when the current thread already has PR context.
