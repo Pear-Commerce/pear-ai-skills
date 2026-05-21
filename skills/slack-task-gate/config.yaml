@@ -1,0 +1,3 @@
+directory:
+  placement: "auxiliary"
+  reason: "Focused Slack approval helper invoked by broader Slack task workflows."
