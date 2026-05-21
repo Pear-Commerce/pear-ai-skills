@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retailer Verify"
+  short_description: "Verify retailer availability and PDP links"
+  default_prompt: "Use this skill to verify a retailer UPC availability path end to end."
