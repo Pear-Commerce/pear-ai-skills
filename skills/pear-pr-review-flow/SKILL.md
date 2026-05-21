@@ -15,6 +15,12 @@ When asked to update this skill from any in-repository or locally installed copy
 
 Use this skill whenever the user mentions a PR or asks to create, update, review, monitor, or land a PR. Before opening a Pear code PR, make sure `$pear-engineering-workflow` has run its cleanup/review-rules pass. Request the right PR reviewers without relying on broad teams, request GitHub Copilot in the way GitHub actually records, ask which autonomous review-loop actions the user wants, create the review-watch loop for Codex-authored PRs, and keep the PR review loop visible in Slack when the user wants that.
 
+## Hard Trigger
+
+Any user mention of `PR`, `pull request`, `review`, `reviewers`, `Copilot`, `ready`, `real`, `draft`, `merge`, `land`, `watch`, or `monitor` for a Pear repository is enough to load this skill before taking GitHub actions. This includes short follow-ups such as "make the PR real", "make it ready", "add reviewers", "watch it", or "land it" when the current thread already has PR context.
+
+Treat converting a draft PR to ready-for-review as a PR-readying operation, not as a standalone metadata flip. After marking a Codex-authored Pear PR non-draft, immediately run the Reviewer Workflow, request Copilot, create or update the review-watch automation, and satisfy the New PR Completion Gate before sending the final response.
+
 ## Codex Authorship Signature
 
 When Codex authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by:
@@ -254,7 +260,7 @@ Use the repo's normal merge path. Prefer a standard `gh pr merge PR_NUMBER` flow
 
 ## New PR Completion Gate
 
-Before sending the final response after creating or materially updating a Codex-authored PR, explicitly verify and, if missing, fix these items:
+Before sending the final response after creating, materially updating, marking ready-for-review, or otherwise making a Codex-authored Pear PR "real", explicitly verify and, if missing, fix these items:
 
 - the PR exists, is on the intended branch, and the final response includes the PR URL
 - the Pear engineering cleanup pass was run or the reason it was skipped is stated
