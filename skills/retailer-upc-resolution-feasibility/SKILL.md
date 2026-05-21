@@ -87,6 +87,8 @@ static SRetailerItemData fetchProductDetails(SRetailerItemData item)
 static SRetailerItemData fetchProductByUpc(String upc)
 ```
 
+Those static methods are for feasibility files only. When the route graduates, move request/parsing/resolution behavior into an injectable retailer `@Service` client and constructor-inject that client into the production resolver. Do not leave production calls shaped as `<Retailer>Client.search(...)`, static memoized helpers, or manually constructed resolvers. Spring-backed tests should `@Autowired` the client/resolver instead of `new`ing them.
+
 When graduating to production, create a resolver that extends `ItemIdInfoSingleResolver` and implements:
 
 ```java

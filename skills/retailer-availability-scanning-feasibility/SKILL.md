@@ -95,6 +95,8 @@ or:
 static SRetailerItemData fetchProductAvailability(String storeId, String upcOrItemId)
 ```
 
+Those static methods are feasibility-only scratch shape. When graduating to production, move live request, parser, store-context, URL, and status mapping behavior into an injectable retailer `@Service` client, then constructor-inject that client into the `UPCRetailerZipAvailabilityRecomputer` and any batch updater. Do not leave production availability paths as `<Retailer>Client.getAvailability(...)` static calls, static memoized suppliers, or manually constructed updaters. Spring-backed tests should `@Autowired` the client/updater and call the bean.
+
 When graduating to production, implement a `UPCRetailerZipAvailabilityRecomputer` subclass:
 
 ```java

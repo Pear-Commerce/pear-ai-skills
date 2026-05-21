@@ -71,6 +71,8 @@ static List<Store.SStore> loadStores()
 
 or use `List<Store>` when the code is already close to a production `StoreUpdater`.
 
+Static store helpers are acceptable only inside feasibility `*Plan.java` files. When productionizing, put store loading, artifact reading, DTO mapping, and live fetch behavior on an injectable retailer `@Service` client, then constructor-inject it into the production availability updater/store importer. Do not leave production import paths as `<Retailer>Client.loadStores()` static calls or static memoized suppliers. Spring-backed tests should `@Autowired` the client/updater rather than manually constructing them.
+
 ## Store JSON Artifacts
 
 When a store import probe successfully produces a normalized `List<Store.SStore>`, also write the stores to JSON artifacts under, unless the user explicitly limited the task to the two plan files:

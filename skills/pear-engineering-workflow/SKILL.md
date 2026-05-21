@@ -43,6 +43,8 @@ Before adding utility-like code, search for the existing home and use or extend 
 
 New feature/domain helpers must default to Spring services with explicit constructor injection. Put `@Autowired` on non-empty constructors in new/changed Spring classes, including services and controllers, so dependency wiring is obvious in review. Avoid field injection, manual `new`, static registries/helpers for behavior, and feature-owned state hidden behind global calls unless the code is a pure reusable value utility with no collaborators and no expected test injection. Before finalizing, scan touched packages for `@Autowired`, `Resources.global`, `ManagedResourcesConfig.getBean`, `static`, and `new <feature class>` and move collaborators into small injected `@Service` modules where practical.
 
+For retailer integrations, this is a hard default: client/helper classes that fetch live pages or APIs, parse retailer payloads, resolve UPCs, load store artifacts, compute PDP URLs, or check availability should be `@Service` beans injected into resolvers/updaters/tests. Static constants and DTOs are fine; static behavior helpers in production retailer code are not.
+
 ## Pear Entity Serialization
 
 Production API paths may serialize `PearEntity` objects through SimpleORM, which emits only `id` and `@SimpleORMField` fields. Plain public fields, `transient`, and `@JsonProperty` can pass local `ObjectMapper` tests yet disappear from real responses.

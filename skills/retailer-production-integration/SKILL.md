@@ -53,6 +53,14 @@ Keep retailer-specific production code together. For a new standalone retailer, 
 
 Do not scatter new retailer classes across `com.pear.itemurlupdater`, `com.pear.upcresolution`, and `com.pear.admin` just because their base classes live there. Import the base classes into the retailer package. Put the production `@Script` test in the matching `test/com/pear/<retailer>/` package unless an existing platform module already has a stronger local convention.
 
+## Spring Service Boundaries
+
+Production retailer helpers are Spring services, not static utility bags. Put live-route behavior in a retailer-owned `@Service` client such as `<Retailer>Client`, and inject that client into resolvers, availability updaters, batch updaters, controllers, jobs, and tests through explicit constructor injection. Add `@Autowired` to every non-empty constructor in new or changed Spring classes.
+
+Do not call production behavior through `RetailerClient.resolve(...)` / `RetailerClient.fetch(...)` static methods, static memoized suppliers, static registries, `ManagedResourcesConfig.getBean(...)`, or manual `new <Retailer>Resolver()` / `new <Retailer>AvailabilityUpdater()` from production code or Spring-backed tests. Static constants, enum lists, DTO/nested model classes, regex patterns, and immutable route configuration are fine; behavior that fetches, parses, caches, maps stores, resolves UPCs, checks availability, or builds retailer data belongs on an injectable bean.
+
+Feasibility `*Plan.java` scratch helpers may be static while exploring, but promotion to production must convert them into Spring services before the PR is considered productionized. Before finalizing a retailer PR, scan touched retailer packages for `static`, `new <Retailer...>`, `ManagedResourcesConfig.getBean`, and `Resources.global`; either remove them from behavior paths or explicitly justify the remaining constants/DTOs.
+
 ## Class Goals
 
 `RetailPartner` setup migrations register the retailer in Pear's data model. Their goal is to create or complete the retailer row, enum wiring, ecommerce URL, display assets, color, and availability/import flags without overwriting meaningful non-default data that may already exist.
