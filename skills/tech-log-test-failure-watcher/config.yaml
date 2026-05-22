@@ -1,0 +1,3 @@
+directory:
+  placement: "auxiliary"
+  reason: "Automation watcher helper invoked explicitly when managing tech-log test failure monitoring."
