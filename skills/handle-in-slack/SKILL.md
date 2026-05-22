@@ -36,25 +36,33 @@ Use this skill as the top-level Slack handling workflow. It combines Slack conte
 
 ## YES/NO Approval Prompt
 
-Use this shape for action-needed threads, keeping it short:
+Every action-needed Slack reply must make the requested human action unmistakable:
+
+- Put `Reply: YES or NO` alone near the top of the message.
+- Repeat `Reply: YES or NO` near the bottom, just above `- Codex`.
+- Keep the message concise: at most three short read-only findings, one proposed action line, and one sentence explaining what happens after yes.
+- Do not bury the ask under analysis. The reader should know immediately that Codex is waiting for a YES/NO decision before doing anything.
+
+Use this shape for action-needed threads:
 
 ```text
+Reply: YES or NO
+
 Quick read-only scan:
 - <evidence-backed finding>
 - <evidence-backed finding>
 - Proposed action: <specific bounded action and scope>
 
-Reply: YES or NO
-
 Should Codex <specific action> for <specific target/scope>?
 
-If yes, I will <execution path>, keep it scoped to <scope>, and post results back here.
-If no, I will stop.
+If yes, I will <execution path>, keep it scoped to <scope>, and post results back here. If no, I will stop.
+
+Reply: YES or NO
 
 - Codex
 ```
 
-For JSP or production-like operational work, use the stricter `$slack-prod-jsp-approval` shape:
+For JSP or production-like operational work, use the stricter `$slack-prod-jsp-approval` shape. It must follow the same top-and-bottom YES/NO rule:
 
 ```text
 Reply: YES or NO
