@@ -1,4 +1,4 @@
 interface:
   display_name: "Handle in Slack"
-  short_description: "Gate Slack fixes with YES/NO approval"
-  default_prompt: "Use $handle-in-slack to analyze and handle this Slack message link with a concise YES/NO approval gate."
+  short_description: "Analyze Slack, gate actions, monitor follow-ups"
+  default_prompt: "Use $handle-in-slack to analyze and handle this Slack message link. If read-only explanation is enough, post that without a YES/NO gate. Use a YES/NO approval gate before fixes, reruns, data changes, PRs, JSPs, or other side effects. After any substantive Slack reply, create or refresh a 48-hour follow-up monitor for the same thread."

@@ -1,13 +1,15 @@
 ---
 name: handle-in-slack
-description: Analyze and handle a Slack message or thread with a concise read-only investigation, a clear YES/NO approval prompt for any fix or operational action, and follow-through after approval. Use when the user says "handle this Slack link", "handle this Slack thread", "ask them if Codex should fix it and then do it", or when Slack watcher automations need the standard analyze, YES/NO gate, and execute workflow for Pear technical questions, tech errors, JSP/data operations, code fixes, PRs, reruns, resolver work, imports, or availability scans.
+description: Analyze and handle a Slack message or thread. "Handle" can mean a read-only investigation followed by an explanation or recommendation, which does not require a YES/NO prompt. Use YES/NO approval only when the handling would proceed to a fix, rerun, data change, JSP, PR, external side effect, or other operational action. After posting a substantive answer, clarification, approval prompt, or completion summary, create a short-lived follow-up monitor for that Slack thread for 48 hours. Use when the user says "handle this Slack link", "handle this Slack thread", "ask them if Codex should fix it and then do it", or when Slack watcher automations need the standard analyze, optionally gate, monitor follow-ups, and execute workflow for Pear technical questions, tech errors, JSP/data operations, code fixes, PRs, reruns, resolver work, imports, or availability scans.
 ---
 
 # Handle In Slack
 
 ## Overview
 
-Use this skill as the top-level Slack handling workflow. It combines Slack context reading, concise evidence-backed analysis, YES/NO approval gating, JSP safety when live Pear operations are involved, and normal local Codex code/PR execution when a code fix is appropriate.
+Use this skill as the top-level Slack handling workflow. It combines Slack context reading, evidence-backed analysis, answer-only explanations, optional YES/NO approval gating, 48-hour follow-up monitoring, JSP safety when live Pear operations are involved, and normal local Codex code/PR execution when a code fix is appropriate.
+
+Not every "handle this" request is an action request. Sometimes the right handling is to analyze the Slack thread and reply with a clear explanation, diagnosis, or recommendation. That answer-only path is complete after the explanation is posted and should not ask for YES/NO approval unless a follow-up action is being proposed.
 
 ## Companion Skills
 
@@ -35,13 +37,28 @@ Use this skill as the top-level Slack handling workflow. It combines Slack conte
    - Stop when there is enough evidence for either a useful answer, a concrete proposed action, or a clear request for missing scope.
 
 4. Decide the outcome.
-   - **Answer-only:** If the thread only needs an explanation or next-step recommendation, post one concise evidence-based reply and stop.
-   - **Clarification:** If the problem is real but scope is missing, ask for the exact IDs/names/env needed plus YES/NO if an action is likely.
+   - **Answer-only:** If the thread needs an explanation, diagnosis, status readout, or next-step recommendation, post an evidence-based reply. This is still "handling" the thread. Do not include a YES/NO prompt when no fix, write, rerun, PR, JSP, or external side effect is being requested.
+   - **Clarification:** If the problem is real but scope is missing, ask for the exact IDs/names/env needed. Include YES/NO only if an action is likely after the scope is supplied.
    - **Action needed:** If a fix, rerun, data change, JSP, PR, or external side effect is appropriate, post a YES/NO approval prompt before acting.
+
+5. Create or refresh a 48-hour follow-up monitor for the same Slack thread after any substantive Slack reply.
+   - Do this after answer-only replies, clarification requests, YES/NO approval prompts, starting acknowledgements, PR/JSP/result summaries, and final completion summaries.
+   - Skip only when the current task itself is already a short-lived follow-up monitor pass for the same thread, or when an equivalent active monitor already exists.
+
+## Answer-Only Handling
+
+Use this path when the user says "handle" and the Slack thread can be resolved by analysis and explanation alone.
+
+- Do the same bounded read-only investigation: read the thread, gather relevant surrounding context, and check source-of-truth systems only as needed.
+- Explain what is happening, why it is happening, and what the practical next step or decision is.
+- Include enough evidence to make the answer trustworthy, but avoid dumping logs, private context, or unrelated details.
+- Do not ask `Reply: YES or NO` unless you are asking for permission to do follow-up work.
+- If useful, end with a lightweight optional next step such as "I can turn this into a fix proposal if needed," but do not frame that as approval already being requested.
+- After posting the answer, create or refresh the 48-hour follow-up monitor, then stop. A later human request to fix, rerun, change data, or open a PR starts a new gated action path.
 
 ## YES/NO Approval Prompt
 
-Every action-needed Slack reply must make the requested human action unmistakable:
+Only use this section for action-needed Slack replies. Every action-needed Slack reply must make the requested human action unmistakable:
 
 - Put `Reply: YES or NO` alone near the top of the message.
 - Repeat `Reply: YES or NO` near the bottom, just above `- Codex`.
@@ -85,11 +102,43 @@ Reply: YES or NO
 
 ## After The Reply
 
+- For answer-only handling, there is no approval state to wait for. The work is complete after the explanation/recommendation is posted and the 48-hour follow-up monitor is active.
+- After any substantive Slack reply from this skill, ensure a 48-hour follow-up monitor exists for the same Slack thread. See **48-Hour Follow-Up Monitor**.
 - Treat only clear human approval as approval: `yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or an equivalent unambiguous reply.
 - Treat `no`, `stop`, or equivalent as a decline; acknowledge only if helpful, then stop.
 - If approval is clear but scope is incomplete, ask for the missing exact IDs/names/env before acting.
 - Re-read the thread immediately before acting and record the exact Slack reply that approved the work.
 - Post a terse starting acknowledgement only after approval, for example `Approved; starting the scoped fix. - Codex`.
+
+## 48-Hour Follow-Up Monitor
+
+Create or refresh a short-lived Codex heartbeat automation for the specific Slack thread after this skill posts a substantive reply.
+
+Purpose:
+
+- Catch follow-up questions, objections, clarifications, or approval replies while the Slack conversation is still warm.
+- Avoid making the user manually ask Codex to check the thread again.
+- Stay quiet when nothing new needs a response.
+
+Creation rules:
+
+- Use a heartbeat automation attached to the current Codex thread.
+- Use a concise name such as `Watch Slack follow-ups: <short topic>`.
+- Prefer a 10-minute cadence for 48 hours. Use `FREQ=MINUTELY;INTERVAL=10;COUNT=288` when the automation runtime supports RRULE counts. If an end count is unavailable, include the 48-hour expiration timestamp in the prompt and instruct the monitor to pause/delete itself after that point.
+- Start at the latest Slack reply timestamp visible immediately after the bot's own reply. Do not backfill older messages.
+- Before creating, inspect existing automations for the same channel id and thread timestamp. Update/refresh the existing active monitor instead of creating a duplicate.
+- The monitor should read only that Slack thread unless a new reply explicitly links elsewhere or needs bounded surrounding context.
+
+Monitor prompt requirements:
+
+- Include the channel id, parent thread timestamp, Slack permalink, start boundary timestamp, and expiration timestamp.
+- Read the Slack thread each pass and process only new human replies after the start boundary.
+- Ignore Codex/ChatGPT/bot replies and skip questions already answered by a later human or Codex reply.
+- For answer-only follow-ups, post a concise evidence-based thread reply and end with `- Codex`.
+- For requested side effects such as code/data changes, PRs, JSPs, reruns, Notion edits, or external writes, use this skill's YES/NO approval gate before acting unless exact scoped approval is already present.
+- Prefer read-only sources. Do not mutate code, data, PRs, Notion, or external systems unless an approved action path requires it.
+- When no new unhandled follow-up is present, return a quiet heartbeat status only.
+- After the 48-hour window expires, pause/delete the monitor or report that the monitor window is complete, depending on what the automation runtime supports.
 
 ## Execution Paths
 
@@ -125,6 +174,8 @@ Use this path only for actions that do not need a PR or JSP and are safe after e
 ## Guardrails
 
 - Do not mutate code, data, production systems, branches, PRs, external services, or Slack state beyond the approval prompt before YES.
+- Do not force a YES/NO prompt onto answer-only analysis. A read-only explanation after investigation is a valid completed handling outcome.
+- Do not leave Slack follow-up monitoring open-ended. The default monitor window is 48 hours unless the user explicitly asks for a different duration.
 - Do not treat ambiguous reactions, jokes, questions, or partial scope as approval.
 - Do not use broad mentions like `@channel`, `@here`, or `@everyone`.
 - Do not expose secrets, credentials, private query dumps, or noisy logs in Slack.
