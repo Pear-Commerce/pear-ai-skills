@@ -1,6 +1,6 @@
 ---
 name: tech-log-test-failure-watcher
-description: Start, restart, or repair the Codex automation that watches Slack #tech-log for Pear api.pearcommerce.com unit or integration test failures, analyzes GitHub Actions logs, posts Slack triage replies, and after yes approval uses Pear engineering and PR workflows to fix, open, watch, and merge PRs.
+description: Start, restart, or repair the Codex automation that watches Slack #tech-log for Pear api.pearcommerce.com unit or integration test failures, spawns deep GitHub Actions triage workers, uses $handle-in-slack for YES/NO approval and follow-through, and after approval uses Pear engineering and PR workflows to fix, open, watch, and merge PRs.
 metadata:
   short-description: Watch #tech-log CI failures and drive surgical fixes
 ---
@@ -15,8 +15,9 @@ Use this skill when asked to start, restart, re-enable, inspect, or recreate the
 - Repo: `Pear-Commerce/api.pearcommerce.com`, local primary checkout `/Users/alexwyler/api.pearcommerce.com`.
 - Watcher automation name: `Tech-log test failure watcher`.
 - Daily repair automation name: `Re-enable tech-log test failure watcher`.
+- Off-hours quiet window: in America/Chicago, skip Slack/GitHub/escalation work after 7:00 PM or before 8:00 AM unless the user explicitly asks for around-the-clock monitoring.
 - Use the automation tool to create or update automations; do not hand-edit automation TOML unless the tool is unavailable.
-- Use `$slack:slack`, `$pear-engineering-workflow`, and `$pear-pr-review-flow` while carrying out the watcher task.
+- Use `$slack:slack`, `$handle-in-slack`, `$pear-engineering-workflow`, and `$pear-pr-review-flow` while carrying out the watcher task.
 - Architecture: keep the recurring watcher as a lightweight sentinel. Escalate real failures to a run-specific deep worker/automation before doing GitHub log analysis, culprit attribution, code edits, PR creation, PR watching, or merging.
 
 ## Start Or Repair
@@ -33,6 +34,8 @@ Use this as the watcher automation prompt:
 ```text
 You are the lightweight sentinel for #tech-log (channel ID C062H588MJM) Pear api.pearcommerce.com test failures. Keep this pass cheap: search/read Slack only, including bot messages. Do not inspect GitHub Actions logs, run `gh`, scan git history, edit code, create branches, open PRs, or post Slack triage yourself from this sentinel unless explicitly instructed below.
 
+Off-hours quiet window: in America/Chicago, if the current local time is after 7:00 PM or before 8:00 AM, do not search Slack, inspect GitHub, escalate, spawn/delegate, create automations, or post Slack replies. Return a quiet status only, unless the user explicitly asked for around-the-clock monitoring.
+
 Target messages look like `Integration test failure: integration test failed for refs/heads/master` and include GitHub Actions URLs like https://github.com/Pear-Commerce/api.pearcommerce.com/actions/runs/<run_id>. Also treat equivalent master unit-test failure messages for Pear-Commerce/api.pearcommerce.com as in scope.
 
 For each recent in-scope failure message:
@@ -42,15 +45,15 @@ For each recent in-scope failure message:
 - do not perform deep analysis in this sentinel pass
 
 When a new unhandled in-scope failure is found, immediately escalate it to a run-specific deep worker before any expensive reasoning:
-- Prefer spawning/delegating a worker/subtask with `reasoning_effort=xhigh` if that capability is available in the current environment and can run immediately.
-- Otherwise create or update a run-specific Codex automation named `Tech-log failure <run_id> deep triage` with model `gpt-5.3-codex`, reasoning effort `xhigh`, cwd `/Users/alexwyler/api.pearcommerce.com`, and the Escalated Failure Prompt from `$tech-log-test-failure-watcher` or `/Users/alexwyler/.codex/skills/tech-log-test-failure-watcher/SKILL.md`, filled with the run URL, run id, Slack channel id, parent message timestamp, and thread permalink. Use the shortest safe cadence available for that automation type, and instruct the deep automation to delete itself when complete or when it hands off to a PR-specific watcher.
+- Prefer spawning/delegating a worker/subtask with model `gpt-5.4` and `reasoning_effort=medium` if that capability is available in the current environment and can run immediately. The spawned worker prompt must explicitly use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` for the approval gate and follow-through.
+- Otherwise create or update a run-specific Codex automation named `Tech-log failure <run_id> deep triage` with model `gpt-5.4`, reasoning effort `medium`, cwd `/Users/alexwyler/api.pearcommerce.com`, and the Escalated Failure Prompt from `$tech-log-test-failure-watcher` or `/Users/alexwyler/.codex/skills/tech-log-test-failure-watcher/SKILL.md`, filled with the run URL, run id, Slack channel id, parent message timestamp, and thread permalink. The spawned worker prompt must explicitly use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` for the approval gate and follow-through. Use the shortest safe cadence available for that automation type, and instruct the deep automation to delete itself when complete or when it hands off to a PR-specific watcher.
 
 After escalation, stay quiet in Slack. Report in this Codex thread only if escalation failed or a duplicate/permission ambiguity needs human attention. If no new unhandled failures are found, do nothing except return a quiet heartbeat status.
 ```
 
 ## Escalated Failure Prompt
 
-Use this as the run-specific xhigh worker/automation prompt. Fill the placeholders from the sentinel before starting it:
+Use this as the run-specific medium-reasoning worker/automation prompt. Fill the placeholders from the sentinel before starting it:
 
 ```text
 Use Slack and GitHub to deeply triage this Pear api.pearcommerce.com master test failure:
@@ -61,6 +64,8 @@ Use Slack and GitHub to deeply triage this Pear api.pearcommerce.com master test
 - GitHub Actions run id: <RUN_ID>
 
 Read the Slack thread first, including bot messages. Skip and delete/stop this run-specific automation if Codex has already posted a triage reply for this run or if a PR/fix flow is already linked in the thread. Extract/confirm the GitHub Actions run URL, then inspect the run, failed jobs, annotations, and logs with GitHub tools or `gh`. Determine the concrete failing test/build step, the most likely code cause, and the smallest surgical fix. Do not edit code during this initial analysis.
+
+Use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` as the canonical workflow for the Slack reply, YES/NO approval gate, and post-approval execution. Do read-only analysis first, then choose the `$handle-in-slack` outcome: answer-only, clarification, or action-needed YES/NO gate.
 
 Scan recent merged PRs for likely culprits before posting. Use the failing run head SHA, failure file/test names, compiler symbols, `git log`, `git blame`, and recent merged PR metadata to identify the PR most likely to have introduced the break. Prefer PRs merged after the last known green master run or shortly before the failing run. If one culprit is reasonably clear, include the PR link and author in the Slack reply. Resolve the GitHub author to a Slack user with `slack_search_users` by name/email/login when possible and tag them with `<@USERID>`. If mapping is uncertain, name the GitHub author without tagging. Do not tag multiple people unless the evidence is genuinely shared.
 
@@ -78,9 +83,9 @@ Post one concise original Slack thread reply on the failure message. Start the r
 - the likely root cause
 - the simplest surgical fix
 - the likely culprit PR and author tag when found
-- a yes/no approval ask
+- a YES/NO approval ask from `$handle-in-slack` with exact scope and execution path
 
-Approval UX: if the available Slack tool supports interactive yes/no buttons, use them. If it only supports markdown messages, ask people to reply `yes` or `no` in the thread. Treat a clear yes from any human in the thread (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval to fix, open a PR, watch it, and merge it when ready. Treat a clear no/stop as a decline for that run. End Codex-authored Slack posts with:
+Approval UX: follow `$handle-in-slack`. If the available Slack tool supports interactive yes/no buttons, use them. If it only supports markdown messages, ask people to reply `yes` or `no` in the thread. Treat a clear yes from any human in the thread (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval to fix only the scoped failure, open a PR, watch it, and merge it when ready. Treat a clear no/stop as a decline for that run. End Codex-authored Slack posts with:
 
 - Codex
 
@@ -102,7 +107,7 @@ Avoid duplicate work: before opening a branch or PR, search the Slack thread and
 Use this as the repair automation prompt:
 
 ```text
-Ensure the `Tech-log test failure watcher` automation exists and is ACTIVE. If it is missing, paused, canceled, disabled, or no longer points at #tech-log channel ID C062H588MJM for Pear-Commerce/api.pearcommerce.com test failures, use the automation tool to recreate or update it from the `$tech-log-test-failure-watcher` skill's Watcher Prompt. Keep the watcher attached to the original watcher thread when known; otherwise attach it to the current thread. Use the standard short heartbeat cadence. Do not process Slack failures yourself from this repair automation; only repair or confirm the watcher. Report what you changed, or say that the watcher was already active.
+Ensure the `Tech-log test failure watcher` automation exists and is ACTIVE. If it is missing, paused, canceled, disabled, no longer points at #tech-log channel ID C062H588MJM for Pear-Commerce/api.pearcommerce.com test failures, or its spawned worker prompt does not explicitly use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md`, use the automation tool to recreate or update it from the `$tech-log-test-failure-watcher` skill's Watcher Prompt. Keep the watcher attached to the original watcher thread when known; otherwise attach it to the current thread. Use the standard short heartbeat cadence. Do not process Slack failures yourself from this repair automation; only repair or confirm the watcher. Report what you changed, or say that the watcher was already active.
 ```
 
 ## Manual Operations

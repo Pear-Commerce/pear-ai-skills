@@ -1,6 +1,6 @@
 ---
 name: tech-errors-watcher
-description: Start, restart, or repair the Codex automation that watches Pear Slack #tech_errors and #tech_errors_high_priority Datadog alert channels, escalates real alerts to deep Datadog/logs.sh/GitHub analysis, posts a plausible explanation only when evidence supports it, and asks yes/no for PR fixes only when a specific code-change cause is very high confidence.
+description: Start, restart, or repair the Codex automation that watches Pear Slack #tech_errors and #tech_errors_high_priority Datadog alert channels, escalates real alerts to deep Datadog/logs.sh/GitHub analysis, posts a plausible explanation only when evidence supports it, and uses $handle-in-slack for consistent YES/NO approval and execution when a specific code/JSP/operational fix is warranted.
 metadata:
   short-description: Watch tech error alerts and gate PR fixes
 ---
@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when asked to start, restart, re-enable, inspect, or recreate the Slack watcher for Pear tech error alerts.
 
-For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
+For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
 
 ## Defaults
 
@@ -35,7 +35,7 @@ The deep worker must be useful without being noisy:
 
 - **No Slack reply** when evidence is low confidence, Datadog/logs are unavailable, the alert is only recovered/resolved with no active incident, or the finding is too vague to give a plausible explanation.
 - **Post an explanation only** when there is a plausible cause supported by evidence from Datadog/Slack alert text, `logs.sh`, GitHub deploy/commit/PR history, or application context. Include a confidence label and the evidence trail.
-- **Ask yes/no for a PR only** when confidence is very high that a specific code/config change caused the alert and there is a clearly surgical fix. Very high confidence usually requires a tight time correlation with a deploy/merge plus a stack trace/error path or monitor dimension that maps directly to changed code.
+- **Ask YES/NO through `$handle-in-slack` only** when confidence is very high that a specific code/config/JSP/operational action caused or can fix the alert and there is a clearly surgical scoped action. Very high confidence usually requires a tight time correlation with a deploy/merge plus a stack trace/error path, monitor dimension, or operational target that maps directly to the proposed action.
 - Do not create a branch or PR from a merely plausible operational explanation, transient vendor/API issue, data issue, capacity spike, deploy/runtime instability, or ambiguous alert.
 
 ## Sentinel Prompt
@@ -55,7 +55,7 @@ For each recent in-scope alert:
 
 When a new unhandled in-scope alert is found, immediately escalate it before any expensive reasoning:
 - Prefer spawning/delegating a worker/subtask with `reasoning_effort=xhigh` if that capability is available and can run immediately.
-- Otherwise create or update a run-specific Codex automation named `Tech errors alert <alert-or-ts> deep analysis` with model `gpt-5.3-codex`, reasoning effort `xhigh`, cwd `/Users/alexwyler/api.pearcommerce.com`, and the Escalated Alert Prompt from `$tech-errors-watcher` or `/Users/alexwyler/.codex/skills/tech-errors-watcher/SKILL.md`, filled with the extracted alert/thread details. Use the shortest safe cadence available, and instruct the deep automation to delete itself when complete or when it hands off to a PR-specific watcher.
+- Otherwise create or update a run-specific Codex automation named `Tech errors alert <alert-or-ts> deep analysis` with model `gpt-5.3-codex`, reasoning effort `xhigh`, cwd `/Users/alexwyler/api.pearcommerce.com`, and the Escalated Alert Prompt from `$tech-errors-watcher` or `/Users/alexwyler/.codex/skills/tech-errors-watcher/SKILL.md`, filled with the extracted alert/thread details. The spawned worker prompt must explicitly use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` for any Slack approval gate and follow-through. Use the shortest safe cadence available, and instruct the deep automation to delete itself when complete or when it hands off to a PR-specific watcher.
 
 After escalation, stay quiet in Slack. Report in this Codex thread only if escalation failed or a duplicate/permission ambiguity needs human attention. If no new unhandled alerts are found, do nothing except return a quiet status.
 ```
@@ -76,6 +76,8 @@ Deeply analyze this Pear tech error alert:
 
 Read the Slack thread first, including bot messages. Skip and delete/stop this run-specific automation if Codex has already posted an explanation for this alert or if a PR/fix flow is already linked in the thread.
 
+Use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` as the canonical workflow for Slack replies that may lead to a fix, JSP, rerun, operational action, PR, or other side effect. Do the deep alert analysis first, then choose the `$handle-in-slack` outcome: answer-only, clarification, or action-needed YES/NO gate.
+
 Analyze evidence in this order:
 1. Datadog/alert context: monitor name, status, query, service/env/resource tags, triggered window, grouped dimensions, stack traces, trace/log links, deployment markers, and whether the alert is still active or recovered. If the Datadog UI/API is not available, use the Slack alert payload and links as far as possible and do not pretend to have inspected unavailable data.
 2. Live logs: map service/env tags to `/Users/alexwyler/api.pearcommerce.com/devops/environments.json`, then use bounded `devops/logs.sh -e <env>` samples around the alert. For UPC resolution, prefer `devops/logs.sh -e upc-resolution --single`. Stop streaming once enough evidence is captured; do not leave long-running log sessions alive.
@@ -93,20 +95,22 @@ Produce one of three outcomes:
 - why no PR is being proposed, if relevant
 - `- Codex`
 
-**PR approval Slack reply:** only if confidence is very high that a specific code/config change caused the alert and a surgical fix is clear. Post one concise thread reply with:
+**Action-needed YES/NO Slack reply:** only if confidence is very high that a specific code/config/JSP/operational action caused or can fix the alert and a surgical scoped action is clear. Use `$handle-in-slack` and, when JSP or production-like operations are involved, `$slack-prod-jsp-approval`. Post one concise thread reply with:
 - `Automatic reply triggered by $tech-errors-watcher.`
 - alert/monitor/service/env
 - likely culprit PR/commit/author, tagged in Slack when confidently mapped
 - direct evidence tying the alert to the change
 - simplest surgical fix
-- yes/no approval ask
+- YES/NO approval ask with exact scope and execution path
 - `- Codex`
 
-Approval UX: if Slack reactions/buttons are available, use them. If not, ask humans to reply `yes` or `no`. Treat clear yes from any human (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval to make the surgical fix, open a PR, watch it, and merge/auto-merge when normal Pear rules allow it. Treat clear no/stop as a decline.
+Approval UX: follow `$handle-in-slack`. If Slack reactions/buttons are available, use them. If not, ask humans to reply `yes` or `no`. Treat clear yes from any human (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval for only the scoped action named in the prompt. Treat clear no/stop as a decline.
 
 When reading approval, mark the exact Slack message treated as affirmation. Prefer a Slack reaction if available; otherwise post one terse reply: `:hourglass_flowing_sand: Approved; starting fix. - Codex`. Do not mark ambiguous replies as approvals.
 
-On approval, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. Create a sibling worktree from the latest base branch, never the user's primary checkout, on a unique `codex/` branch. Make the smallest code/config/test-data fix that addresses the specific alert cause. Run focused practical verification; if local setup would be noisy, use cheap local checks plus CI as source of truth.
+On approval for code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. Create a sibling worktree from the latest base branch, never the user's primary checkout, on a unique `codex/` branch. Make the smallest code/config/test-data fix that addresses the specific alert cause. Run focused practical verification; if local setup would be noisy, use cheap local checks plus CI as source of truth.
+
+On approval for JSP or operational work, use the `$handle-in-slack` JSP/operational path: follow `$slack-prod-jsp-approval` and `$pear-prod-jsp`, create a preview-only JSP first, wait for Run-button approval, and post concise results back to the Slack thread.
 
 Commit, push, and create a PR with a concise body linking the Slack alert thread, Datadog alert/link, logs evidence, and culprit change. Request reviewers/Copilot according to `$pear-pr-review-flow`. Enable auto-merge immediately when normal branch protection allows it. Post one terse PR-created reply such as `:white_check_mark: PR opened: <PR_URL>. Auto-merge enabled. - Codex`.
 
@@ -120,7 +124,7 @@ Avoid duplicate work: before opening a branch or PR, search the Slack thread and
 Use this as the repair automation prompt:
 
 ```text
-Ensure the `Tech errors alert watcher` automation exists and is ACTIVE. Use `/Users/alexwyler/.codex/skills/tech-errors-watcher/SKILL.md` as the source of truth, especially the lightweight Sentinel Prompt. If the watcher is missing, paused, canceled, disabled, or no longer points at #tech_errors (CNMQLEWDV) and #tech_errors_high_priority (C059KM2EDEY), recreate or update it as an active lightweight sentinel with a 5 minute cadence. Prefer a heartbeat attached to the original watcher thread when possible; if that thread already has another heartbeat, use a detached local cron with a small model and low reasoning. Do not process Slack alerts from this repair automation; only repair or confirm the watcher. Report what you changed, or say the watcher was already active.
+Ensure the `Tech errors alert watcher` automation exists and is ACTIVE. Use `/Users/alexwyler/.codex/skills/tech-errors-watcher/SKILL.md` as the source of truth, especially the lightweight Sentinel Prompt and its `$handle-in-slack` handoff. If the watcher is missing, paused, canceled, disabled, no longer points at #tech_errors (CNMQLEWDV) and #tech_errors_high_priority (C059KM2EDEY), or its spawned worker prompt does not explicitly use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md`, recreate or update it as an active lightweight sentinel with a 5 minute cadence. Prefer a heartbeat attached to the original watcher thread when possible; if that thread already has another heartbeat, use a detached local cron with a small model and low reasoning. Do not process Slack alerts from this repair automation; only repair or confirm the watcher. Report what you changed, or say the watcher was already active.
 ```
 
 ## Manual Operations

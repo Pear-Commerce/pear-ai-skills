@@ -1,6 +1,6 @@
 ---
 name: slack-approval-pr-automation
-description: Create, restart, or repair Slack watcher automations that stay lightweight while scanning, escalate real findings to high-reasoning analysis/fix workers, ask for Slack yes/no approval, create PRs, and run PR-specific watch/merge automations. Use for Slack-to-GitHub or Slack-to-PR workflows that need dedupe, approval gates, and model/reasoning tiering.
+description: Create, restart, or repair Slack watcher automations that stay lightweight while scanning, escalate real findings to high-reasoning analysis/fix workers, use $handle-in-slack for Slack YES/NO approval and follow-through, create PRs, and run PR-specific watch/merge automations. Use for Slack-to-GitHub or Slack-to-PR workflows that need dedupe, approval gates, spawned worker prompts, and model/reasoning tiering.
 metadata:
   short-description: Create staged Slack-to-PR automations
 ---
@@ -12,11 +12,11 @@ Use this skill when asked to create or update a Slack watcher that:
 - watches a channel/thread pattern for actionable messages
 - keeps routine polling cheap
 - escalates only real work to high or xhigh reasoning
-- asks humans for yes/no approval in Slack before edits
+- uses `$handle-in-slack` to ask humans for YES/NO approval in Slack before edits or side effects
 - creates and watches PRs after approval
 - optionally auto-fixes review/CI feedback and auto-lands when allowed
 
-For Pear engineering repos, also use `$pear-engineering-workflow` before code edits and `$pear-pr-review-flow` for PR creation, review requests, PR watchers, and landing.
+For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth in both the sentinel prompt and any spawned deep worker prompt. For Pear engineering repos, also use `$pear-engineering-workflow` before code edits and `$pear-pr-review-flow` for PR creation, review requests, PR watchers, and landing.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ If the request is under-specified, make conservative defaults and include them i
 2. Create or update the sentinel heartbeat. Keep it cheap and explicit that it must only search/read Slack, dedupe, extract identifiers, and escalate.
 3. Add or update the daily repair cron. It should not process Slack findings itself.
 4. Put the deep prompt template in the skill or sentinel prompt so the sentinel can create a run-specific worker without reconstructing policy.
-5. In the deep prompt, include the Slack message budget, approval semantics, code-work rules, PR watcher creation, and shutdown rules.
+5. In the deep prompt, explicitly instruct the worker to use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` before posting any action-needed Slack reply, then include the Slack message budget, approval semantics, code-work rules, PR watcher creation, and shutdown rules.
 6. Verify automation files or tool results: IDs, `ACTIVE` status, cadence, target thread/cwds, model, and reasoning effort where supported.
 7. Sync any newly created or edited skill copies from the canonical source before finishing.
 
@@ -103,7 +103,7 @@ For each recent in-scope message:
 
 When a new unhandled in-scope finding is found, immediately escalate it before any expensive reasoning:
 - Prefer spawning/delegating a worker/subtask with reasoning_effort=xhigh if available and immediate.
-- Otherwise create or update a run-specific Codex automation named `<AUTOMATION_PREFIX> <ITEM_ID> deep triage` with model `gpt-5.3-codex`, reasoning effort `xhigh`, cwd `<LOCAL_CWD>`, and the Escalated Triage Prompt from this skill or from the task-specific watcher skill, filled with the extracted identifiers and Slack thread data.
+- Otherwise create or update a run-specific Codex automation named `<AUTOMATION_PREFIX> <ITEM_ID> deep triage` with model `gpt-5.3-codex`, reasoning effort `xhigh`, cwd `<LOCAL_CWD>`, and the Escalated Triage Prompt from this skill or from the task-specific watcher skill, filled with the extracted identifiers and Slack thread data. The spawned worker prompt must explicitly use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` for any Slack approval gate and follow-through.
 
 After escalation, stay quiet in Slack. Report in the Codex thread only if escalation failed or a duplicate/permission ambiguity needs human attention. If no new unhandled findings are found, do nothing except return a quiet status.
 ```
@@ -123,6 +123,8 @@ Deeply triage this <SYSTEM_OR_REPO> finding:
 
 Read the Slack thread first. Skip and delete/stop this run-specific automation if Codex has already posted triage for this item or if a PR/fix flow is already linked in the thread.
 
+Use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` as the canonical workflow for Slack replies that may lead to a fix, PR, JSP, rerun, operational action, or other side effect. Do read-only analysis first, then choose the `$handle-in-slack` outcome: answer-only, clarification, or action-needed YES/NO gate.
+
 Inspect the source of truth for the failure or request. For GitHub Actions, inspect run status, failed jobs, annotations, and logs. Determine:
 - concrete failing job/test/build step or requested change
 - important error text or stack frame, paraphrased when long
@@ -132,7 +134,7 @@ Inspect the source of truth for the failure or request. For GitHub Actions, insp
 
 Before posting, search for duplicate work by source URL/id, failed test name, branch slug, Slack thread links, and open PRs.
 
-Post one concise original Slack thread reply that starts with `Automatic reply triggered by <SKILL_OR_AUTOMATION_NAME>.` Include the findings above, the likely owner/author tag when evidence supports it, and ask for yes/no approval. End with `- Codex`.
+Post one concise original Slack thread reply that starts with `Automatic reply triggered by <SKILL_OR_AUTOMATION_NAME>.` Include the findings above, the likely owner/author tag when evidence supports it, and use `$handle-in-slack` for the YES/NO approval ask, exact scope, and execution path. End with `- Codex`.
 
 Treat clear yes replies from any human (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval to perform the approved scope. Treat clear no/stop as a decline. If no approval has arrived, stay quiet except for notable blockers in the Codex thread. If declined, acknowledge once in Slack and delete/stop this run-specific automation.
 

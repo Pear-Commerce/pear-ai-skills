@@ -1,6 +1,6 @@
 ---
 name: slack-technical-question-watcher
-description: Start, restart, or repair the Codex automation that watches Pear Slack #eng-help, #pulse-internal, #customer-success, and #engineering for explicit bug reports or technical questions, investigates with code/tools, and posts concise evidence-based thread replies.
+description: Start, restart, or repair the Codex automation that watches Pear Slack #eng-help, #pulse-internal, #customer-success, and #engineering for explicit bug reports or technical questions, investigates with code/tools, posts concise evidence-based thread replies, and uses $handle-in-slack for consistent YES/NO approval and execution when a fix or operational action is needed.
 metadata:
   short-description: Watch Slack for technical questions and reply with investigated answers
 ---
@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when asked to start, restart, re-enable, inspect, recreate, modify, or push the Slack watcher that answers explicit Pear technical questions or bug reports from shared Slack channels.
 
-For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work after explicit approval, always use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
+For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work after explicit approval, always use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
 
 ## Defaults
 
@@ -70,7 +70,7 @@ Watch Pear Slack for new, explicit engineering bug reports or technical question
 
 This watcher starts at <START_LOCAL_TIME> / Slack epoch <START_SLACK_EPOCH>. Do not backfill older messages unless a newer in-scope message explicitly asks about that older thread.
 
-Use the Slack Approval PR Automation pattern, but this watcher is for analysis replies, not automatic PR creation. Keep routine passes cheap. On each pass, search/read Slack only first, including recent thread context. Look back roughly 45 minutes, and up to 2 hours if the previous pass may have been missed.
+Use the Slack Approval PR Automation pattern and `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` as the canonical analyze -> YES/NO gate -> execute flow. This watcher is for analysis replies and approval-gated follow-through, not automatic PR creation. Keep routine passes cheap. On each pass, search/read Slack only first, including recent thread context. Look back roughly 45 minutes, and up to 2 hours if the previous pass may have been missed.
 
 In scope: messages that are clearly asking for technical help or reporting a bug, failure, data issue, integration issue, Pulse/reporting issue, API/job/test/runtime error, missing expected behavior, stack trace, broken customer workflow, or a concrete "why is X happening / can someone investigate" engineering question. In #customer-success, only treat it as in scope when the message is explicitly technical and about Pear product/data/system behavior.
 
@@ -83,7 +83,12 @@ For each candidate message:
 - skip if a human has already provided a concrete answer/fix that appears sufficient
 - extract the channel id, parent timestamp, message permalink, short problem statement, named customer/vendor/retailer/system, URLs, IDs, UPCs, SKUs, account/vendor IDs, stack traces, and any explicitly requested output
 
-When a new unhandled in-scope item is found, do the work Alex would normally ask Codex to do for an investigation, using read-only tools by default:
+When a new unhandled in-scope item is found, follow `$handle-in-slack`:
+- read the full Slack context
+- do the bounded read-only investigation Alex would normally ask Codex to do
+- choose answer-only, clarification, or action-needed YES/NO approval gate
+
+Use read-only tools by default:
 - search the Slack thread and relevant Slack history for context
 - search the local codebase at /Users/alexwyler/api.pearcommerce.com with `rg`/git as needed
 - inspect relevant tools/connectors, GitHub issues/PRs, logs, Snowflake/DB/reporting sources, DevRev links, browser pages, or web sources when they are the source of truth and safe to read
@@ -101,7 +106,11 @@ Post at most one concise thread reply per item only when you have a useful, evid
 
 If confidence is low, tools are unavailable, the question is too ambiguous, or the investigation would require risky mutation, stay quiet in Slack unless a short clarification request would be clearly helpful. Prefer no reply over speculative noise.
 
-If a message explicitly asks for a code fix/PR and the root cause is concrete, ask for yes/no approval in the thread before making changes unless Alex already gave explicit approval in that thread. After approval, the Pear PR Gate from `$slack-technical-question-watcher` is mandatory before any Pear PR operation: load `$pear-engineering-workflow` and `$pear-pr-review-flow`, use a sibling worktree from latest master, complete the Pre-PR Cleanup Gate, keep the fix surgical, request individual engineering reviewers and GitHub Copilot, verify Copilot when possible, create or update a PR-specific watch automation with the approved auto-fix/auto-land scope, and post only the PR link/final status in the original Slack thread. If any PR-flow step is unavailable, say exactly which step is missing instead of silently skipping it.
+If a concrete fix, PR, JSP, rerun, resolver/import/availability scan, or other side effect is appropriate, use `$handle-in-slack` to post the concise YES/NO approval prompt before making changes unless the thread already contains explicit approval for that exact scoped action. After approval:
+- for code/PR work, the Pear PR Gate from `$slack-technical-question-watcher` remains mandatory: load `$pear-engineering-workflow` and `$pear-pr-review-flow`, use a sibling worktree from latest master, complete the Pre-PR Cleanup Gate, keep the fix surgical, request individual engineering reviewers and GitHub Copilot, verify Copilot when possible, create or update a PR-specific watch automation with the approved auto-fix/auto-land scope, and post only the PR link/final status in the original Slack thread
+- for JSP or operational work, follow `$handle-in-slack`, `$slack-prod-jsp-approval`, and `$pear-prod-jsp`: create a preview-only JSP first, wait for Run-button approval, then post concise results in the original Slack thread
+
+If any required follow-through step is unavailable, say exactly which step is missing instead of silently skipping it.
 
 When no new unhandled in-scope messages are found, return a quiet heartbeat status only.
 ```
@@ -111,7 +120,7 @@ When no new unhandled in-scope messages are found, return a quiet heartbeat stat
 Use this as the repair automation prompt:
 
 ```text
-Ensure the `Slack technical question watcher` automation exists and is ACTIVE. Use `/Users/alexwyler/.codex/skills/slack-technical-question-watcher/SKILL.md` as the source of truth, especially the Watcher Prompt and Scope Policy. If the watcher is missing, paused, canceled, disabled, or no longer points at #eng-help C035Q6QTX41, #pulse-internal C082CDY96BC, #customer-success C03A31MS4F3, and #engineering C07RNCXKWJU with the explicit-bug-report/technical-question scope, recreate or update it as an active heartbeat attached to the original Codex thread using a 10 minute cadence. It should start from its creation time and should not backfill old Slack messages. Do not process Slack messages, run codebase investigations, or post Slack replies from this repair automation; only repair or confirm the watcher. Report what you changed, or say the watcher was already active.
+Ensure the `Slack technical question watcher` automation exists and is ACTIVE. Use `/Users/alexwyler/.codex/skills/slack-technical-question-watcher/SKILL.md` as the source of truth, especially the Watcher Prompt, Scope Policy, and `$handle-in-slack` handoff. If the watcher is missing, paused, canceled, disabled, or no longer points at #eng-help C035Q6QTX41, #pulse-internal C082CDY96BC, #customer-success C03A31MS4F3, and #engineering C07RNCXKWJU with the explicit-bug-report/technical-question scope, recreate or update it as an active heartbeat attached to the original Codex thread using a 10 minute cadence. It should start from its creation time and should not backfill old Slack messages. Do not process Slack messages, run codebase investigations, or post Slack replies from this repair automation; only repair or confirm the watcher. Report what you changed, or say the watcher was already active.
 ```
 
 ## Manual Operations
