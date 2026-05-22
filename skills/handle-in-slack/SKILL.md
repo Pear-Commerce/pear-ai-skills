@@ -24,12 +24,17 @@ Use this skill as the top-level Slack handling workflow. It combines Slack conte
    - Resolve channel, parent timestamp, permalink, requester, relevant mentioned people, prior Codex replies, linked PRs, alerts, Datadog links, IDs, vendors, retailers, accounts, UPCs, SKUs, environments, and any requested action.
    - Skip duplicate work if Codex already answered, a human already gave a sufficient answer, or an active PR/fix flow is linked.
 
-2. Do a bounded read-only investigation.
+2. Read surrounding Slack context before deciding what the message means.
+   - For sparse, ambiguous, or follow-up messages, read nearby channel or DM history around the linked timestamp, normally 10-30 relevant messages before and a few after when available.
+   - Use surrounding context to identify the real problem, prior decisions, named systems, and whether the message is part of an ongoing request.
+   - Keep this bounded and relevant. Do not summarize or expose unrelated private context in the outgoing reply.
+
+3. Do a bounded read-only investigation.
    - Search Slack history, the local repo, logs, GitHub, browser pages, DB/reporting sources, Datadog, or external docs only when they are relevant sources of truth.
    - Keep commands and queries read-only until there is explicit approval.
    - Stop when there is enough evidence for either a useful answer, a concrete proposed action, or a clear request for missing scope.
 
-3. Decide the outcome.
+4. Decide the outcome.
    - **Answer-only:** If the thread only needs an explanation or next-step recommendation, post one concise evidence-based reply and stop.
    - **Clarification:** If the problem is real but scope is missing, ask for the exact IDs/names/env needed plus YES/NO if an action is likely.
    - **Action needed:** If a fix, rerun, data change, JSP, PR, or external side effect is appropriate, post a YES/NO approval prompt before acting.
