@@ -13,6 +13,15 @@ If Pear has no usable UPC with retailer ids yet, discover an in-stock product on
 
 For JSP execution, prefer TEST first when possible because TEST targets the production database and is convenient for app logs. Treat TEST JSP writes as production DB writes. For the shopper-facing proof, still check production Offers (`https://offers.pearcommerce.com`) and the production API/read path unless the user explicitly asks to inspect the test frontend.
 
+When curling Pear API hosts during verification, include the trusted-edge header used by the Admin/Offers Cloudflare invalidation scripts before treating a Cloudflare 403/block page as real API behavior:
+
+```bash
+PEAR_TRUSTED_EDGE_VALUE="${PEAR_TRUSTED_EDGE_HEADER:-${PEAR_TRUSTED_EDGE:-a1360351-32b2-4410-9c87-ec294e780c25}}"
+curl -fsS -H "x-pear-trusted-edge: ${PEAR_TRUSTED_EDGE_VALUE}" "https://api.pearcommerce.com/v1/retailer-list/<offerId>?zip=<zip>&countryCode=<countryCode>"
+```
+
+Use this for `api.pearcommerce.com` and `test.api.pearcommerce.com` only. Do not add it to retailer sites, `partners.pearcommerce.com`, raw Offers picker page loads, Cloudflare's own API, or unrelated domains.
+
 ## Required Companion Skills
 
 Use `pear-prod-jsp` only when the live Pear server context is actually needed: production DB reads that are not otherwise available, production classpath/ORM checks, availability updater execution, or DB modifications. Keep its preview-page and visible `Run` button approval rules, especially for any write/updater step.
@@ -92,7 +101,7 @@ Use `browser` for landing-page and click verification. Open the JSP preview URL 
 8. Verify server-side read path.
    - Check the saved availability row in the production DB or via JSP/retailer-list API. TEST JSPs read that same production DB.
    - Confirm the saved availability URL equals the expected PDP URL.
-   - If external `curl` is blocked by Cloudflare, use the browser or an internal JSP/API call from the app server.
+   - For external `curl` to `api.pearcommerce.com` or `test.api.pearcommerce.com`, include `x-pear-trusted-edge` first. If it is still blocked by Cloudflare, use the browser or an internal JSP/API call from the app server.
    - If the retailer is not naturally selected by geo constraints but the row is valid, use the landing page/API `include=<RetailerEnum>` query parameter to verify the retailer-specific button path.
 
 9. Verify the landing page.

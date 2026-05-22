@@ -26,6 +26,17 @@ Use a temporary JSP when the useful execution context is the live Pear server: p
 - Never put raw secrets, tokens, customer data dumps, or unmasked credentials in the JSP source or output. `jsp.sh` archives the JSP source to `s3://assets.pearcommerce.com/jsp-log/`.
 - Do not use this workflow to repair or deploy Offers production/staging static assets by manually writing local build artifacts to S3/R2/CDN. Fix source/deploy/CI instead. Production data artifacts, catalog/report outputs, and one-off tool uploads are okay when scoped.
 
+## Pear API Curl Header
+
+When you curl `https://api.pearcommerce.com` or `https://test.api.pearcommerce.com` directly for JSP previews, raw JSP output, controller probes, cache invalidation, or API verification, include the trusted-edge header used by the Admin/Offers Cloudflare invalidation scripts before interpreting a Cloudflare 403/block page:
+
+```bash
+PEAR_TRUSTED_EDGE_VALUE="${PEAR_TRUSTED_EDGE_HEADER:-${PEAR_TRUSTED_EDGE:-a1360351-32b2-4410-9c87-ec294e780c25}}"
+curl -fsS -H "x-pear-trusted-edge: ${PEAR_TRUSTED_EDGE_VALUE}" "https://api.pearcommerce.com/..."
+```
+
+Do not add this header to third-party retailer APIs, `partners.pearcommerce.com`, raw Offers page URLs, Cloudflare's own API, or unrelated domains. If a Pear API curl is still blocked with the header, use the browser for public page proof or a narrow JSP/server-side read path for live app context.
+
 ## Learn The Pattern
 
 Before inventing a pattern, inspect current examples:
@@ -66,7 +77,7 @@ Use this only when the user asked for a formal output contract, such as JSON, CS
 
 For formal-output JSPs, prefer this structure:
 
-1. No-parameter preview: explain the formal output, show the `Run` button for the normal `run=true` page, and include an optional direct `curl` command for `run=true&output=raw`.
+1. No-parameter preview: explain the formal output, show the `Run` button for the normal `run=true` page, and include an optional direct `curl` command for `run=true&output=raw`. If that curl targets `api.pearcommerce.com` or `test.api.pearcommerce.com`, include the trusted-edge header described above.
 2. `run=true`: render the formal output at the top, then render the full normal execution report underneath with steps, timings, context, errors, stack traces, and verification notes. Do not collapse this report by default.
 3. `run=true&output=raw`: return only the formal artifact. For JSON or CSV, set the matching response content type and do not append HTML.
 

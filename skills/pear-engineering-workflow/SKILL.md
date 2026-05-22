@@ -19,6 +19,17 @@ Never deploy production from a local or dev build. Production Offers artifacts m
 
 CDN cache purges/invalidations may be run when needed to make already-deployed CI artifacts visible, but they must not be paired with local object-content writes. If a situation appears to require manual production object mutation, stop and escalate instead of improvising from local files.
 
+## Pear API Curl Header
+
+When curling Pear API hosts from a local shell, include the trusted-edge header before treating a Cloudflare 403/block page as endpoint behavior. This applies to `https://api.pearcommerce.com` and `https://test.api.pearcommerce.com` requests, including validation probes, cache invalidation calls, retailer-list reads, JSP raw-output curls, and other direct API checks. The header shape comes from the Admin/Offers Cloudflare invalidation scripts:
+
+```bash
+PEAR_TRUSTED_EDGE_VALUE="${PEAR_TRUSTED_EDGE_HEADER:-${PEAR_TRUSTED_EDGE:-a1360351-32b2-4410-9c87-ec294e780c25}}"
+curl -fsS -H "x-pear-trusted-edge: ${PEAR_TRUSTED_EDGE_VALUE}" "https://api.pearcommerce.com/v1/..."
+```
+
+Use this only for Pear API hosts. Do not add it to third-party retailer APIs, `partners.pearcommerce.com`, raw Offers page loads, Cloudflare's own API, or unrelated domains. If the trusted-edge header still returns a Cloudflare block, switch to browser verification or a narrow JSP/server-side read path instead of escalating local curl variants.
+
 ## Review Rules
 
 Before calling code changes done, read the PR-improvement guide. Prefer:
