@@ -95,11 +95,11 @@ Use read-only tools by default:
 - use bounded, read-only queries and commands; do not leave sessions running
 - do not edit files, create branches, open PRs, run production-write JSPs, mutate DBs, or change external state unless the Slack message explicitly asks Codex/Alex for that exact action and the needed approval is present
 
-Post at most one concise thread reply per item only when you have a useful, evidence-based answer. The reply must:
+Post at most one short thread reply per item only when you have a useful, evidence-based answer. Keep it brief: usually 3-5 bullets or a short paragraph plus bullets. The reply must:
 - start with `Automatic reply triggered by Slack technical question watcher.`
-- summarize the likely answer/root cause and confidence
-- include the key evidence trail, with concrete IDs/tables/files/commands or links where useful
-- say what should happen next, especially if a rerun/deploy/data refresh/owner decision is needed
+- give a one-line likely answer/root cause with confidence
+- include only the key evidence needed to trust the answer; avoid long evidence dumps
+- include one concrete next step when a rerun/deploy/data refresh/owner decision is needed
 - tag a likely owner only when evidence strongly supports it
 - avoid secrets, credentials, private query outputs, or noisy implementation logs
 - end with `- Codex`
