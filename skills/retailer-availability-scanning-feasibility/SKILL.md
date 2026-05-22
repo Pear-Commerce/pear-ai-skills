@@ -59,8 +59,9 @@ Explore in local Chrome before coding, but treat local browser and direct local 
 2. Open the PDP for a sample product with a known UPC and item id.
 3. Switch pickup/delivery/ship modes and observe Network requests.
 4. Identify endpoints or documents that return inventory, purchasability, price, fulfillment, substitutions, or store-specific product details.
-5. Record required headers, cookies, postal code/store id parameters, GraphQL operation names, request bodies, and local storage/session setup.
-6. Check whether the route can be replayed statelessly in Java. If session state is required, reproduce the session setup request sequence in Java instead of relying on the browser session.
+5. For shared storefront platforms, inspect the storefront bootstrap config, embedded/injected JSON, merchant/location config endpoints, and current selected store payload before trusting Pear `Store.storeId` values. Store imports, locator ids, Google/place ids, or old platform ids can be valid Pear data but invalid for the ecommerce inventory endpoint; use the merchant/fulfillment id that the live storefront sends to the API.
+6. Record required headers, cookies, postal code/store id parameters, merchant ids, GraphQL operation names, request bodies, and local storage/session setup.
+7. Check whether the route can be replayed statelessly in Java. If session state is required, reproduce the session setup request sequence in Java instead of relying on the browser session.
 
 Prefer stable sources in this order: inventory API, product detail API with store id, cart/add-to-cart validation, PDP embedded store-specific JSON, rendered PDP DOM, then live online PDP/product/search JSON when it exposes checkout-relevant stock status, price, and buyability. For online-only availability, verify the add-to-cart/buy button is enabled in live HTML/JSON or that a live cart/add endpoint accepts the item; otherwise leave the probe disabled as a possible dead-link risk.
 
@@ -200,7 +201,7 @@ When app decompilation or APK string extraction reveals API base URLs, route fra
 
 When a new tactic is useful, or a creative route fails in a reusable way, update this skill or `references/repo-tactics.md` in the canonical skills repo before wrapping up, then sync/reinstall the skill. Capture the store-context setup, request body/header shape, proxy type, status/price mapping, cache key implication, and how the `@Script` probe distinguishes unavailable from blocked.
 
-When store ids differ between locator surfaces, validate the id against the availability endpoint before committing to the store import. A marketing locator id may be stable for maps but unusable for fulfillment; in that case use the ecommerce/fulfillment UUID or code in `Store.SStore.storeId` and note any small count difference from the marketing locator.
+When store ids differ between locator surfaces, validate the id against the availability endpoint before committing to the store import or declaring the route blocked. A marketing locator id, Google/place id, Pear imported id, or stale platform id may be stable for maps but unusable for fulfillment; in that case use the ecommerce/fulfillment merchant UUID or code from storefront config, selected-store payloads, or merchant config APIs in `Store.SStore.storeId`, and note any small count difference from the marketing locator. If static/browser-profile proxy tests fail with an "invalid merchant/store" style response, try the live storefront's current merchant id before escalating to mobile TLS profiles, render proxies, or app decompilation.
 
 For GraphQL routes copied from browser bundles, keep the operation and fragments browser-shaped until the probe is stable. A proxy response that reaches GraphQL validation, even with errors like unused/missing fragments, is useful evidence that the proxy/header/key path reached the retailer API; fix the query shape and retest that proxy before discarding it.
 

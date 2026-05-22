@@ -72,6 +72,8 @@ Some retailers have both: a static checker for correctness and a batch updater f
 
 Use real multi-UPC endpoints when available; otherwise serial base classes are simpler and safer.
 
+For shared storefront platforms, first prove that DB `Store.storeId` values are the same ids the inventory endpoint expects. If live storefront config exposes merchant/fulfillment ids that differ from imported Pear store ids, a custom `BatchAvailabilityUpdater` may need to stream those platform merchant ids directly instead of extending `MultiUPCStoreIdBatchAvailabilityUpdater`. In that shape, keep `markMissingStoreIdsUnavailable()` false and rely on matching `RetailerZone` rows for writeback so stale/wrong DB store ids do not create misleading unavailable records.
+
 ## `BatchAvailability` And `RecomputeResult`
 
 Populate these fields:
@@ -110,6 +112,7 @@ Most scanner bugs come from silently checking the wrong store:
 
 - Reproduce store-selection cookies/headers/request sequence in Java; do not rely on local browser session state.
 - Validate response store id when the response contains one. HEB rejects product data for the wrong store; Walmart Canada throws on pickup store mismatch.
+- For shared storefront platforms, parse homepage/app bootstrap config and merchant/location config APIs for the ecommerce merchant id before relying on imported `Store.storeId` rows. If the API says the merchant/store id is invalid, verify the id source before broadening proxy/TLS experiments.
 - Include store id in request body, cookies, headers, and cache key when it affects inventory.
 - If a route uses zip or lat/lng instead of store id, include rounded coordinates/zip in the cache key and prove mapping back to the target store.
 - Load `Store` from DB when the request needs secondary id, country code, zip, lat/lng, or fulfillment id.

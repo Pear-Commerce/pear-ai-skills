@@ -213,6 +213,8 @@ Create a batch updater only when one of these is true:
 
 If the availability recomputer already uses all-static proxies and per-item/per-store checks are acceptable, prefer a delegating batch updater that calls the recomputer rather than duplicating logic. Otherwise, implement a true `BatchAvailabilityUpdater` only when the retailer API returns many item/store records per request or another existing batch pattern closely matches.
 
+For shared storefront platforms, validate that Pear `Store.storeId` rows are the same merchant/fulfillment ids the live availability endpoint accepts before choosing `MultiUPCStoreIdBatchAvailabilityUpdater`. If storefront bootstrap config or merchant config APIs expose the authoritative merchant ids and the DB store rows are stale, numeric, or locator-specific, build the batch stream from those live storefront merchant configs instead. In that case, keep missing-store inference disabled unless the store import has been fixed, and let writeback happen only where matching `RetailerZone` rows exist.
+
 ## Production @Script Test
 
 Add a focused `@Script` test, usually under `test/com/pear/itemurlupdater/**` or `test/com/pear/upcresolution/**` following nearby patterns. The test should cover:
