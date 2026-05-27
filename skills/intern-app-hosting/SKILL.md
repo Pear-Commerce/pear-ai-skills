@@ -275,26 +275,28 @@ If this is happening, the score recovers on its own within minutes to hours. To 
 
 ## Step 4: Wire Up Shared Google Auth
 
-All apps use the shared Google OAuth client at `auth.intern.pearcommerce.com`. No app should register its own Google redirect URI.
+New apps use the v2 shared Google OAuth lane at `auth-v2.intern.pearcommerce.com`. No app should register its own Google redirect URI.
 
-**Never rotate or replace the shared Google OAuth client secret while fixing an app.** `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` belong only to the shared `auth-intern` service and affect every intern app. If Google auth is failing for one app, leave the Google OAuth client alone; fix that app's callback, state/cookie handling, domain config, or `AUTH_SHARED_SECRET` instead. Only change `auth-intern` Google client credentials when the user explicitly asks for a global auth rotation and you have a coordinated rollout plan for all apps.
+Existing apps that already use `auth.intern.pearcommerce.com` stay on that legacy lane until the user explicitly asks to migrate that app. Do not change legacy app auth secrets while creating or fixing a v2 app.
+
+**Never rotate or replace a shared Google OAuth client secret while fixing an app.** `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` belong only to the shared auth service for that lane and affect every app on the lane. If Google auth is failing for one app, leave the Google OAuth client alone; fix that app's callback, state/cookie handling, domain config, or `AUTH_SHARED_SECRET` instead. Only change shared auth Google client credentials when the user explicitly asks for a coordinated lane-wide auth rotation.
 
 Read `references/shared-auth-contract.md` for the full contract. The key points:
 
-- **Login start**: app redirects user to `https://auth.intern.pearcommerce.com/auth/google/start` with `return_to`, `state`, `nonce`, `hosted_domain`, `app_name`
+- **Login start**: app redirects user to `https://auth-v2.intern.pearcommerce.com/auth/google/start` with `return_to`, `state`, `nonce`, `hosted_domain`, `app_name`
 - **Callback**: shared auth service completes Google OAuth and redirects back to the app's callback URL with `state` and a signed `session_token`
 - **Validation**: app validates `state`, validates `session_token` using `AUTH_SHARED_SECRET`, checks nonce and `hosted_domain`, then creates a local session
 
 **Important: do not rotate or reinterpret `AUTH_SHARED_SECRET`.** The auth service and every hosted app must use the exact same byte string. When fixing one app, update only that app's secret unless the user explicitly asks for a shared-token rotation.
 
-At Pear, the safe source for Worker secret setup is the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1`. Do not JSON-parse it, pick an inner field, trim quotes from it, or substitute a stale KV value. If stores disagree, treat the currently deployed auth service as the source of truth and verify candidate values against a fresh `session_token` before setting the app secret.
+At Pear, the safe source for new v2 Worker app secret setup is the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-v2-shared-secret` in `us-east-1`. Do not JSON-parse it, pick an inner field, trim quotes from it, or substitute a stale KV value. Legacy apps on `auth.intern.pearcommerce.com` use `intern-app-hosting-auth-shared-secret`; do not copy legacy values into v2 apps or v2 values into legacy apps.
 
-Set a Worker app's shared secret like this:
+Set a new Worker app's v2 shared secret like this:
 
 ```bash
 AUTH_SHARED_SECRET="$(
   aws secretsmanager get-secret-value \
-    --secret-id intern-app-hosting-auth-shared-secret \
+    --secret-id intern-app-hosting-auth-v2-shared-secret \
     --region us-east-1 \
     --query SecretString \
     --output text
@@ -302,11 +304,11 @@ AUTH_SHARED_SECRET="$(
 printf '%s' "$AUTH_SHARED_SECRET" | npx wrangler secret put AUTH_SHARED_SECRET --name <worker-name>
 ```
 
-If the user reports `Bad shared auth token signature`, do not touch `auth-intern` or other apps. Update only the affected app's `AUTH_SHARED_SECRET`, then retry the callback. A stale pasted callback may then say `Shared auth token expired`; that is progress and means the signature now verifies.
+If the user reports `Bad shared auth token signature`, do not touch `auth-intern`, `auth-intern-v2`, or other apps. First identify the app's auth lane from `AUTH_BASE_URL`, then update only the affected app's `AUTH_SHARED_SECRET` from that lane's AWS secret. A stale pasted callback may then say `Shared auth token expired`; that is progress and means the signature now verifies.
 
 **Required env vars for the hosted app:**
 ```
-AUTH_BASE_URL=https://auth.intern.pearcommerce.com
+AUTH_BASE_URL=https://auth-v2.intern.pearcommerce.com
 AUTH_CALLBACK_URL=https://<app-hostname>/auth/google/callback
 AUTH_SHARED_SECRET=<shared secret — retrieve from Pear secrets store>
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
@@ -316,6 +318,16 @@ GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 **For Lightsail/Node apps**, use `express-session` with `connect.sid`. Add `SESSION_SECRET` to env vars.
 
 Set these secrets/env vars using whatever secrets management is available (Workers secrets, Lightsail instance env, etc.).
+
+For new app templates, include an auth verification helper equivalent to `Pear-Commerce/auth-intern-v2`'s `scripts/auth-lane.mjs`. Before handoff, run it against the live app so the app proves it accepts v2 tokens:
+
+```bash
+node scripts/auth-lane.mjs sync-app-secret --worker <worker-name> --secret-id intern-app-hosting-auth-v2-shared-secret
+node scripts/auth-lane.mjs verify-app \
+  --url https://<app-name>.intern.pearcommerce.com \
+  --oauth-cookie <temporary-oauth-cookie-name> \
+  --session-cookie <session-cookie-name>
+```
 
 ---
 
@@ -467,8 +479,8 @@ Always produce this summary at the end:
 
 If the app is visible, add: "You can ask Codex or Claude to hide this from the intern apps directory later; the app will still be reachable by direct URL."
 
-**Auth mode:** Shared Google OAuth via auth.intern.pearcommerce.com
-**Auth callback registered in Google Cloud:** https://auth.intern.pearcommerce.com/auth/google/callback (no app-specific URI needed)
+**Auth mode:** Shared Google OAuth via auth-v2.intern.pearcommerce.com for new apps, or legacy auth.intern.pearcommerce.com only when deliberately supporting an unmigrated app
+**Auth callback registered in Google Cloud:** https://auth-v2.intern.pearcommerce.com/auth/google/callback for v2 apps (no app-specific URI needed)
 
 **Secrets / env vars set:**
 - AUTH_BASE_URL

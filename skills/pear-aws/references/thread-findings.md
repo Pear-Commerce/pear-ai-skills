@@ -17,7 +17,7 @@ This reference records distilled guidance from Codex sessions scanned from 2026-
 - JSP work should load `$pear-prod-jsp`; that skill has the current preview/Run button and S3 archive safety rules.
 - Offers production/staging static assets must not be repaired by manual local S3/R2/CloudFront/Cloudflare uploads.
 - The AWS Cost Tracker repo demonstrated the local AWS SDK pattern: default credential chain or `AWS_PROFILE`, Cost Explorer in `us-east-1`, CloudTrail across several regions, S3 report cache, and shared Pear Google OAuth.
-- Internal dashboards should use `auth.intern.pearcommerce.com` with `AUTH_REQUIRED`, `AUTH_SHARED_SECRET`, `SESSION_SECRET`, `GOOGLE_HOSTED_DOMAIN=pearcommerce.com`, and a callback under the app domain.
+- New internal dashboards should use `auth-v2.intern.pearcommerce.com` with `AUTH_REQUIRED`, `AUTH_SHARED_SECRET`, `SESSION_SECRET`, `GOOGLE_HOSTED_DOMAIN=pearcommerce.com`, and a callback under the app domain. Existing dashboards already on `auth.intern.pearcommerce.com` stay on that legacy lane until deliberately migrated.
 
 ## Useful Local Artifacts
 

@@ -2,19 +2,23 @@
 
 ## Overview
 
-All Pear intern apps share one Google OAuth client. The shared auth service at `auth.intern.pearcommerce.com` owns the Google callback. Hosted apps never register their own Google redirect URIs — they only need to trust the signed token returned by the shared service.
+New Pear intern apps use the v2 shared Google OAuth lane. The shared auth service at `auth-v2.intern.pearcommerce.com` owns the Google callback. Hosted apps never register their own Google redirect URIs — they only need to trust the signed token returned by the shared service.
 
-Never rotate or replace `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` while fixing a single app. Those credentials belong to `auth-intern` and changing them is a global auth change that can break every app using shared login. For app-specific auth failures, debug callback routing, cookies/state, hosted domain checks, and `AUTH_SHARED_SECRET` first. Only perform a Google OAuth client rotation when explicitly requested as a coordinated global auth operation.
+Existing apps that already use `auth.intern.pearcommerce.com` stay on that legacy lane until a deliberate app-by-app migration. Do not mix v2 and legacy `AUTH_SHARED_SECRET` values.
+
+Never rotate or replace `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` while fixing a single app. Those credentials belong to the shared auth service for its lane and changing them is a lane-wide auth change that can break every app using that login lane. For app-specific auth failures, debug callback routing, cookies/state, hosted domain checks, and `AUTH_SHARED_SECRET` first. Only perform a Google OAuth client rotation when explicitly requested as a coordinated lane-wide auth operation.
 
 ---
 
 ## Stable Google Redirect URI
 
-Only this URI is registered in Google Cloud:
+Only this URI is registered in Google Cloud for the v2 lane:
 
 ```
-https://auth.intern.pearcommerce.com/auth/google/callback
+https://auth-v2.intern.pearcommerce.com/auth/google/callback
 ```
+
+The legacy lane keeps its existing Google redirect URI at `https://auth.intern.pearcommerce.com/auth/google/callback` for apps that have not migrated yet.
 
 ---
 
@@ -25,7 +29,7 @@ https://auth.intern.pearcommerce.com/auth/google/callback
 The hosted app generates a `state` (CSRF token) and `nonce`, stores them temporarily (cookie or session), then redirects the user to:
 
 ```
-GET https://auth.intern.pearcommerce.com/auth/google/start
+GET https://auth-v2.intern.pearcommerce.com/auth/google/start
 ```
 
 Query parameters:
@@ -63,13 +67,13 @@ The hosted app:
 ## Environment Variables
 
 ```bash
-AUTH_BASE_URL=https://auth.intern.pearcommerce.com
+AUTH_BASE_URL=https://auth-v2.intern.pearcommerce.com
 AUTH_CALLBACK_URL=https://<app-hostname>/auth/google/callback
 AUTH_SHARED_SECRET=<retrieve from Pear secrets store>
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 ```
 
-Use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared token secret while fixing a single app. If a callback reports `Bad shared auth token signature`, update only the affected app's Worker secret first.
+For v2 apps, use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-v2-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared token secret while fixing a single app. If a callback reports `Bad shared auth token signature`, identify the app's lane from `AUTH_BASE_URL` and update only the affected app's Worker secret from that lane's AWS secret.
 
 For Lightsail/Node apps, also add:
 

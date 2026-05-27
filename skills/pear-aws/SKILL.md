@@ -142,14 +142,14 @@ For internal AWS-backed dashboards, reuse Pear's shared Google OAuth service ins
 
 ```bash
 AUTH_REQUIRED=true
-AUTH_BASE_URL=https://auth.intern.pearcommerce.com
+AUTH_BASE_URL=https://auth-v2.intern.pearcommerce.com
 AUTH_CALLBACK_URL=https://<app>.intern.pearcommerce.com/auth/google/callback
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
-AUTH_SHARED_SECRET=<secret from env/secret manager>
+AUTH_SHARED_SECRET=<raw SecretString from intern-app-hosting-auth-v2-shared-secret in us-east-1>
 SESSION_SECRET=<secret from env/secret manager>
 ```
 
-The AWS Cost Tracker app at `/Users/alexwyler/aws-cost-tracker` is the reference for AWS SDK credential profiles, Cost Explorer, CloudTrail, S3 report cache, and shared OAuth. For hosting, DNS, TLS, CloudFront, Lightsail, and auth env changes, also load `$intern-app-hosting`.
+Existing apps already on `auth.intern.pearcommerce.com` stay on that legacy auth lane until a deliberate app migration. The AWS Cost Tracker app at `/Users/alexwyler/aws-cost-tracker` is the reference for AWS SDK credential profiles, Cost Explorer, CloudTrail, S3 report cache, and shared OAuth. For hosting, DNS, TLS, CloudFront, Lightsail, and auth env changes, also load `$intern-app-hosting`.
 
 ## Cost And CloudTrail
 

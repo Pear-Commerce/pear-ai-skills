@@ -92,9 +92,9 @@ Create a `.env` file or export them in the startup script:
 cat > .env << 'EOF'
 APP_NAME=sample
 APP_DOMAIN=sample.intern.pearcommerce.com
-AUTH_BASE_URL=https://auth.intern.pearcommerce.com
+AUTH_BASE_URL=https://auth-v2.intern.pearcommerce.com
 AUTH_CALLBACK_URL=https://sample.intern.pearcommerce.com/auth/google/callback
-AUTH_SHARED_SECRET=<retrieve from Pear secrets store>
+AUTH_SHARED_SECRET=<raw SecretString from intern-app-hosting-auth-v2-shared-secret>
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 SESSION_SECRET=<generate a strong random secret>
 PORT=3000
