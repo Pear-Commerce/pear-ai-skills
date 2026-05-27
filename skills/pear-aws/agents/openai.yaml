@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pear AWS"
+  short_description: "Pear AWS ops, credentials, SSM, and CLI"
+  default_prompt: "Use $pear-aws to inspect AWS health, credentials, logs, or deployment tooling for Pear safely."
