@@ -26,21 +26,27 @@ compatibility_date = "2024-01-01"
 
 ### Setting Secrets on a Worker
 
-```bash
-# Set a secret interactively
-npx wrangler secret put AUTH_SHARED_SECRET
+Always set Worker secrets against an explicit app Worker name. Do not run secret commands against `auth-intern`, `auth-intern-v2`, or any `auth-*` support Worker during normal app hosting.
 
-# Or pipe the value
-echo "<secret-value>" | npx wrangler secret put AUTH_SHARED_SECRET
+```bash
+WORKER_NAME="<app-worker-name>"
+case "$WORKER_NAME" in
+  auth-intern|auth-intern-v2|auth-*)
+    echo "Refusing to modify protected shared auth Worker: $WORKER_NAME" >&2
+    exit 1
+    ;;
+esac
+
+printf '%s' "<secret-value>" | npx wrangler secret put AUTH_SHARED_SECRET --name "$WORKER_NAME"
 ```
 
 Set all required auth secrets:
 ```bash
-npx wrangler secret put AUTH_BASE_URL
-npx wrangler secret put AUTH_CALLBACK_URL
-npx wrangler secret put AUTH_SHARED_SECRET
-npx wrangler secret put GOOGLE_HOSTED_DOMAIN
+npx wrangler secret put AUTH_SHARED_SECRET --name "$WORKER_NAME"
+npx wrangler secret put COOKIE_SECRET --name "$WORKER_NAME"
 ```
+
+`AUTH_BASE_URL`, `AUTH_CALLBACK_URL`, and `GOOGLE_HOSTED_DOMAIN` are normally plain Wrangler vars in `wrangler.toml`, not secrets. If an existing app stores them as secrets, keep using explicit `--name "$WORKER_NAME"` and re-check the protected-worker guard first.
 
 ---
 

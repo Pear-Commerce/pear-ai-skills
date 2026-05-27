@@ -13,6 +13,28 @@ When asked to update this skill from any in-repository copy, first read the cano
 
 This skill takes an already-built app and hosts it on a Pear-managed subdomain like `sample.intern.pearcommerce.com`. It acts — using available tools — rather than just advising.
 
+## Protected Shared Auth Infrastructure
+
+`auth-intern` and `auth-intern-v2` are shared infrastructure Workers, not app Workers. A normal intern app hosting, update, or auth repair task must never run `wrangler secret put`, `wrangler deploy`, dashboard secret edits, or API writes against either shared auth Worker.
+
+Before any Wrangler secret or deploy command, identify the intended app Worker and reject protected targets:
+
+```bash
+WORKER_NAME="<app-worker-name>"
+case "$WORKER_NAME" in
+  auth-intern|auth-intern-v2|auth-*)
+    echo "Refusing to modify protected shared auth Worker: $WORKER_NAME" >&2
+    exit 1
+    ;;
+esac
+```
+
+Use explicit `--name "$WORKER_NAME"` on Worker secret commands so the target is visible in command history. Do not rely on a current directory, stale `wrangler.toml`, or dashboard-selected Worker when setting `AUTH_SHARED_SECRET`.
+
+Only modify `auth-intern` or `auth-intern-v2` when the user explicitly asks for a coordinated shared-auth lane operation. In that case, state that the change affects every app on that auth lane, verify the AWS source secret for the lane, and plan the lane-wide rollout before writing secrets.
+
+If a repo contains a vendored copy such as `skills/intern-app-hosting`, treat it as stale unless it was intentionally synced from `Pear-Commerce/pear-ai-skills` after this protected-worker rule was added. Prefer the canonical repo and recommend deleting or replacing old vendored copies.
+
 ## Standalone App Prompt
 
 When a task creates or substantially finishes a standalone app, tool, site, demo, or service that is not merely an embedded component of an existing product, always proactively ask the user whether they want it published internally. If they say yes, continue with this skill. If they already asked to share it with the team or get it live, do not ask again; proceed through the hosting workflow.
@@ -294,6 +316,14 @@ At Pear, the safe source for new v2 Worker app secret setup is the exact raw `Se
 Set a new Worker app's v2 shared secret like this:
 
 ```bash
+WORKER_NAME="<app-worker-name>"
+case "$WORKER_NAME" in
+  auth-intern|auth-intern-v2|auth-*)
+    echo "Refusing to modify protected shared auth Worker: $WORKER_NAME" >&2
+    exit 1
+    ;;
+esac
+
 AUTH_SHARED_SECRET="$(
   aws secretsmanager get-secret-value \
     --secret-id intern-app-hosting-auth-v2-shared-secret \
@@ -301,10 +331,10 @@ AUTH_SHARED_SECRET="$(
     --query SecretString \
     --output text
 )"
-printf '%s' "$AUTH_SHARED_SECRET" | npx wrangler secret put AUTH_SHARED_SECRET --name <worker-name>
+printf '%s' "$AUTH_SHARED_SECRET" | npx wrangler secret put AUTH_SHARED_SECRET --name "$WORKER_NAME"
 ```
 
-If the user reports `Bad shared auth token signature`, do not touch `auth-intern`, `auth-intern-v2`, or other apps. First identify the app's auth lane from `AUTH_BASE_URL`, then update only the affected app's `AUTH_SHARED_SECRET` from that lane's AWS secret. A stale pasted callback may then say `Shared auth token expired`; that is progress and means the signature now verifies.
+If the user reports `Bad shared auth token signature`, do not touch `auth-intern`, `auth-intern-v2`, or other apps. First identify the app's auth lane from `AUTH_BASE_URL`, then update only the affected app's `AUTH_SHARED_SECRET` from that lane's AWS secret. If a fresh token from the shared auth service fails against the AWS lane secret, stop and report a possible shared-auth lane drift instead of improvising a secret rotation. A stale pasted callback may then say `Shared auth token expired`; that is progress and means the signature now verifies.
 
 **Required env vars for the hosted app:**
 ```

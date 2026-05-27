@@ -47,6 +47,7 @@ Quick checklist for tracking progress on each hosted app. Use this to stay organ
 ## Auth
 
 - [ ] Auth lane selected: v2 for new apps (`auth-v2.intern.pearcommerce.com`) or legacy only for deliberate migration/support (`auth.intern.pearcommerce.com`)
+- [ ] Worker secret/deploy target checked and is NOT `auth-intern`, `auth-intern-v2`, or any `auth-*` shared support Worker
 - [ ] App has a `/login` route that generates `state` + `nonce` and redirects to shared auth start URL
 - [ ] App has an `/auth/google/callback` route that validates `state`, `session_token`, nonce, hosted domain
 - [ ] Local session created after successful validation

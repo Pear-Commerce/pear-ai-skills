@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 const DEFAULT_AUTH_URL = "https://auth-v2.intern.pearcommerce.com";
 const DEFAULT_SECRET_ID = "intern-app-hosting-auth-v2-shared-secret";
 const DEFAULT_REGION = "us-east-1";
+const PROTECTED_WORKERS = new Set(["auth-intern", "auth-intern-v2"]);
 
 const args = parseArgs(process.argv.slice(2));
 const command = args._[0] || "verify-app";
@@ -36,6 +37,7 @@ try {
 
 function syncAppSecret({ region, secretId, workerName }) {
   if (!workerName) fail("Pass --worker <worker-name>.");
+  assertAppWorkerName(workerName);
 
   const secret = readAwsSecret({ region, secretId });
   const result = spawnSync("npx", [
@@ -57,6 +59,13 @@ function syncAppSecret({ region, secretId, workerName }) {
   }
 
   console.log(`AUTH_SHARED_SECRET for ${workerName} now mirrors ${secretId} in ${region}.`);
+}
+
+function assertAppWorkerName(workerName) {
+  const normalized = String(workerName || "").trim();
+  if (PROTECTED_WORKERS.has(normalized) || normalized.startsWith("auth-")) {
+    fail(`Refusing to modify protected shared auth Worker "${normalized}". Pass the app Worker name instead.`);
+  }
 }
 
 async function verifyAuthService({ authUrl }) {

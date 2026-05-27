@@ -8,6 +8,8 @@ Existing apps that already use `auth.intern.pearcommerce.com` stay on that legac
 
 Never rotate or replace `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` while fixing a single app. Those credentials belong to the shared auth service for its lane and changing them is a lane-wide auth change that can break every app using that login lane. For app-specific auth failures, debug callback routing, cookies/state, hosted domain checks, and `AUTH_SHARED_SECRET` first. Only perform a Google OAuth client rotation when explicitly requested as a coordinated lane-wide auth operation.
 
+`auth-intern` and `auth-intern-v2` are protected shared auth Workers. During normal app hosting or auth repair, never set secrets or deploy against those Workers. Set `AUTH_SHARED_SECRET` only on the affected app Worker, using the AWS secret for that app's lane. If evidence points to shared-auth lane drift, stop and report the lane-wide risk before touching the auth Worker.
+
 ---
 
 ## Stable Google Redirect URI
@@ -74,6 +76,18 @@ GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 ```
 
 For v2 apps, use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-v2-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared token secret while fixing a single app. If a callback reports `Bad shared auth token signature`, identify the app's lane from `AUTH_BASE_URL` and update only the affected app's Worker secret from that lane's AWS secret.
+
+Before running a Worker secret command, verify the target:
+
+```bash
+WORKER_NAME="<app-worker-name>"
+case "$WORKER_NAME" in
+  auth-intern|auth-intern-v2|auth-*)
+    echo "Refusing to modify protected shared auth Worker: $WORKER_NAME" >&2
+    exit 1
+    ;;
+esac
+```
 
 For Lightsail/Node apps, also add:
 
