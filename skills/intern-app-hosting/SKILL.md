@@ -319,7 +319,7 @@ GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 
 Set these secrets/env vars using whatever secrets management is available (Workers secrets, Lightsail instance env, etc.).
 
-For new app templates, include an auth verification helper equivalent to `Pear-Commerce/auth-intern-v2`'s `scripts/auth-lane.mjs`. Before handoff, run it against the live app so the app proves it accepts v2 tokens:
+For new app templates, include an auth verification helper by copying `templates/scripts/auth-lane.mjs` into the app's `scripts/` directory and adding package scripts for `auth:sync-secret` and `auth:verify`. Before handoff, run it against the live app so the app proves it accepts v2 tokens:
 
 ```bash
 node scripts/auth-lane.mjs sync-app-secret --worker <worker-name> --secret-id intern-app-hosting-auth-v2-shared-secret
