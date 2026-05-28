@@ -37,7 +37,7 @@ Do not duplicate the signoff if it is already present. Treat both the current `-
 
 ## PR Body Context
 
-Every Codex-authored or materially Codex-edited PR body must include a brief problem statement and justification for the chosen solution. Prefer short sections named `Problem` and `Solution / Justification` before the implementation summary. Keep them concise and specific: explain what was wrong or risky, why this change is the right shape for the codebase, and any important tradeoff reviewers should understand.
+Every Codex-authored or materially Codex-edited PR body must include a brief problem statement and justification for the chosen solution. Prefer short sections named `Problem` and `Solution` before the implementation summary. Keep them concise and specific: explain what was wrong or risky, why this change is the right shape for the codebase, and any important tradeoff reviewers should understand.
 
 ## Review Reply Tone
 
