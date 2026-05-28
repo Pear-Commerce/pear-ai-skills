@@ -35,6 +35,10 @@ When Codex authored or materially edited a PR body, GitHub issue/PR comment, rev
 
 Do not duplicate the signoff if it is already present. Treat both the current `- Codex` signoff and legacy `Thanks,\nCodex` signoff as existing Codex authorship signatures when checking whether a PR/comment/reply is Codex-authored or already signed. When adding a new signoff, always use `- Codex`. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
 
+## PR Body Context
+
+Every Codex-authored or materially Codex-edited PR body must include a brief problem statement and justification for the chosen solution. Prefer short sections named `Problem` and `Solution / Justification` before the implementation summary. Keep them concise and specific: explain what was wrong or risky, why this change is the right shape for the codebase, and any important tradeoff reviewers should understand.
+
 ## Review Reply Tone
 
 When replying to PR comments, be appreciative, understanding, and humble. Assume the commenter is trying to improve the work, acknowledge the useful intent, and keep the response concise and grounded in evidence.
