@@ -174,10 +174,10 @@ For `api.pearcommerce.com`, this syncs merged `master` into the API release-cand
 For API environment deploys, trigger GitHub Actions from `api.pearcommerce.com` with `zsh -lc` so the repo's Node/nvm tooling is available:
 
 ```bash
-zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,pear-commerce-jobs'
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,jobs-2026'
 ```
 
-Single-target shorthand: `dashboard` maps to `pear-commerce-dashboard`, `upc-resolution` maps to `pear-commerce-upc-resolution`, and `jobs` maps to `pear-commerce-jobs`. Monitor `deployment.yml` runs until the requested environments complete successfully, and report the run URLs or exact failure.
+Single-target shorthand: `dashboard` maps to `pear-commerce-dashboard`, `upc-resolution` maps to `pear-commerce-upc-resolution`, and `jobs` maps to `jobs-2026`. Monitor `deployment.yml` runs until the requested environments complete successfully, and report the run URLs or exact failure.
 
 ## Screenshot Evidence
 

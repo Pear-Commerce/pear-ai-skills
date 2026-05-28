@@ -66,6 +66,8 @@ Strict rule: never put any value the client must receive on a `PearEntity` as a 
 
 For external API response/request DTOs, scraper payload models, JSON-LD/schema.org models, app/webhook payloads, and other classes whose fields are populated by Jackson or Pear `JSON`, prefer representing as many upstream JSON fields as practical. These fields document the payload shape for future readers, make debugger inspection easier, and reduce rediscovery when another scraper/resolver path later needs the same data.
 
+For simple Jackson/Gson/Pear `JSON` payload shapes, prefer `public static` nested DTO classes with public fields when that is the local convention. Do not make DTO classes or fields private/package-private solely to satisfy `EffectivelyPrivate` or similar unused-field warnings when framework serialization/deserialization depends on visibility or the public-field shape is intentional.
+
 Do not remove serialized JSON DTO fields solely because the current production code does not read them. A Copilot or reviewer comment like "field X is deserialized but never read" is usually not sufficient reason to delete it. Stand firm graciously: explain that unused-but-real DTO fields intentionally preserve the upstream contract, especially in retailer integrations and API clients.
 
 This guidance is different from dead behavior. Remove stale helpers, duplicate DTO classes, fields that are proven not to exist upstream, sensitive fields we should not retain, fields that actively mislead readers, or fields whose parsing has meaningful performance/memory cost in a hot path. When in doubt, keep the field and add a short comment only if the retention would otherwise look surprising.
@@ -165,16 +167,16 @@ When the user says "deploy" for API code, use the API repo's GitHub Actions depl
 ```bash
 zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard'
 zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-upc-resolution'
-zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-jobs'
+zsh -lc './devops/trigger-deploy.sh -c master -e jobs-2026'
 ```
 
 For a combined API deploy to dashboard, UPC resolution, and jobs:
 
 ```bash
-zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,pear-commerce-jobs'
+zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,jobs-2026'
 ```
 
-Short user phrases map naturally: "deploy to upc-resolution" means `-e pear-commerce-upc-resolution`; "deploy to dashboard" means `-e pear-commerce-dashboard`; "deploy to jobs" means `-e pear-commerce-jobs`. After triggering, monitor `deployment.yml` runs with `gh run list --workflow deployment.yml` or `gh run watch` until the requested environments complete successfully. Do not deploy Offers production from local artifacts; keep following the Offers deploy safety rules above.
+Short user phrases map naturally: "deploy to upc-resolution" means `-e pear-commerce-upc-resolution`; "deploy to dashboard" means `-e pear-commerce-dashboard`; "deploy to jobs" means `-e jobs-2026`. After triggering, monitor `deployment.yml` runs with `gh run list --workflow deployment.yml` or `gh run watch` until the requested environments complete successfully. Do not deploy Offers production from local artifacts; keep following the Offers deploy safety rules above.
 
 ## End-To-End Checks
 
