@@ -125,6 +125,35 @@ aws elasticbeanstalk describe-events --environment-name pear-commerce-production
 4. Use `devops/logs.sh -e ENV` for streaming when a single stream is enough.
 5. Use SSM `send-command` snapshots across all running instances for fleet counts, container state, recent errors, OOMs, health check failures, or repeated stack traces.
 
+## RDS And Performance Insights
+
+For DB wait, load, latency, or connection spikes, use Performance Insights plus a bounded live process snapshot instead of guessing from the graph alone. Pull top wait events and SQL fingerprints for the alert window, then compare the same fingerprints against a pre-spike window before calling something a spike.
+
+When the database is reached through RDS Proxy, be careful with PI host dimensions: `db.host` may identify RDS Proxy ENI private IPs, not the app instance or service that caused the load. Prefer service/version tags embedded in Pear SQL comments when they are present, especially:
+
+- `ddps='<service>'`: Datadog service such as `production`, `availability_aws`, `list-scraper`, `dashboard`, or `jobs`.
+- `dde='<env>'`: Datadog environment.
+- `ddpv='<version>'`: deployed app version or git SHA for correlating with deploy history.
+
+Useful read-only snapshots:
+
+```sql
+SHOW FULL PROCESSLIST;
+
+SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(INFO, "ddps='", -1), "'", 1) service,
+       SUBSTRING_INDEX(SUBSTRING_INDEX(INFO, "dde='", -1), "'", 1) env,
+       SUBSTRING_INDEX(SUBSTRING_INDEX(INFO, "ddpv='", -1), "'", 1) version,
+       COALESCE(STATE, '') state,
+       COUNT(*) cnt,
+       MAX(TIME) max_time
+FROM information_schema.PROCESSLIST
+WHERE COMMAND <> 'Sleep' AND INFO IS NOT NULL
+GROUP BY service, env, version, state
+ORDER BY cnt DESC, max_time DESC;
+```
+
+If live SQL comments are missing from `PROCESSLIST`, use PI SQL fingerprints, app logs, EB/Copilot deploy versions, and GitHub workflow timing together. Do not attribute a DB spike to a code path solely because it is top-ranked during the incident; check whether that fingerprint actually increased relative to the baseline.
+
 ## S3, CloudFront, And Deploy Safety
 
 Pear uses S3 for dev/test data, archived JSPs, static assets, EB Dockerrun bundles, and some internal app/report caches. Common patterns:

@@ -80,8 +80,9 @@ Use `/Users/alexwyler/.codex/skills/handle-in-slack/SKILL.md` as the canonical w
 
 Analyze evidence in this order:
 1. Datadog/alert context: monitor name, status, query, service/env/resource tags, triggered window, grouped dimensions, stack traces, trace/log links, deployment markers, and whether the alert is still active or recovered. If the Datadog UI/API is not available, use the Slack alert payload and links as far as possible and do not pretend to have inspected unavailable data.
-2. Live logs: map service/env tags to `/Users/alexwyler/api.pearcommerce.com/devops/environments.json`, then use bounded `devops/logs.sh -e <env>` samples around the alert. For UPC resolution, prefer `devops/logs.sh -e upc-resolution --single`. Stop streaming once enough evidence is captured; do not leave long-running log sessions alive.
-3. GitHub/deploy history: inspect recent merged PRs, commits, workflow runs, deployments, and merge/deploy timing around the alert window. Look for changes touching the exact class, endpoint, job, query, feature flag, config, dependency, or integration named by Datadog/logs.
+2. RDS/DB context when relevant: use `$pear-aws` guidance for Performance Insights and live DB snapshots. For RDS Proxy-backed databases, do not rely on PI `db.host` alone because it can point at proxy ENIs. Prefer SQL comment tags from `PROCESSLIST`, PI SQL text, or logs: `ddps` for service, `dde` for environment, and `ddpv` for deployed version/git SHA. Compare top SQL fingerprints against a pre-alert baseline before saying a query spiked.
+3. Live logs: map service/env tags to `/Users/alexwyler/api.pearcommerce.com/devops/environments.json`, then use bounded `devops/logs.sh -e <env>` samples around the alert. For UPC resolution, prefer `devops/logs.sh -e upc-resolution --single`. Stop streaming once enough evidence is captured; do not leave long-running log sessions alive.
+4. GitHub/deploy history: inspect recent merged PRs, commits, workflow runs, deployments, and merge/deploy timing around the alert window. Look for changes touching the exact class, endpoint, job, query, feature flag, config, dependency, or integration named by Datadog/logs.
 
 Produce one of three outcomes:
 
