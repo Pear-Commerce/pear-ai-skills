@@ -66,7 +66,11 @@ Strict rule: never put any value the client must receive on a `PearEntity` as a 
 
 For external API response/request DTOs, scraper payload models, JSON-LD/schema.org models, app/webhook payloads, and other classes whose fields are populated by Jackson or Pear `JSON`, prefer representing as many upstream JSON fields as practical. These fields document the payload shape for future readers, make debugger inspection easier, and reduce rediscovery when another scraper/resolver path later needs the same data.
 
-For simple Jackson/Gson/Pear `JSON` payload shapes, prefer `public static` nested DTO classes with public fields when that is the local convention. Do not make DTO classes or fields private/package-private solely to satisfy `EffectivelyPrivate` or similar unused-field warnings when framework serialization/deserialization depends on visibility or the public-field shape is intentional.
+For simple Jackson/Gson/Pear `JSON` payload shapes, prefer `public static` nested DTO classes with public fields when that is the local convention. This is the default for external API request/response DTOs, scraper payloads, JSON-LD models, and webhook/app payloads that are just data carriers.
+
+If Error Prone reports `EffectivelyPrivate` on public fields inside a private nested JSON DTO, fix the class visibility first: make the DTO `public static` when the public-field payload shape is intentional. Do not "fix" that warning by making serialized/deserialized DTO fields private or package-private, and do not add `@JsonProperty` solely to preserve names after narrowing field visibility. Keeping the DTO class public and the fields public is the intended Pear convention for these simple payload models.
+
+Do not make DTO classes or fields private/package-private solely to satisfy `EffectivelyPrivate` or similar unused-field warnings when framework serialization/deserialization depends on visibility or the public-field shape is intentional.
 
 Do not remove serialized JSON DTO fields solely because the current production code does not read them. A Copilot or reviewer comment like "field X is deserialized but never read" is usually not sufficient reason to delete it. Stand firm graciously: explain that unused-but-real DTO fields intentionally preserve the upstream contract, especially in retailer integrations and API clients.
 
