@@ -18,7 +18,7 @@ Not every "handle this" request is an action request. Sometimes the right handli
 - Use `$slack-task-gate` for the general YES/NO wording and missing-scope discipline.
 - Use `$slack-prod-jsp-approval` when a JSP, live ORM/data change, vendor or retailer reimport, resolver run, availability scan, or similar operational action may be needed.
 - Use `$pear-prod-jsp` for JSP preview/run safety after approval.
-- Use `$pear-engineering-workflow` and `$pear-pr-review-flow` for Pear repo code fixes, PRs, reviewer/Copilot flow, CI fixes, and auto-merge/watch behavior.
+- Use `$pear-engineering-workflow` for any Pear `api.pearcommerce.com`, `test.api.pearcommerce.com`, Admin, Offers, or repo debugging, including read-only answer-only investigations. Use `$pear-pr-review-flow` for PRs, reviewer/Copilot flow, CI fixes, and auto-merge/watch behavior.
 
 ## Handle A Slack Link
 
@@ -34,6 +34,7 @@ Not every "handle this" request is an action request. Sometimes the right handli
 3. Do a bounded read-only investigation.
    - Search Slack history, the local repo, logs, GitHub, browser pages, DB/reporting sources, Datadog, or external docs only when they are relevant sources of truth.
    - Keep commands and queries read-only until there is explicit approval.
+   - For Pear API requests through Cloudflare, follow `$pear-engineering-workflow`: include the trusted-edge header from the Admin/Offers deploy scripts before interpreting a plain local `curl` 403/block page as API behavior. This applies to `api.pearcommerce.com` and `test.api.pearcommerce.com` API/XHR probes; it does not apply to third-party sites, Cloudflare APIs, raw Offers page loads, or unrelated domains.
    - Stop when there is enough evidence for either a useful answer, a concrete proposed action, or a clear request for missing scope.
 
 4. Decide the outcome.
