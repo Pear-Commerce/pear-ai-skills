@@ -1,0 +1,4 @@
+interface:
+  display_name: "Event Attendee Export"
+  short_description: "Discover and export attendee lists from curls or event sites"
+  default_prompt: "Use $event-attendee-export to discover attendee or exhibitor list endpoints from a provided curl or website, infer pagination, extract rich profile/contact fields, and export the final results to Pear S3 using Pear proxy and production JSP patterns when needed."
