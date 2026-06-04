@@ -89,6 +89,13 @@ Collect the richest fields available. Prefer these columns when present:
 
 If the list endpoint only has partial data, look for profile-detail endpoints and enrich the export before writing the final CSV.
 
+In many event apps, the attendee list also includes links or IDs for attendee profile pages or profile-detail API calls. The scraper examples in `api.pearcommerce.com/test/com/pear/scrappers` show both patterns:
+
+- some exports are good enough from the list response alone
+- some exports become much more valuable after profile-detail enrichment for email, phone, website, LinkedIn, social links, company metadata, or bios
+
+Treat list-to-profile enrichment as a discovery decision, not an automatic default.
+
 ## Working Modes
 
 ### If The User Gives A Curl
@@ -105,6 +112,8 @@ If the list endpoint only has partial data, look for profile-detail endpoints an
    - cursor disappears
    - fetched count reaches reported total
 5. Validate by pulling at least two pages before committing to the implementation pattern.
+6. Inspect whether the list response contains profile URLs, attendee IDs, slugs, GraphQL node IDs, or other handles that enable useful profile-detail calls.
+7. Decide whether the list data is already sufficient or whether detail enrichment is likely worth the extra calls.
 
 ### If The User Gives Only A Website
 
@@ -123,6 +132,33 @@ If the list endpoint only has partial data, look for profile-detail endpoints an
    - XHR/fetch requests from the attendee page
    - GraphQL persisted query payloads
 5. Once the list endpoint is found, switch to the curl-driven workflow above.
+6. Look for profile pages or detail routes linked from list results and assess whether they add meaningful fields beyond the list payload.
+
+## Discovery Checkpoint
+
+Before building the final scraper or production JSP, stop and communicate the discovery findings to the user.
+
+At minimum, summarize:
+
+- the list endpoint you found
+- the pagination method and stop condition
+- the fields available directly from the list response
+- whether attendee profile/detail calls exist
+- which additional fields those profile/detail calls appear to provide
+- the expected cost of enrichment:
+  - extra request per attendee
+  - extra request per page
+  - likely rate-limit or auth risk
+  - likely runtime impact
+
+Then let the user decide whether the extra enrichment is worth it.
+
+Your default recommendation should be:
+
+- recommend list-only when the list already contains the fields the user cares about
+- recommend enrichment when the detail calls clearly add meaningful fields like email, phone, LinkedIn, company website, or other high-value contact/profile data
+
+Do not silently expand a scrape from list-only into per-attendee profile fetching without surfacing that tradeoff first.
 
 ## Proxy Rules
 
@@ -216,15 +252,24 @@ Always generate a stable CSV with explicit headers.
 
 If list and detail data differ, merge into one final row per person whenever possible.
 
+Prefer this decision sequence:
+
+1. discover list fields
+2. discover profile/detail fields
+3. explain the delta to the user
+4. get user confirmation on whether enrichment is worth the added calls
+5. only then finalize the build/run approach
+
 ## Suggested Agent Behavior
 
 Use this prompt behavior as the basis of the skill:
 
-> When a user asks for an attendee, participant, exhibitor, or sponsor export, first determine whether they provided a working curl or only a website. If given a curl, replay it and identify the minimum required auth, headers, cookies, and payload. Infer the pagination mechanism by testing additional pages and reading the response shape. If given only a website, discover the backing attendee endpoint by inspecting the page and its network calls. Reuse proven Pear patterns from `api.pearcommerce.com/test/com/pear/scrappers`, especially Grip, Shoptalk, Possible, and Digital Grocery examples. Prefer `JurlProxyFallback` with static proxies for production-like scraping. Extract as much profile information as possible, including first name, last name, company, title, email, phone, LinkedIn, social profiles, website, and any event-specific metadata that is useful. If list responses are partial, find and call detail endpoints to enrich the export. Once the flow is proven, produce a production-safe Pear JSP using the `pear-prod-jsp` workflow when production execution is needed: no-side-effect preview first, then a `Run` button, then the actual export behind `run=true`. Upload the final CSV, and optionally JSON, to S3 with a timestamped key, and report the bucket, key, URL, row count, pagination logic, and any missing fields or blockers.
+> When a user asks for an attendee, participant, exhibitor, or sponsor export, first determine whether they provided a working curl or only a website. If given a curl, replay it and identify the minimum required auth, headers, cookies, and payload. Infer the pagination mechanism by testing additional pages and reading the response shape. If given only a website, discover the backing attendee endpoint by inspecting the page and its network calls. Reuse proven Pear patterns from `api.pearcommerce.com/test/com/pear/scrappers`, especially Grip, Shoptalk, Possible, NRF, and Digital Grocery examples. Prefer `JurlProxyFallback` with static proxies for production-like scraping. During discovery, determine both what the list endpoint provides and whether attendee profile/detail calls exist that would materially enrich the export. Before building the final scraper, clearly summarize that tradeoff to the user: what fields are already available from the list, what extra fields profile enrichment would add, and what additional request volume and runtime it would cost. Let the user decide whether the enrichment is worth it. After that decision, build the export path, merge list and detail data where appropriate, and produce a production-safe Pear JSP using the `pear-prod-jsp` workflow when production execution is needed: no-side-effect preview first, then a `Run` button, then the actual export behind `run=true`. Upload the final CSV, and optionally JSON, to S3 with a timestamped key, and report the bucket, key, URL, row count, pagination logic, enrichment choice, and any missing fields or blockers.
 
 ## Residual Expectations
 
 - Tell the user what pagination field or stop condition you discovered.
+- Tell the user whether the export is list-only or list-plus-profile-enrichment, and why.
 - Call out whether the export came from:
   - list endpoint only
   - list + detail enrichment
