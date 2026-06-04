@@ -6,6 +6,7 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 
 - `canonical-skills`: bootstrap and sync Pear's canonical skill library.
 - `check-partner-upc`: check Pinterest partner UPC status, retailers, and availability.
+- `event-attendee-export`: discover attendee endpoints from curls or event sites, enrich contact fields, and export results to S3.
 - `gsd-add-phase`: add a phase to the end of the current milestone roadmap.
 - `gsd-add-tests`: generate tests for a completed phase from UAT criteria and implementation.
 - `gsd-add-todo`: capture an idea or task as a todo from conversation context.
