@@ -180,7 +180,7 @@ For a combined API deploy to dashboard, UPC resolution, and jobs:
 zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,jobs-2026'
 ```
 
-Short user phrases map naturally: "deploy to upc-resolution" means `-e pear-commerce-upc-resolution`; "deploy to dashboard" means `-e pear-commerce-dashboard`; "deploy to jobs" means `-e jobs-2026`. After triggering, monitor `deployment.yml` runs with `gh run list --workflow deployment.yml` or `gh run watch` until the requested environments complete successfully. Do not deploy Offers production from local artifacts; keep following the Offers deploy safety rules above.
+Short user phrases map naturally: "deploy to upc-resolution" means `-e pear-commerce-upc-resolution`; "deploy to dashboard" means `-e pear-commerce-dashboard`; "deploy to jobs" means `-e jobs-2026`. API environment deploys go through Elastic Beanstalk and often take a long time; after triggering one, do not babysit it to completion by default. Instead, use `gh run list --workflow deployment.yml` once to capture and report the run URL, target environment, commit SHA, and queued/in-progress/completed status. Only run `gh run watch`, poll until completion, or investigate deploy logs when the user explicitly asks you to wait, when the deploy fails immediately, or when the task requires synchronous deploy verification. Do not deploy Offers production from local artifacts; keep following the Offers deploy safety rules above.
 
 ## End-To-End Checks
 

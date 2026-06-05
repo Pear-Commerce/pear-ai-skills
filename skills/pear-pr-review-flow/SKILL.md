@@ -177,7 +177,7 @@ For API environment deploys, trigger GitHub Actions from `api.pearcommerce.com` 
 zsh -lc './devops/trigger-deploy.sh -c master -e pear-commerce-dashboard,pear-commerce-upc-resolution,jobs-2026'
 ```
 
-Single-target shorthand: `dashboard` maps to `pear-commerce-dashboard`, `upc-resolution` maps to `pear-commerce-upc-resolution`, and `jobs` maps to `jobs-2026`. Monitor `deployment.yml` runs until the requested environments complete successfully, and report the run URLs or exact failure.
+Single-target shorthand: `dashboard` maps to `pear-commerce-dashboard`, `upc-resolution` maps to `pear-commerce-upc-resolution`, and `jobs` maps to `jobs-2026`. API environment deploys go through Elastic Beanstalk and often take a long time; after triggering one, do not babysit it to completion by default. Use `gh run list --workflow deployment.yml` once to capture and report the run URL, target environment, commit SHA, and queued/in-progress/completed status. Only run `gh run watch`, poll until completion, or investigate deploy logs when the user explicitly asks you to wait, when the deploy fails immediately, or when the task requires synchronous deploy verification.
 
 ## Screenshot Evidence
 
