@@ -1,12 +1,12 @@
 ---
 name: remote-codex-worker-slot
 description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.13"
+remote_codex_bundle_version: "2026-06-08.14"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.13`
+Bundle version: `2026-06-08.14`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
@@ -41,7 +41,7 @@ Each automation wake should do one bounded cycle and then stop cleanly.
 
 1. Use `$remote-codex-updater` before doing anything else.
 2. Print a concise diagnostic plan for this wake: slot id, whether you expect to inspect an existing job or scan pending work, and the major steps you will take.
-3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.13`.
+3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.14`.
 4. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, print a diagnostic explaining that work was skipped because the automation was stale, and stop before claiming or continuing work.
 5. Publish a slot heartbeat/status object under:
    ```text
@@ -65,7 +65,7 @@ Schedule it every 1 minute.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.13
+remoteCodexBundleVersion: 2026-06-08.14
 Run one bounded worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, mirror major diagnostics into job log chunks when an attempt exists, and stop cleanly.
 ```
 
