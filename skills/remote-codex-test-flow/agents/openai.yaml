@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Codex Test Flow"
+  short_description: "Submit and verify remote Codex worker probes"
+  default_prompt: "Use $remote-codex-test-flow to submit a remote Codex probe job and validate the S3 worker flow."

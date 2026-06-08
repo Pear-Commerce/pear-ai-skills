@@ -45,7 +45,7 @@ fi
 
 for target in "${CODEX_HOME:-$HOME/.codex}/skills" "$HOME/.claude/skills"; do
   [ -d "$target" ] || continue
-  for skill in remote-codex-workers remote-codex-orchestrator remote-codex-worker-slot; do
+  for skill in remote-codex-workers remote-codex-orchestrator remote-codex-worker-slot remote-codex-test-flow; do
     test -d "$TMP_DIR/pear-ai-skills/skills/$skill"
     rm -rf "$target/$skill"
     cp -R "$TMP_DIR/pear-ai-skills/skills/$skill" "$target/$skill"

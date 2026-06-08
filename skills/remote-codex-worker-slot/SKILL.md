@@ -72,7 +72,7 @@ S3 general purpose buckets return keys lexicographically. Pending keys are shape
 
 For each candidate:
 
-1. Extract `jobId` from the final dash-delimited segment before `.json`.
+1. Extract `jobId` by removing `.json`, then splitting the file name on the first three dashes: `{priority}-{createdAtMillis}-{random}-{jobId}`. The `jobId` itself may contain dashes.
 2. Skip if `{rootPrefix}/jobs/{jobId}/done.json` exists.
 3. Build a lease body:
    ```json
