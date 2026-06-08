@@ -15,9 +15,10 @@ DEFAULT_ROOT_PREFIX = "remote-codex"
 DEFAULT_POOL = "default"
 DEFAULT_PRIORITY = 50
 DEFAULT_LEASE_SECONDS = 600
+DEFAULT_JOB_TIMEOUT_SECONDS = 3600
 DEFAULT_WAIT_SECONDS = 600
 DEFAULT_POLL_SECONDS = 15
-REMOTE_CODEX_BUNDLE_VERSION = "2026-06-08.5"
+REMOTE_CODEX_BUNDLE_VERSION = "2026-06-08.6"
 
 
 def utc_now():
@@ -41,6 +42,16 @@ def safe_part(value, name):
     if any(ch not in allowed for ch in value):
         raise ValueError(f"{name} has unsafe characters for remote Codex S3 keys: {value}")
     return value
+
+
+def positive_int(value):
+    try:
+        seconds = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from exc
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError("must be a positive number of seconds")
+    return seconds
 
 
 def root(value):
@@ -483,9 +494,9 @@ def add_submit_args(parser):
     parser.add_argument("--prompt")
     parser.add_argument("--mode", default="ask")
     parser.add_argument("--created-by", default="remote-codex-test-flow")
-    parser.add_argument("--max-attempts", type=int, default=2)
-    parser.add_argument("--timeout-seconds", type=int, default=3600)
-    parser.add_argument("--lease-seconds", type=int, default=DEFAULT_LEASE_SECONDS)
+    parser.add_argument("--max-attempts", type=positive_int, default=2)
+    parser.add_argument("--timeout-seconds", type=positive_int, default=DEFAULT_JOB_TIMEOUT_SECONDS)
+    parser.add_argument("--lease-seconds", type=positive_int, default=DEFAULT_LEASE_SECONDS)
 
 
 def main():
@@ -498,8 +509,8 @@ def main():
 
     p = sub.add_parser("run-e2e")
     add_submit_args(p)
-    p.add_argument("--wait-seconds", type=int, default=DEFAULT_WAIT_SECONDS)
-    p.add_argument("--poll-seconds", type=int, default=DEFAULT_POLL_SECONDS)
+    p.add_argument("--wait-seconds", type=positive_int, default=DEFAULT_WAIT_SECONDS)
+    p.add_argument("--poll-seconds", type=positive_int, default=DEFAULT_POLL_SECONDS)
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_run_e2e)
 
@@ -511,8 +522,8 @@ def main():
     p = sub.add_parser("wait")
     add_common(p)
     p.add_argument("--job-id", required=True)
-    p.add_argument("--wait-seconds", type=int, default=DEFAULT_WAIT_SECONDS)
-    p.add_argument("--poll-seconds", type=int, default=DEFAULT_POLL_SECONDS)
+    p.add_argument("--wait-seconds", type=positive_int, default=DEFAULT_WAIT_SECONDS)
+    p.add_argument("--poll-seconds", type=positive_int, default=DEFAULT_POLL_SECONDS)
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_wait)
 

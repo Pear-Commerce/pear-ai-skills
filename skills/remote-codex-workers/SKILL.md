@@ -1,12 +1,12 @@
 ---
 name: remote-codex-workers
 description: Opt a Codex host into the S3-only remote Codex worker pool. Use when a user wants to start, configure, repair, inspect, or change remote Codex worker capacity, slots, orchestrator threads, or worker automations.
-remote_codex_bundle_version: "2026-06-08.5"
+remote_codex_bundle_version: "2026-06-08.6"
 ---
 
 # Remote Codex Workers
 
-Bundle version: `2026-06-08.5`
+Bundle version: `2026-06-08.6`
 
 Use this skill to configure a Codex-native worker host. The worker system is S3-only and Codex-only:
 
@@ -58,7 +58,7 @@ Then run the updater:
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.5"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.6"
 ```
 
 After syncing, read the freshly installed Codex copy of this skill before continuing:
@@ -86,7 +86,7 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
    ```text
    Use $remote-codex-updater, then $remote-codex-orchestrator.
 
-   remoteCodexBundleVersion: 2026-06-08.5
+   remoteCodexBundleVersion: 2026-06-08.6
 
    Maintain this remote Codex worker host:
    {
@@ -104,7 +104,7 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
 6. Do not create the orchestrator heartbeat from this setup thread. Instead, ensure the orchestrator thread runs an immediate self-bootstrap turn. If the orchestrator thread already exists, send it this follow-up:
    ```text
    Use $remote-codex-updater, then $remote-codex-orchestrator.
-   remoteCodexBundleVersion: 2026-06-08.5
+   remoteCodexBundleVersion: 2026-06-08.6
    Self-bootstrap this orchestrator: create or refresh your own heartbeat automation attached to this thread, publish host heartbeat, ensure desired slot threads exist, and ask each slot thread to create or refresh its own heartbeat automation. Do not claim queue jobs.
    ```
 7. Let the orchestrator thread publish `hosts/{hostId}/orchestrator.json`, `hosts/{hostId}/heartbeat.json`, and slot summaries to S3. The setup thread may inspect those objects for verification, but it should not be the source of truth for host state.

@@ -1,12 +1,12 @@
 ---
 name: remote-codex-test-flow
 description: Test the S3-only, Codex-only remote Codex worker flow end to end. Use when a user wants to submit probe tasks, validate requester-side S3 protocol behavior, inspect active remote Codex workers, poll logs/results, or run a remote Codex e2e smoke test.
-remote_codex_bundle_version: "2026-06-08.5"
+remote_codex_bundle_version: "2026-06-08.6"
 ---
 
 # Remote Codex Test Flow
 
-Bundle version: `2026-06-08.5`
+Bundle version: `2026-06-08.6`
 
 Use this skill to test the remote Codex worker system from inside Codex. It includes a requester-side Codex implementation of the S3 protocol at:
 
@@ -22,7 +22,7 @@ Before testing, use `$remote-codex-updater` to refresh the full remote Codex ski
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.5"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.6"
 ```
 
 If the update fails, stop unless the user explicitly asks to test the currently installed copy.
@@ -33,8 +33,11 @@ If the update fails, stop unless the user explicitly asks to test the currently 
 - Root prefix: `remote-codex`
 - Pool: `default`
 - Priority: `050`
+- Job execution timeout: 1 hour
 - Wait timeout: 10 minutes
 - Poll interval: 15 seconds
+
+`--timeout-seconds` is written into the submitted job as `limits.timeoutSeconds` for workers to enforce. `--wait-seconds` only controls how long this requester process waits for `done.json`.
 
 ## Real End-To-End Test
 
@@ -46,6 +49,7 @@ python3 "$SKILL_DIR/scripts/remote_codex_client.py" run-e2e \
   --bucket private.pearcommerce.com \
   --root-prefix remote-codex \
   --pool default \
+  --timeout-seconds 3600 \
   --wait-seconds 600 \
   --poll-seconds 15
 ```
@@ -79,7 +83,9 @@ python3 "$SKILL_DIR/scripts/remote_codex_client.py" protocol-smoke \
 Submit without waiting:
 
 ```bash
-python3 "$SKILL_DIR/scripts/remote_codex_client.py" submit --prompt "Return a tiny JSON result."
+python3 "$SKILL_DIR/scripts/remote_codex_client.py" submit \
+  --timeout-seconds 300 \
+  --prompt "Return a tiny JSON result."
 ```
 
 Check one job:

@@ -1,12 +1,12 @@
 ---
 name: remote-codex-orchestrator
 description: Maintain a Codex-only remote worker host orchestrator. Use inside orchestrator Codex threads and automations to create, repair, inspect, and heartbeat worker slot threads backed by the S3 remote Codex protocol.
-remote_codex_bundle_version: "2026-06-08.5"
+remote_codex_bundle_version: "2026-06-08.6"
 ---
 
 # Remote Codex Orchestrator
 
-Bundle version: `2026-06-08.5`
+Bundle version: `2026-06-08.6`
 
 This skill runs inside the orchestrator Codex thread. It owns the orchestrator heartbeat automation for one opted-in host and maintains slot threads for that host.
 
@@ -39,7 +39,7 @@ Required config:
 
 1. Use `$remote-codex-updater` before doing anything else.
 2. If Codex thread or automation tools are not loaded, use tool search for `create_thread`, `read_thread`, `list_threads`, `send_message_to_thread`, and `automation_update`.
-3. Create or refresh this orchestrator thread's own heartbeat automation. Prefer `destination=thread` when running in the orchestrator thread; if updating by id, keep `targetThreadId` equal to the current orchestrator thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.5`.
+3. Create or refresh this orchestrator thread's own heartbeat automation. Prefer `destination=thread` when running in the orchestrator thread; if updating by id, keep `targetThreadId` equal to the current orchestrator thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.6`.
 4. If the updater reports this invocation or automation is stale, finish the self-refresh above, ask existing slot threads to self-refresh their automations, publish a heartbeat that says `staleVersionRefreshed: true`, and stop this invocation before maintaining capacity or touching jobs.
 5. Read existing slot summaries from:
    ```text
@@ -67,7 +67,7 @@ Use a heartbeat automation attached to this orchestrator thread:
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-orchestrator.
-remoteCodexBundleVersion: 2026-06-08.5
+remoteCodexBundleVersion: 2026-06-08.6
 Run one orchestrator maintenance cycle for the configured remote Codex worker host: self-refresh this orchestrator automation if stale, ensure slot threads exist, ask slot threads to self-refresh their own automations, publish host heartbeat, and repair drift. Do not execute queue jobs in the orchestrator.
 ```
 
@@ -81,7 +81,7 @@ Use $remote-codex-updater, then $remote-codex-worker-slot.
 You are remote Codex worker slot slot-001 for host host-user.
 Run one worker wake cycle whenever prompted or awakened by automation.
 
-remoteCodexBundleVersion: 2026-06-08.5
+remoteCodexBundleVersion: 2026-06-08.6
 
 Config:
 {
@@ -103,7 +103,7 @@ When a slot exists but its automation is missing or stale, send the slot thread 
 
 ```text
 Use $remote-codex-updater, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.5
+remoteCodexBundleVersion: 2026-06-08.6
 Self-bootstrap this slot: create or refresh your own heartbeat automation attached to this slot thread, publish slot heartbeat, and then run one bounded worker wake cycle if it is safe to do so.
 ```
 
@@ -113,7 +113,7 @@ Each slot creates this heartbeat automation from inside its own slot thread:
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.5
+remoteCodexBundleVersion: 2026-06-08.6
 Run one bounded worker wake cycle for this configured slot: renew or release the current job lease, claim an eligible pending job if idle, perform bounded work, publish logs/status/result to S3, and stop cleanly. If the updater reports this automation is stale, update/recreate this automation prompt to the current version and stop before claiming work.
 ```
 
@@ -145,7 +145,7 @@ Run one bounded worker wake cycle for this configured slot: renew or release the
 
 - Repair missing slot threads directly.
 - Repair missing or stale slot automations by asking the owning slot thread to self-bootstrap.
-- Repair stale automation prompts whose `remoteCodexBundleVersion` is missing or not `2026-06-08.5`.
+- Repair stale automation prompts whose `remoteCodexBundleVersion` is missing or not `2026-06-08.6`.
 - Prefer preserving existing slot threads over replacing them.
 - Never create more active non-retiring slots than `desiredSlots`.
 - Never renew a job lease from the orchestrator.
