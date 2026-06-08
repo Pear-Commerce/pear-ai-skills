@@ -1,12 +1,12 @@
 ---
 name: remote-codex-worker-slot
 description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.11"
+remote_codex_bundle_version: "2026-06-08.12"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.11`
+Bundle version: `2026-06-08.12`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
@@ -41,7 +41,7 @@ Each automation wake should do one bounded cycle and then stop cleanly.
 
 1. Use `$remote-codex-updater` before doing anything else.
 2. Print a concise diagnostic plan for this wake: slot id, whether you expect to inspect an existing job or scan pending work, and the major steps you will take.
-3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.11`.
+3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.12`.
 4. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, print a diagnostic explaining that work was skipped because the automation was stale, and stop before claiming or continuing work.
 5. Publish a slot heartbeat/status object under:
    ```text
@@ -65,7 +65,7 @@ Schedule it every 1 minute.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.11
+remoteCodexBundleVersion: 2026-06-08.12
 Run one bounded worker wake cycle for this configured slot: print concise worker diagnostics, self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, mirror major diagnostics into job log chunks when an attempt exists, and stop cleanly.
 ```
 
@@ -246,6 +246,14 @@ Read:
 ```
 
 Follow the request prompt and mode. Keep each wake bounded enough that the lease can be renewed. For large work, make progress, write logs/status, and let the next automation wake continue from thread context and S3 state.
+
+## Job Compatibility
+
+The remote Codex bundle version is not a job compatibility gate. A slot running bundle `.8` may execute a job submitted while `.7` was installed, and later workers should keep executing older queued jobs unless the actual job state makes them ineligible.
+
+When deciding whether to claim or continue a job, use only protocol facts such as pool, `done.json`, `cancel.json`, lease ownership/expiry, `limits.timeoutSeconds`, `limits.maxAttempts`, and whether the request has the fields needed to execute safely. Ignore any `remoteCodexBundleVersion` found in `request.json`, pending markers, logs, or other job-owned S3 objects; at most, treat it as diagnostic metadata from the requester that created the job.
+
+The `version` fields on request, marker, heartbeat, event, or result objects are object-shape markers. They should help readers understand the JSON shape, but they do not by themselves make a task unexecutable. If an older object is missing a field that newer workers need, apply the documented default when one exists; otherwise write a clear failed result or blocker log for the missing field instead of silently dropping the job.
 
 ## Timeout Handling
 

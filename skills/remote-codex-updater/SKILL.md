@@ -1,12 +1,12 @@
 ---
 name: remote-codex-updater
 description: Refresh and version-check the remote Codex skill bundle. Use at the start of every remote Codex worker, orchestrator, setup, or test automation invocation to sync canonical skills from GitHub and detect stale automation prompts.
-remote_codex_bundle_version: "2026-06-08.11"
+remote_codex_bundle_version: "2026-06-08.12"
 ---
 
 # Remote Codex Updater
 
-Bundle version: `2026-06-08.11`
+Bundle version: `2026-06-08.12`
 
 Use this skill first in every remote Codex setup, orchestrator, slot, and test-flow invocation. It updates the remote Codex skill bundle from canonical GitHub, verifies the installed bundle version, and tells the caller whether automation prompts should be recreated.
 
@@ -24,7 +24,7 @@ Run the bundled script:
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.11"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.12"
 ```
 
 Use `REMOTE_CODEX_SKILLS_BRANCH` only when intentionally testing an unmerged branch. Otherwise it defaults to `main`.
@@ -36,7 +36,7 @@ If the script fails, stop and report the blocker. Do not continue orchestrating 
 Every remote Codex thread prompt and automation prompt should include:
 
 ```text
-remoteCodexBundleVersion: 2026-06-08.11
+remoteCodexBundleVersion: 2026-06-08.12
 ```
 
 After updating, compare the installed bundle version reported by the script to the version in the current thread/automation prompt.
@@ -45,6 +45,8 @@ After updating, compare the installed bundle version reported by the script to t
 - If the current prompt version differs from the installed version, treat it as stale.
 - If stale, the owning thread should update or recreate its own automation prompt with the current version and stop this invocation after reporting that it refreshed itself.
 - If current, continue to the caller skill.
+
+This version gate applies only to Codex skill bundles, thread prompts, and automation prompts. It must never be used as a queued-job compatibility check. Do not compare `remoteCodexBundleVersion` from `request.json`, pending markers, logs, or other job-owned S3 objects to the installed bundle version when deciding whether a worker may execute a job. Existing queued jobs from older bundle versions remain eligible as long as their request shape, pool, timeout, cancel, max-attempt, and lease state permit execution.
 
 ## Caller Responsibilities
 
@@ -61,8 +63,8 @@ Report a compact JSON-like summary:
 
 ```json
 {
-  "installedBundleVersion": "2026-06-08.11",
-  "expectedBundleVersion": "2026-06-08.11",
+  "installedBundleVersion": "2026-06-08.12",
+  "expectedBundleVersion": "2026-06-08.12",
   "skillsUpdated": true,
   "automationRefreshRequired": false
 }
