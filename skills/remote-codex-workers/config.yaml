@@ -1,0 +1,3 @@
+directory:
+  placement: "auxiliary"
+  reason: "Supporting remote Codex setup skill for creating orchestrator and worker slot automations."
