@@ -1,12 +1,12 @@
 ---
 name: remote-codex-worker-slot
-description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.15"
+description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim and drain S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
+remote_codex_bundle_version: "2026-06-08.16"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.15`
+Bundle version: `2026-06-08.16`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
@@ -35,27 +35,51 @@ Required config:
 }
 ```
 
+Optional config:
+
+```json
+{
+  "maxJobsPerWake": null,
+  "drainStopAfterSeconds": null
+}
+```
+
+`maxJobsPerWake` is an optional safety cap for a single automation wake. When it is missing or null, do not apply a fixed job-count cap; keep draining until the queue is empty or a safety stop applies. `drainStopAfterSeconds` is an optional wall-clock safety budget for one wake. When it is missing or null, use judgment and stop before the turn gets too long to safely renew leases, write results, and publish heartbeats.
+
 ## Wake Cycle
 
-Each automation wake should do one bounded cycle and then stop cleanly.
+Each automation wake should run one bounded queue-draining cycle and then stop cleanly. Do not intentionally stop after completing a single job while eligible pending jobs remain. After a job reaches a terminal result and the slot clears `currentJobId`, immediately scan the pending queue again and claim the next eligible job.
 
 1. Use `$remote-codex-updater` before doing anything else.
-2. Print a concise diagnostic plan for this wake: slot id, whether you expect to inspect an existing job or scan pending work, and the major steps you will take.
-3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.15`.
+2. Print a concise diagnostic plan for this wake: slot id, whether you expect to inspect an existing job or scan pending work, that this wake will drain additional eligible jobs before sleeping, and the major steps you will take.
+3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.16`.
 4. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, print a diagnostic explaining that work was skipped because the automation was stale, and stop before claiming or continuing work.
 5. Publish a slot heartbeat/status object under:
    ```text
    {rootPrefix}/hosts/{hostId}/slots/{slotId}.json
    ```
-6. If the slot already has a `currentJobId`, inspect that job first.
-7. If the job has `done.json`, clear local slot state and become idle.
-8. If the job has `cancel.json`, stop work, write a canceled result if this slot owns the lease, and clear the slot.
-9. If this slot still owns the lease, renew it with `If-Match: <etag>` and continue bounded work.
-10. If the lease is missing, expired and reclaimable, or owned by another slot, clear local slot state.
-11. If idle, list pending queue markers and try to claim the earliest eligible job.
-12. Execute or continue bounded work.
-13. Publish logs/status/result.
-14. End the turn with a compact status summary.
+6. Initialize drain state for this wake: `jobsStartedThisWake`, `jobsCompletedThisWake`, `queueScansThisWake`, and `drainStopReason`.
+7. Enter the drain loop:
+   - If the slot already has a `currentJobId`, inspect that job first.
+   - If the job has `done.json`, clear local slot state and continue the drain loop.
+   - If the job has `cancel.json`, write a canceled result if this slot owns the lease, clear the slot, and continue the drain loop unless a safety stop applies.
+   - If this slot still owns the lease, renew it with `If-Match: <etag>` and continue bounded work.
+   - If the lease is missing, expired and reclaimable, or owned by another slot, clear local slot state and continue the drain loop.
+   - If idle, list pending queue markers and try to claim the earliest eligible job. If no eligible job can be claimed after scanning candidates, set `drainStopReason: "queue_empty"` and stop cleanly.
+   - Execute or continue bounded work for the current job.
+   - Publish logs/status/result.
+   - If the job is still running, blocked on user/external input, or only made bounded progress, set `drainStopReason` to that state and stop; the next automation wake will continue it.
+   - If the job completed terminally and the slot cleared `currentJobId`, increment counters, publish an updated slot heartbeat, and immediately continue the drain loop instead of sleeping.
+8. Stop the drain loop when any safety stop applies:
+   - the queue has no eligible pending jobs;
+   - the updater was stale and the automation was refreshed;
+   - the slot loses the lease for the current job;
+   - the current job is blocked, still running, canceled, or timed out in a way that requires the next wake;
+   - AWS/S3 credentials or access are unavailable;
+   - `maxJobsPerWake` is configured and reached;
+   - `drainStopAfterSeconds` is configured and reached;
+   - the turn is approaching a practical limit where another claim would risk missing lease renewal, result publication, or a clean final status.
+9. End the turn with a compact status summary that includes jobs started/completed this wake and `drainStopReason`.
 
 ## Owned Automation Prompt
 
@@ -65,13 +89,13 @@ Schedule it every 1 minute.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.15
-Run one bounded worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, mirror major diagnostics into job log chunks when an attempt exists, and stop cleanly.
+remoteCodexBundleVersion: 2026-06-08.16
+Run one bounded queue-draining worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, then keep claiming and completing additional eligible pending jobs until the queue is empty or a safety stop applies. Mirror major diagnostics into job log chunks when an attempt exists, and stop cleanly with a drainStopReason.
 ```
 
 ## Queue Listing
 
-List candidates:
+List candidates on every drain-loop scan:
 
 ```bash
 aws s3api list-objects-v2 \
@@ -128,6 +152,8 @@ For each candidate:
      --if-match "$LEASE_ETAG"
    ```
 6. If conditional write fails, another worker owns the job. Try the next candidate.
+
+After a job completes terminally, do not wait for the next 1-minute automation wake. Return to the drain loop, list pending markers again, and try to claim the next eligible job. This keeps an awake worker chewing through queued work until the queue is empty.
 
 ## Lease Renewal
 
@@ -212,12 +238,13 @@ Print simple diagnostics in the worker slot thread as the automation runs. Keep 
 - Start of wake: slot id, current-job expectation, and plan.
 - Updater result: current, refreshed, or stale-and-stopping.
 - Automation refresh result.
-- Queue scan: candidate count and whether an eligible job exists.
+- Queue drain: whether this wake is continuing after a completed job, jobs started/completed so far, and why it eventually stopped.
+- Queue scan: candidate count, scan number, and whether an eligible job exists.
 - Claim result: claimed job id/attempt id, skipped because already done/timed out/max-attempts, or lost race to another slot.
 - Lease result: renewed, lost, stale-reclaimed, or released.
 - Task action/fallback steps: before a material external action or tool route, say what you are about to try and why; if it fails, say the fallback. Examples: `opening Chrome to whatsmyip.com`, `Chrome extension connection failed; trying the Chrome connector/MCP`, `page did not show an IP yet; waiting for DOMContentLoaded`, `schema parse failed; writing schema_validation_failed result`.
 - Work result: started prompt work, made bounded progress, blocked, errored, timed out, canceled, or completed.
-- Final state: idle/running/completed/blocked and what was written to S3.
+- Final state: idle/running/completed/blocked, jobs started/completed this wake, `drainStopReason`, and what was written to S3.
 
 Do not dump full prompts, secrets, credentials, or large response bodies into thread diagnostics. Summarize job prompts in a short phrase only when needed to orient the reader. Diagnostics should not delay real work; one sentence per major transition is enough. For task action/fallback steps, log material tool/browser/network attempts and fallback decisions, not every low-level shell command or every S3 object write.
 
@@ -246,7 +273,7 @@ Read:
 {rootPrefix}/jobs/{jobId}/response-schema.json
 ```
 
-Follow the request prompt and mode. Keep each wake bounded enough that the lease can be renewed. For large work, make progress, write logs/status, and let the next automation wake continue from thread context and S3 state.
+Follow the request prompt and mode. Keep each individual job step bounded enough that the lease can be renewed. For large work, make progress, write logs/status, and let the next automation wake continue from thread context and S3 state. For short or completed jobs, immediately return to the drain loop and claim more eligible pending work before sleeping.
 
 ## Job Compatibility
 
@@ -334,6 +361,7 @@ Only the current lease owner may complete a job.
    }
    ```
 5. Clear slot `currentJobId`.
+6. Return to the drain loop. If another eligible pending job exists and no safety stop applies, claim it immediately in the same automation wake.
 
 If `done.json` already exists, treat the job as terminal and clear the slot.
 

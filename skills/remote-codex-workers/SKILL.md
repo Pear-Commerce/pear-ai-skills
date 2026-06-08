@@ -1,12 +1,12 @@
 ---
 name: remote-codex-workers
 description: Opt a Codex host into the S3-only remote Codex worker pool. Use when a user wants to start, configure, repair, inspect, or change remote Codex worker capacity, slots, orchestrator threads, or worker automations.
-remote_codex_bundle_version: "2026-06-08.15"
+remote_codex_bundle_version: "2026-06-08.16"
 ---
 
 # Remote Codex Workers
 
-Bundle version: `2026-06-08.15`
+Bundle version: `2026-06-08.16`
 
 Use this skill to configure a Codex-native worker host. The worker system is S3-only and Codex-only:
 
@@ -75,7 +75,7 @@ Then run the updater:
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.15"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.16"
 ```
 
 After syncing, read the freshly installed Codex copy of this skill before continuing:
@@ -104,7 +104,7 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
    ```text
    Use $remote-codex-updater, then $remote-codex-orchestrator.
 
-   remoteCodexBundleVersion: 2026-06-08.15
+   remoteCodexBundleVersion: 2026-06-08.16
 
    Maintain this remote Codex worker host:
    {
@@ -118,13 +118,13 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
      "leaseSeconds": 600
    }
 
-   On your first turn, create or refresh your own heartbeat automation from inside this orchestrator thread, then maintain slot threads, print REMOTE_CODEX_FLEET_STATUS_JSON from S3 host and slot heartbeats, and print REMOTE_CODEX_TASK_LOG_JSON from slot task events. Format the final response as readable markdown with fenced JSON blocks; do not inline JSON and do not wrap output in XML or CDATA. Ensure slot prompts require concise worker diagnostics, including material task action/fallback steps, and job-log diagnostic chunks. Do not execute queue jobs in the orchestrator.
+   On your first turn, create or refresh your own heartbeat automation from inside this orchestrator thread, then maintain slot threads, print REMOTE_CODEX_FLEET_STATUS_JSON from S3 host and slot heartbeats, and print REMOTE_CODEX_TASK_LOG_JSON from slot task events. Format the final response as readable markdown with fenced JSON blocks; do not inline JSON and do not wrap output in XML or CDATA. Ensure slot prompts require bounded queue-draining behavior, concise worker diagnostics, material task action/fallback steps, and job-log diagnostic chunks. Do not execute queue jobs in the orchestrator.
    ```
 7. Do not create the orchestrator heartbeat from this setup thread. Instead, ensure the orchestrator thread runs an immediate self-bootstrap turn. If the orchestrator thread already exists, send it this follow-up:
    ```text
    Use $remote-codex-updater, then $remote-codex-orchestrator.
-   remoteCodexBundleVersion: 2026-06-08.15
-   Self-bootstrap this orchestrator: create or refresh your own heartbeat automation attached to this thread, publish host heartbeat, ensure desired slot threads exist, ask each slot thread to create or refresh its own heartbeat automation with concise worker diagnostics and material task action/fallback steps enabled, print REMOTE_CODEX_FLEET_STATUS_JSON from S3 host and slot heartbeats, and print REMOTE_CODEX_TASK_LOG_JSON from slot task events. Format the final response as readable markdown with fenced JSON blocks; do not inline JSON and do not wrap output in XML or CDATA. Do not claim queue jobs.
+   remoteCodexBundleVersion: 2026-06-08.16
+   Self-bootstrap this orchestrator: create or refresh your own heartbeat automation attached to this thread, publish host heartbeat, ensure desired slot threads exist, ask each slot thread to create or refresh its own heartbeat automation with bounded queue-draining behavior, concise worker diagnostics, and material task action/fallback steps enabled, print REMOTE_CODEX_FLEET_STATUS_JSON from S3 host and slot heartbeats, and print REMOTE_CODEX_TASK_LOG_JSON from slot task events. Format the final response as readable markdown with fenced JSON blocks; do not inline JSON and do not wrap output in XML or CDATA. Do not claim queue jobs.
    ```
 8. Let the orchestrator thread publish `hosts/{hostId}/orchestrator.json`, `hosts/{hostId}/heartbeat.json`, and slot summaries to S3. The setup thread may inspect those objects for verification, but it should not be the source of truth for host state.
 9. Report whether the orchestrator self-bootstrap completed, whether its automation exists, whether threads were placed under the API project or fell back to projectless chats, and whether slots were created immediately or will be repaired on the next orchestrator wake.
