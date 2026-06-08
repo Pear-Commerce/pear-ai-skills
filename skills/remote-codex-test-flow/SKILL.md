@@ -1,9 +1,12 @@
 ---
 name: remote-codex-test-flow
 description: Test the S3-only, Codex-only remote Codex worker flow end to end. Use when a user wants to submit probe tasks, validate requester-side S3 protocol behavior, inspect active remote Codex workers, poll logs/results, or run a remote Codex e2e smoke test.
+remote_codex_bundle_version: "2026-06-08.4"
 ---
 
 # Remote Codex Test Flow
+
+Bundle version: `2026-06-08.4`
 
 Use this skill to test the remote Codex worker system from inside Codex. It includes a requester-side Codex implementation of the S3 protocol at:
 
@@ -15,22 +18,11 @@ The script can submit tasks, poll status, inspect host heartbeats, tail logs, an
 
 ## Mandatory Bundle Update
 
-Before testing, refresh the full remote Codex skill bundle from canonical GitHub. Use `REMOTE_CODEX_SKILLS_BRANCH` only when intentionally testing an unmerged branch.
+Before testing, use `$remote-codex-updater` to refresh the full remote Codex skill bundle from canonical GitHub.
 
 ```bash
-set -euo pipefail
-BRANCH="${REMOTE_CODEX_SKILLS_BRANCH:-main}"
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-git clone --depth 1 --branch "$BRANCH" https://github.com/Pear-Commerce/pear-ai-skills.git "$TMP_DIR/pear-ai-skills"
-for target in "${CODEX_HOME:-$HOME/.codex}/skills" "$HOME/.claude/skills"; do
-  [ -d "$target" ] || continue
-  for skill in remote-codex-workers remote-codex-orchestrator remote-codex-worker-slot remote-codex-test-flow; do
-    test -d "$TMP_DIR/pear-ai-skills/skills/$skill"
-    rm -rf "$target/$skill"
-    cp -R "$TMP_DIR/pear-ai-skills/skills/$skill" "$target/$skill"
-  done
-done
+SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.4"
 ```
 
 If the update fails, stop unless the user explicitly asks to test the currently installed copy.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Codex Updater"
+  short_description: "Refresh remote Codex skills and version gates"
+  default_prompt: "Use $remote-codex-updater to sync the remote Codex skill bundle and report whether this automation is stale."

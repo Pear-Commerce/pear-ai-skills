@@ -1,9 +1,12 @@
 ---
 name: remote-codex-workers
 description: Opt a Codex host into the S3-only remote Codex worker pool. Use when a user wants to start, configure, repair, inspect, or change remote Codex worker capacity, slots, orchestrator threads, or worker automations.
+remote_codex_bundle_version: "2026-06-08.4"
 ---
 
 # Remote Codex Workers
+
+Bundle version: `2026-06-08.4`
 
 Use this skill to configure a Codex-native worker host. The worker system is S3-only and Codex-only:
 
@@ -28,9 +31,9 @@ Accept user overrides for bucket, root prefix, pool, slot count, and intervals. 
 
 ## Mandatory Self-Update
 
-Before doing any setup, repair, or inspection work, update this skill and its related skills from the canonical Pear skills GitHub repo.
+Before doing any setup, repair, or inspection work, use `$remote-codex-updater` to update this skill and its related skills from the canonical Pear skills GitHub repo.
 
-Use a fresh temporary clone so dirty local canonical checkouts cannot block the update:
+If `$remote-codex-updater` is not installed yet, bootstrap the bundle with a fresh temporary clone:
 
 ```bash
 set -euo pipefail
@@ -38,19 +41,23 @@ BRANCH="${REMOTE_CODEX_SKILLS_BRANCH:-main}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-if ! git clone --depth 1 --branch "$BRANCH" https://github.com/Pear-Commerce/pear-ai-skills.git "$TMP_DIR/pear-ai-skills"; then
-  gh repo clone Pear-Commerce/pear-ai-skills "$TMP_DIR/pear-ai-skills"
-  git -C "$TMP_DIR/pear-ai-skills" checkout "$BRANCH"
-fi
+git clone --depth 1 --branch "$BRANCH" https://github.com/Pear-Commerce/pear-ai-skills.git "$TMP_DIR/pear-ai-skills"
 
 for target in "${CODEX_HOME:-$HOME/.codex}/skills" "$HOME/.claude/skills"; do
   [ -d "$target" ] || continue
-  for skill in remote-codex-workers remote-codex-orchestrator remote-codex-worker-slot remote-codex-test-flow; do
+  for skill in remote-codex-updater remote-codex-workers remote-codex-orchestrator remote-codex-worker-slot remote-codex-test-flow; do
     test -d "$TMP_DIR/pear-ai-skills/skills/$skill"
     rm -rf "$target/$skill"
     cp -R "$TMP_DIR/pear-ai-skills/skills/$skill" "$target/$skill"
   done
 done
+```
+
+Then run the updater:
+
+```bash
+SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.4"
 ```
 
 After syncing, read the freshly installed Codex copy of this skill before continuing:
@@ -76,7 +83,9 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
 4. Create or find one orchestrator thread for this `hostId`, bucket, root prefix, and pool. Prefer reusing an active thread whose initial prompt/config matches this host.
 5. The orchestrator thread prompt must say:
    ```text
-   Use $remote-codex-orchestrator.
+   Use $remote-codex-updater, then $remote-codex-orchestrator.
+
+   remoteCodexBundleVersion: 2026-06-08.4
 
    Maintain this remote Codex worker host:
    {
@@ -89,9 +98,11 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
      "leaseSeconds": 600
    }
    ```
-6. Create or update a heartbeat automation on the orchestrator thread. The automation prompt should be self-contained:
+6. Create or update a heartbeat automation on the orchestrator thread. The automation prompt should be self-contained and include the current bundle version:
    ```text
-   Use $remote-codex-orchestrator. Run one orchestrator maintenance cycle for the configured remote Codex worker host: ensure slot threads and slot automations exist, publish host heartbeat, and repair drift. Do not execute queue jobs in the orchestrator.
+   Use $remote-codex-updater first, then $remote-codex-orchestrator.
+   remoteCodexBundleVersion: 2026-06-08.4
+   Run one orchestrator maintenance cycle for the configured remote Codex worker host: ensure slot threads and slot automations exist, publish host heartbeat, and repair drift. If the updater reports this automation is stale, recreate/update the automation prompt to the current version and stop. Do not execute queue jobs in the orchestrator.
    ```
 7. Publish `hosts/{hostId}/orchestrator.json` to S3 with the thread id, requested slots, pool, intervals, and current timestamp.
 8. Run one immediate orchestrator cycle by sending/starting the orchestrator thread if needed, or tell the user the automation will repair slots on its next wake.

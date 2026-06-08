@@ -17,6 +17,7 @@ DEFAULT_PRIORITY = 50
 DEFAULT_LEASE_SECONDS = 600
 DEFAULT_WAIT_SECONDS = 600
 DEFAULT_POLL_SECONDS = 15
+REMOTE_CODEX_BUNDLE_VERSION = "2026-06-08.4"
 
 
 def utc_now():
@@ -264,6 +265,7 @@ def submit(args):
         "createdBy": args.created_by,
         "prompt": prompt,
         "mode": args.mode,
+        "remoteCodexBundleVersion": REMOTE_CODEX_BUNDLE_VERSION,
         "limits": {
             "maxAttempts": args.max_attempts,
             "timeoutSeconds": args.timeout_seconds,
@@ -282,6 +284,7 @@ def submit(args):
         "jobId": job_id,
         "pool": args.pool,
         "priority": args.priority,
+        "remoteCodexBundleVersion": REMOTE_CODEX_BUNDLE_VERSION,
         "createdAt": iso(created),
         "requestUri": s3_uri(args.bucket, req_key),
         "responseSchemaUri": s3_uri(args.bucket, resp_schema_key),
