@@ -1,6 +1,6 @@
 ---
 name: slack-technical-question-watcher
-description: Start, restart, or repair the Codex automation that watches Pear Slack #eng-help, #pulse-internal, #customer-success, and #engineering for explicit bug reports or technical questions, investigates with code/tools, posts concise evidence-based thread replies, and uses $handle-in-slack for consistent YES/NO approval and execution when a fix or operational action is needed.
+description: Use for starting, repairing, or debugging the Codex watcher for Pear Slack technical questions and bug reports in #eng-help, #pulse-internal, #customer-success, and #engineering; it investigates, replies with evidence, and delegates gated fixes or ops to $handle-in-slack.
 metadata:
   short-description: Watch Slack for technical questions and reply with investigated answers
 ---

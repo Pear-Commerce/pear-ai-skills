@@ -1,6 +1,6 @@
 ---
 name: presenton-test-deploy
-description: Use when deploying, patch-layering, backing up, verifying, smoke testing, or debugging the Pear Presenton test instance at presenton-test.intern.pearcommerce.com / EC2 i-030ec83d92fe974e5, especially backend-only FastAPI fixes for QBR strict-contract rendering while preserving SQLite and /opt/presenton/app_data.
+description: Use for deploys, patch layers, backups, verification, smoke tests, or debugging on Pear's Presenton test instance (presenton-test.intern.pearcommerce.com / EC2 i-030ec83d92fe974e5), especially backend FastAPI QBR strict-contract fixes that preserve SQLite and /opt/presenton/app_data.
 ---
 
 # Presenton Test Deploy
