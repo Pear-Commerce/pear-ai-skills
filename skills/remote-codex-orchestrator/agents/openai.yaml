@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Codex Orchestrator"
+  short_description: "Maintain remote Codex worker slot threads"
+  default_prompt: "Use $remote-codex-orchestrator to run one host maintenance cycle."

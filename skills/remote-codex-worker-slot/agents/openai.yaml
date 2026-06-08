@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Codex Worker Slot"
+  short_description: "Claim and run one S3-backed remote Codex job"
+  default_prompt: "Use $remote-codex-worker-slot to run one bounded worker wake cycle."

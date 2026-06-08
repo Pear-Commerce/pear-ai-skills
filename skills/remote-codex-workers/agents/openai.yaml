@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Codex Workers"
+  short_description: "Opt this Codex host into S3-backed remote workers"
+  default_prompt: "Use $remote-codex-workers to configure this host for the remote Codex worker pool."
