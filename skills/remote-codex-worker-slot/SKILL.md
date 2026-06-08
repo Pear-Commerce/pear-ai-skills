@@ -1,12 +1,12 @@
 ---
 name: remote-codex-worker-slot
 description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.7"
+remote_codex_bundle_version: "2026-06-08.8"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.7`
+Bundle version: `2026-06-08.8`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
@@ -40,7 +40,7 @@ Required config:
 Each automation wake should do one bounded cycle and then stop cleanly.
 
 1. Use `$remote-codex-updater` before doing anything else.
-2. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.7`.
+2. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.8`.
 3. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, and stop before claiming or continuing work.
 4. Publish a slot heartbeat/status object under:
    ```text
@@ -64,8 +64,8 @@ Schedule it every 1 minute.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.7
-Run one bounded worker wake cycle for this configured slot: self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, perform bounded work, publish logs/status/result to S3, and stop cleanly.
+remoteCodexBundleVersion: 2026-06-08.8
+Run one bounded worker wake cycle for this configured slot: self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, and stop cleanly.
 ```
 
 ## Queue Listing
@@ -142,6 +142,59 @@ aws s3api put-object \
 ```
 
 If renewal fails, stop working on that job. Do not write a terminal result after losing the lease.
+
+## Host Task Events
+
+Write immutable host task events so the orchestrator thread can print a simple task log.
+
+Event objects live at:
+
+```text
+{rootPrefix}/hosts/{hostId}/task-events/{eventTimeMillis}-{slotId}-{jobId}-{attemptId}-{eventType}.json
+```
+
+Use zero-padded 13-digit Unix epoch milliseconds for `eventTimeMillis` so keys sort chronologically. Event files are append-only; never rewrite an existing event.
+
+When this slot claims a job, write a `task_started` event immediately after the lease claim succeeds and before executing prompt work:
+
+```json
+{
+  "version": 1,
+  "eventType": "task_started",
+  "ts": "2026-06-08T18:00:00Z",
+  "hostId": "host-user",
+  "slotId": "slot-001",
+  "jobId": "job_...",
+  "attemptId": "attempt_...",
+  "workerThreadId": "019...",
+  "requestUri": "s3://..."
+}
+```
+
+When this slot writes a terminal result and `done.json`, write a `task_completed` event after `done.json` succeeds:
+
+```json
+{
+  "version": 1,
+  "eventType": "task_completed",
+  "ts": "2026-06-08T18:00:00Z",
+  "hostId": "host-user",
+  "slotId": "slot-001",
+  "jobId": "job_...",
+  "attemptId": "attempt_...",
+  "workerThreadId": "019...",
+  "status": "succeeded",
+  "resultUri": "s3://...",
+  "doneUri": "s3://...",
+  "outputJson": {
+    "ok": true,
+    "summary": "Short human-readable summary",
+    "data": {}
+  }
+}
+```
+
+For failed, timed-out, canceled, or schema-validation terminal results, still write `task_completed` with `status` matching `done.json` and `outputJson` set to the result envelope that was written to `result.json`. If the completion event write fails after `done.json` succeeds, do not retry by rewriting `done.json`; instead write a normal job log chunk describing the missed host task event.
 
 ## Logging
 
