@@ -1,12 +1,12 @@
 ---
 name: remote-codex-test-flow
 description: Test the S3-only, Codex-only remote Codex worker flow end to end. Use when a user wants to submit probe tasks, validate requester-side S3 protocol behavior, inspect active remote Codex workers, poll logs/results, or run a remote Codex e2e smoke test.
-remote_codex_bundle_version: "2026-06-08.14"
+remote_codex_bundle_version: "2026-06-08.15"
 ---
 
 # Remote Codex Test Flow
 
-Bundle version: `2026-06-08.14`
+Bundle version: `2026-06-08.15`
 
 Use this skill to test the remote Codex worker system from inside Codex. It includes a requester-side Codex implementation of the S3 protocol at:
 
@@ -22,7 +22,7 @@ Before testing, use `$remote-codex-updater` to refresh the full remote Codex ski
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.14"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.15"
 ```
 
 If the update fails, stop unless the user explicitly asks to test the currently installed copy.
