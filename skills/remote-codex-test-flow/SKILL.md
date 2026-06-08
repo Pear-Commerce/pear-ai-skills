@@ -1,12 +1,12 @@
 ---
 name: remote-codex-test-flow
 description: Test the S3-only, Codex-only remote Codex worker flow end to end. Use when a user wants to submit probe tasks, validate requester-side S3 protocol behavior, inspect active remote Codex workers, poll logs/results, or run a remote Codex e2e smoke test.
-remote_codex_bundle_version: "2026-06-08.10"
+remote_codex_bundle_version: "2026-06-08.11"
 ---
 
 # Remote Codex Test Flow
 
-Bundle version: `2026-06-08.10`
+Bundle version: `2026-06-08.11`
 
 Use this skill to test the remote Codex worker system from inside Codex. It includes a requester-side Codex implementation of the S3 protocol at:
 
@@ -22,7 +22,7 @@ Before testing, use `$remote-codex-updater` to refresh the full remote Codex ski
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.10"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.11"
 ```
 
 If the update fails, stop unless the user explicitly asks to test the currently installed copy.
@@ -55,6 +55,8 @@ python3 "$SKILL_DIR/scripts/remote_codex_client.py" run-e2e \
 ```
 
 This submits a probe job asking a slot worker to return a structured result containing the test id, then waits for `done.json`, prints the final result, and validates the result envelope shape.
+
+Long `run-e2e` waits may be quiet while the requester process is polling. If there is no terminal output yet, inspect S3 state from another command instead of assuming the test is stuck: use `status --job-id`, `hosts`, and `tail-logs --job-id ... --attempt-id ...` to check queue publication, lease ownership, worker progress, and result/done markers.
 
 If no worker claims the job, inspect hosts:
 
