@@ -1,12 +1,12 @@
 ---
 name: remote-codex-updater
 description: Refresh and version-check the remote Codex skill bundle. Use at the start of every remote Codex worker, orchestrator, setup, or test automation invocation to sync canonical skills from GitHub and detect stale automation prompts.
-remote_codex_bundle_version: "2026-06-08.9"
+remote_codex_bundle_version: "2026-06-08.10"
 ---
 
 # Remote Codex Updater
 
-Bundle version: `2026-06-08.9`
+Bundle version: `2026-06-08.10`
 
 Use this skill first in every remote Codex setup, orchestrator, slot, and test-flow invocation. It updates the remote Codex skill bundle from canonical GitHub, verifies the installed bundle version, and tells the caller whether automation prompts should be recreated.
 
@@ -24,7 +24,7 @@ Run the bundled script:
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.9"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.10"
 ```
 
 Use `REMOTE_CODEX_SKILLS_BRANCH` only when intentionally testing an unmerged branch. Otherwise it defaults to `main`.
@@ -36,7 +36,7 @@ If the script fails, stop and report the blocker. Do not continue orchestrating 
 Every remote Codex thread prompt and automation prompt should include:
 
 ```text
-remoteCodexBundleVersion: 2026-06-08.9
+remoteCodexBundleVersion: 2026-06-08.10
 ```
 
 After updating, compare the installed bundle version reported by the script to the version in the current thread/automation prompt.
@@ -61,8 +61,8 @@ Report a compact JSON-like summary:
 
 ```json
 {
-  "installedBundleVersion": "2026-06-08.9",
-  "expectedBundleVersion": "2026-06-08.9",
+  "installedBundleVersion": "2026-06-08.10",
+  "expectedBundleVersion": "2026-06-08.10",
   "skillsUpdated": true,
   "automationRefreshRequired": false
 }
