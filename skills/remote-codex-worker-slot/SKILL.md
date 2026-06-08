@@ -1,12 +1,12 @@
 ---
 name: remote-codex-worker-slot
 description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.6"
+remote_codex_bundle_version: "2026-06-08.7"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.6`
+Bundle version: `2026-06-08.7`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
@@ -40,7 +40,7 @@ Required config:
 Each automation wake should do one bounded cycle and then stop cleanly.
 
 1. Use `$remote-codex-updater` before doing anything else.
-2. Create or refresh this slot thread's own heartbeat automation. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.6`.
+2. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.7`.
 3. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, and stop before claiming or continuing work.
 4. Publish a slot heartbeat/status object under:
    ```text
@@ -60,9 +60,11 @@ Each automation wake should do one bounded cycle and then stop cleanly.
 
 Use a heartbeat automation attached to this slot thread:
 
+Schedule it every 1 minute.
+
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.6
+remoteCodexBundleVersion: 2026-06-08.7
 Run one bounded worker wake cycle for this configured slot: self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, perform bounded work, publish logs/status/result to S3, and stop cleanly.
 ```
 
