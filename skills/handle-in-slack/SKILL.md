@@ -31,11 +31,14 @@ Not every "handle this" request is an action request. Sometimes the right handli
    - Use surrounding context to identify the real problem, prior decisions, named systems, and whether the message is part of an ongoing request.
    - Keep this bounded and relevant. Do not summarize or expose unrelated private context in the outgoing reply.
 
-3. Do a bounded read-only investigation.
-   - Search Slack history, the local repo, logs, GitHub, browser pages, DB/reporting sources, Datadog, or external docs only when they are relevant sources of truth.
+3. Do a comprehensive read-only source sweep.
+   - For every handle request, check every available source-of-truth category that could bear on the thread before deciding the outcome. Treat each check as lightweight when the signal is low, but do not stop after Slack or one alert when other sources are available.
+   - Available sources normally include Slack thread/surrounding context, Datadog monitors/events/metrics/logs, local repo/code/git history, GitHub PRs/issues/actions, environment health, app/server logs, DB/reporting/analytics data, browser/API probes, linked docs/pages, and relevant external vendor/status/docs sources.
+   - If a source is unavailable, rate-limited, forbidden, unsafe, or would require a side effect or approval, record that limitation and continue with the remaining sources.
+   - Keep DB/reporting checks narrow, indexed, and read-only. Avoid broad URZA/table scans; if a query starts running long or risks undo-log growth, kill that query and report the limitation instead of letting it continue.
    - Keep commands and queries read-only until there is explicit approval.
    - For Pear API requests through Cloudflare, follow `$pear-engineering-workflow`: include the trusted-edge header from the Admin/Offers deploy scripts before interpreting a plain local `curl` 403/block page as API behavior. This applies to `api.pearcommerce.com` and `test.api.pearcommerce.com` API/XHR probes; it does not apply to third-party sites, Cloudflare APIs, raw Offers page loads, or unrelated domains.
-   - Stop when there is enough evidence for either a useful answer, a concrete proposed action, or a clear request for missing scope.
+   - Stop after the source sweep produces enough evidence for either a useful answer, a concrete proposed action, or a clear request for missing scope.
 
 4. Decide the outcome.
    - **Answer-only:** If the thread needs an explanation, diagnosis, status readout, or next-step recommendation, post an evidence-based reply. This is still "handling" the thread. Do not include a YES/NO prompt when no fix, write, rerun, PR, JSP, or external side effect is being requested.
@@ -50,7 +53,7 @@ Not every "handle this" request is an action request. Sometimes the right handli
 
 Use this path when the user says "handle" and the Slack thread can be resolved by analysis and explanation alone.
 
-- Do the same bounded read-only investigation: read the thread, gather relevant surrounding context, and check source-of-truth systems only as needed.
+- Do the same comprehensive read-only source sweep: read the thread, gather relevant surrounding context, and check all available source-of-truth systems that could bear on the thread, noting any unavailable or unsafe source.
 - Explain what is happening, why it is happening, and what the practical next step or decision is.
 - Include enough evidence to make the answer trustworthy, but avoid dumping logs, private context, or unrelated details.
 - Do not ask `Reply: YES or NO` unless you are asking for permission to do follow-up work.
