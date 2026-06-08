@@ -1,12 +1,12 @@
 ---
 name: remote-codex-worker-slot
 description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.8"
+remote_codex_bundle_version: "2026-06-08.9"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.8`
+Bundle version: `2026-06-08.9`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
@@ -40,21 +40,22 @@ Required config:
 Each automation wake should do one bounded cycle and then stop cleanly.
 
 1. Use `$remote-codex-updater` before doing anything else.
-2. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.8`.
-3. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, and stop before claiming or continuing work.
-4. Publish a slot heartbeat/status object under:
+2. Print a concise diagnostic plan for this wake: slot id, whether you expect to inspect an existing job or scan pending work, and the major steps you will take.
+3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.9`.
+4. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, print a diagnostic explaining that work was skipped because the automation was stale, and stop before claiming or continuing work.
+5. Publish a slot heartbeat/status object under:
    ```text
    {rootPrefix}/hosts/{hostId}/slots/{slotId}.json
    ```
-5. If the slot already has a `currentJobId`, inspect that job first.
-6. If the job has `done.json`, clear local slot state and become idle.
-7. If the job has `cancel.json`, stop work, write a canceled result if this slot owns the lease, and clear the slot.
-8. If this slot still owns the lease, renew it with `If-Match: <etag>` and continue bounded work.
-9. If the lease is missing, expired and reclaimable, or owned by another slot, clear local slot state.
-10. If idle, list pending queue markers and try to claim the earliest eligible job.
-11. Execute or continue bounded work.
-12. Publish logs/status/result.
-13. End the turn with a compact status summary.
+6. If the slot already has a `currentJobId`, inspect that job first.
+7. If the job has `done.json`, clear local slot state and become idle.
+8. If the job has `cancel.json`, stop work, write a canceled result if this slot owns the lease, and clear the slot.
+9. If this slot still owns the lease, renew it with `If-Match: <etag>` and continue bounded work.
+10. If the lease is missing, expired and reclaimable, or owned by another slot, clear local slot state.
+11. If idle, list pending queue markers and try to claim the earliest eligible job.
+12. Execute or continue bounded work.
+13. Publish logs/status/result.
+14. End the turn with a compact status summary.
 
 ## Owned Automation Prompt
 
@@ -64,8 +65,8 @@ Schedule it every 1 minute.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
-remoteCodexBundleVersion: 2026-06-08.8
-Run one bounded worker wake cycle for this configured slot: self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, and stop cleanly.
+remoteCodexBundleVersion: 2026-06-08.9
+Run one bounded worker wake cycle for this configured slot: print concise worker diagnostics, self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, mirror major diagnostics into job log chunks when an attempt exists, and stop cleanly.
 ```
 
 ## Queue Listing
@@ -197,6 +198,21 @@ When this slot writes a terminal result and `done.json`, write a `task_completed
 For failed, timed-out, canceled, or schema-validation terminal results, still write `task_completed` with `status` matching `done.json` and `outputJson` set to the result envelope that was written to `result.json`. If the completion event write fails after `done.json` succeeds, do not retry by rewriting `done.json`; instead write a normal job log chunk describing the missed host task event.
 
 ## Logging
+
+Print simple diagnostics in the worker slot thread as the automation runs. Keep these diagnostics short and useful:
+
+- Start of wake: slot id, current-job expectation, and plan.
+- Updater result: current, refreshed, or stale-and-stopping.
+- Automation refresh result.
+- Queue scan: candidate count and whether an eligible job exists.
+- Claim result: claimed job id/attempt id, skipped because already done/timed out/max-attempts, or lost race to another slot.
+- Lease result: renewed, lost, stale-reclaimed, or released.
+- Work result: started prompt work, made bounded progress, blocked, errored, timed out, canceled, or completed.
+- Final state: idle/running/completed/blocked and what was written to S3.
+
+Do not dump full prompts, secrets, credentials, or large response bodies into thread diagnostics. Summarize job prompts in a short phrase only when needed to orient the reader. Diagnostics should not delay real work; one sentence per major transition is enough.
+
+When a job attempt exists, mirror major diagnostics into that attempt's immutable S3 log chunks as JSON lines. Use `type: "diagnostic"` for plan/progress messages, `type: "status"` for state changes, and `type: "error"` for failures or blockers. If there is no active attempt yet, the thread diagnostic and slot heartbeat message are enough.
 
 Write immutable log chunks:
 
