@@ -1,16 +1,17 @@
 ---
 name: remote-codex-worker-slot
 description: Run one Codex-only remote worker slot wake cycle. Use inside slot Codex threads and automations to claim S3 pending jobs, maintain S3 leases, execute bounded Codex work, publish logs, and write structured results.
-remote_codex_bundle_version: "2026-06-08.4"
+remote_codex_bundle_version: "2026-06-08.5"
 ---
 
 # Remote Codex Worker Slot
 
-Bundle version: `2026-06-08.4`
+Bundle version: `2026-06-08.5`
 
 This skill runs inside a slot Codex thread. The slot owns queue polling, job claiming, lease renewal, logs, and results.
 
 Do not create other worker slots. Do not maintain host capacity. The orchestrator does that.
+Do create or refresh this slot thread's own heartbeat automation from inside the slot thread before claiming queue work. Do not rely on the orchestrator or setup thread to own this automation.
 
 ## Inputs
 
@@ -38,20 +39,32 @@ Required config:
 
 Each automation wake should do one bounded cycle and then stop cleanly.
 
-1. Use `$remote-codex-updater` before doing anything else. If the updater reports this invocation or automation is stale, update/recreate this slot automation prompt to `remoteCodexBundleVersion: 2026-06-08.4` when possible, publish a stale-version slot heartbeat, and stop before claiming or continuing work.
-2. Publish a slot heartbeat/status object under:
+1. Use `$remote-codex-updater` before doing anything else.
+2. Create or refresh this slot thread's own heartbeat automation. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.5`.
+3. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, and stop before claiming or continuing work.
+4. Publish a slot heartbeat/status object under:
    ```text
    {rootPrefix}/hosts/{hostId}/slots/{slotId}.json
    ```
-3. If the slot already has a `currentJobId`, inspect that job first.
-4. If the job has `done.json`, clear local slot state and become idle.
-5. If the job has `cancel.json`, stop work, write a canceled result if this slot owns the lease, and clear the slot.
-6. If this slot still owns the lease, renew it with `If-Match: <etag>` and continue bounded work.
-7. If the lease is missing, expired and reclaimable, or owned by another slot, clear local slot state.
-8. If idle, list pending queue markers and try to claim the earliest eligible job.
-9. Execute or continue bounded work.
-10. Publish logs/status/result.
-11. End the turn with a compact status summary.
+5. If the slot already has a `currentJobId`, inspect that job first.
+6. If the job has `done.json`, clear local slot state and become idle.
+7. If the job has `cancel.json`, stop work, write a canceled result if this slot owns the lease, and clear the slot.
+8. If this slot still owns the lease, renew it with `If-Match: <etag>` and continue bounded work.
+9. If the lease is missing, expired and reclaimable, or owned by another slot, clear local slot state.
+10. If idle, list pending queue markers and try to claim the earliest eligible job.
+11. Execute or continue bounded work.
+12. Publish logs/status/result.
+13. End the turn with a compact status summary.
+
+## Owned Automation Prompt
+
+Use a heartbeat automation attached to this slot thread:
+
+```text
+Use $remote-codex-updater first, then $remote-codex-worker-slot.
+remoteCodexBundleVersion: 2026-06-08.5
+Run one bounded worker wake cycle for this configured slot: self-refresh this slot automation if stale, renew or release the current job lease, claim an eligible pending job if idle, perform bounded work, publish logs/status/result to S3, and stop cleanly.
+```
 
 ## Queue Listing
 

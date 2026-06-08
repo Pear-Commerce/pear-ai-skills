@@ -1,22 +1,23 @@
 ---
 name: remote-codex-workers
 description: Opt a Codex host into the S3-only remote Codex worker pool. Use when a user wants to start, configure, repair, inspect, or change remote Codex worker capacity, slots, orchestrator threads, or worker automations.
-remote_codex_bundle_version: "2026-06-08.4"
+remote_codex_bundle_version: "2026-06-08.5"
 ---
 
 # Remote Codex Workers
 
-Bundle version: `2026-06-08.4`
+Bundle version: `2026-06-08.5`
 
 Use this skill to configure a Codex-native worker host. The worker system is S3-only and Codex-only:
 
 - One orchestrator Codex thread per opted-in host.
-- One heartbeat automation on the orchestrator thread.
+- One heartbeat automation owned and self-created by the orchestrator thread.
 - N slot Codex threads per host.
-- One heartbeat automation per slot thread.
+- One heartbeat automation owned and self-created by each slot thread.
 - S3 stores queue markers, leases, heartbeats, logs, and results.
 
 Do not start a local daemon, background shell loop, launchd service, or PID-based supervisor.
+Do not create child heartbeat automations from the setup thread. The setup thread delegates bootstrapping to the child, and the child creates or refreshes its own automation from inside its own turn.
 
 ## Defaults
 
@@ -57,7 +58,7 @@ Then run the updater:
 
 ```bash
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/remote-codex-updater"
-"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.4"
+"$SKILL_DIR/scripts/update_remote_codex_bundle.sh" "2026-06-08.5"
 ```
 
 After syncing, read the freshly installed Codex copy of this skill before continuing:
@@ -71,7 +72,7 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
 ## Setup Workflow
 
 1. Complete the mandatory self-update above.
-2. If Codex thread or automation tools are not loaded, use tool search for `create_thread`, `read_thread`, `list_threads`, `automation_update`, and `set_thread_archived`.
+2. If Codex thread tools are not loaded, use tool search for `create_thread`, `read_thread`, `list_threads`, `send_message_to_thread`, and `set_thread_archived`.
 3. Derive a stable `hostId` from the local machine and user, for example:
    ```bash
    python3 - <<'PY'
@@ -85,7 +86,7 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
    ```text
    Use $remote-codex-updater, then $remote-codex-orchestrator.
 
-   remoteCodexBundleVersion: 2026-06-08.4
+   remoteCodexBundleVersion: 2026-06-08.5
 
    Maintain this remote Codex worker host:
    {
@@ -97,15 +98,17 @@ If the GitHub update fails, stop and report the blocker. Do not proceed with wor
      "slotIntervalMinutes": 1,
      "leaseSeconds": 600
    }
+
+   On your first turn, create or refresh your own heartbeat automation from inside this orchestrator thread, then maintain slot threads. Do not execute queue jobs in the orchestrator.
    ```
-6. Create or update a heartbeat automation on the orchestrator thread. The automation prompt should be self-contained and include the current bundle version:
+6. Do not create the orchestrator heartbeat from this setup thread. Instead, ensure the orchestrator thread runs an immediate self-bootstrap turn. If the orchestrator thread already exists, send it this follow-up:
    ```text
-   Use $remote-codex-updater first, then $remote-codex-orchestrator.
-   remoteCodexBundleVersion: 2026-06-08.4
-   Run one orchestrator maintenance cycle for the configured remote Codex worker host: ensure slot threads and slot automations exist, publish host heartbeat, and repair drift. If the updater reports this automation is stale, recreate/update the automation prompt to the current version and stop. Do not execute queue jobs in the orchestrator.
+   Use $remote-codex-updater, then $remote-codex-orchestrator.
+   remoteCodexBundleVersion: 2026-06-08.5
+   Self-bootstrap this orchestrator: create or refresh your own heartbeat automation attached to this thread, publish host heartbeat, ensure desired slot threads exist, and ask each slot thread to create or refresh its own heartbeat automation. Do not claim queue jobs.
    ```
-7. Publish `hosts/{hostId}/orchestrator.json` to S3 with the thread id, requested slots, pool, intervals, and current timestamp.
-8. Run one immediate orchestrator cycle by sending/starting the orchestrator thread if needed, or tell the user the automation will repair slots on its next wake.
+7. Let the orchestrator thread publish `hosts/{hostId}/orchestrator.json`, `hosts/{hostId}/heartbeat.json`, and slot summaries to S3. The setup thread may inspect those objects for verification, but it should not be the source of truth for host state.
+8. Report whether the orchestrator self-bootstrap completed, whether its automation exists, and whether slots were created immediately or will be repaired on the next orchestrator wake.
 
 ## S3 Paths
 
@@ -133,7 +136,7 @@ Report:
 - bucket/root prefix/pool
 - desired slot count
 - orchestrator thread id
-- automation status
+- orchestrator-owned automation status
 - whether slots were created immediately or will be repaired on next wake
 
 Mention that `remote-codex-orchestrator` maintains the pool and `remote-codex-worker-slot` owns job claims and leases.
