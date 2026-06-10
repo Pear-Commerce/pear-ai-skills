@@ -24,6 +24,8 @@ Use this reference after the quick skill flow when the task is moving from a bro
 - Deletes existing live imported stores that are missing from the returned retailer list.
 - Calls `Store.updateZipRetailerZonesToUseStore(retailer.id, 1, 15, storesFromRetailer)` when stores changed, so downstream URZAs use the imported stores.
 
+For PR reviews, do not treat the absence of a manual `Store.updateZipRetailerZonesToUseStore(...)` call in a JSON seed/import migration as a blocker by itself. Zone refresh is owned by the scheduled store import job through `importStoresFromRetailer(...)`. A PR that checks in `WebContent/META-INF/<retailer>/current.json` and imports those stores can be acceptable as an import-only step when that is the intended rollout. Ask for an explicit zone rebuild only if the PR bypasses the job path and claims or requires immediate refreshed `RetailerZone` / `ZipRetailerZone` coverage before the store import job runs.
+
 Because missing stores can be deleted, never enable `canImportStoresFromRetailer` for production until the discovered source is complete enough for the retailer estate or the importer intentionally scopes the country/brand.
 
 ## Choosing `getAllStores` vs `getStoresForZip`

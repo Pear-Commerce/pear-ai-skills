@@ -195,6 +195,8 @@ Store import methods:
 
 It is acceptable to load stores from the normalized JSON artifact produced during feasibility for the first production pass because it is fast and stable. Keep the original live store scraping code in the `@Script` production test so the store list can be regenerated and verified later.
 
+The normal store import job updates retailer zones after `importStoresFromRetailer(...)` detects changed stores. Prefer wiring the retailer into that job-backed path over adding one-off zone refresh calls to every setup or JSON seed migration. Do not block a PR merely because a JSON-backed store import lacks an explicit `Store.updateZipRetailerZonesToUseStore(...)` call when the intended rollout is import-only or job-backed. Add a manual zone rebuild only when the PR bypasses the job path and immediate refreshed `RetailerZone` / `ZipRetailerZone` coverage is required.
+
 Do not touch infrastructure helpers unless the task is explicitly about infrastructure:
 
 - `addUnsavedAvailabilitiesToResolveInBackground(...)`

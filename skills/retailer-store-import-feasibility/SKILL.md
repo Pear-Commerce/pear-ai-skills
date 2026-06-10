@@ -34,6 +34,8 @@ Check these first:
 
 Read `references/repo-tactics.md` when deciding how to productionize a store import, choose `getAllStores` vs `getStoresForZip`, set cache TTLs, or diagnose stale/missing store ids. It summarizes patterns and gotchas mined from current API store import code.
 
+When reviewing store-import PRs, remember that retailer-zone refresh belongs to the normal store import job path. `RetailerStoreLocationsSyncJob` calls `UPCRetailerZipAvailabilityRecomputer.importStoresFromRetailer(...)`, and that importer updates store-backed retailer zones when imported stores change. Do not request changes solely because a JSON-backed seed/import PR lacks a direct `Store.updateZipRetailerZonesToUseStore(...)` call. Instead, verify whether the PR is only seeding `Store.SStore` JSON or rows, or whether it is enabling the job-backed path with `canImportStoresFromRetailer(...)` plus `getAllStores(...)` / `getStoresForZip(...)`. Ask for an explicit zone rebuild only when the PR bypasses the normal job path and its rollout requires immediate zone coverage before the job can run.
+
 Read `references/store-extraction-patterns.md` when choosing a full-estate store extraction pattern, preserving Java rerun notes, or adding a new site family.
 
 ## Discovery Order
