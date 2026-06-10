@@ -47,6 +47,10 @@ Check these first:
 
 If the store id or item id is not known yet, use `$retailer-store-import-feasibility` and `$retailer-upc-resolution-feasibility` first.
 
+## Item ID Semantics
+
+In Pear URD language, `UPCRetailerData.itemId` / `SItemDataWrapper.getItemId()` means the direct retailer-specific item id used by that retailer's resolver, availability updater, and PDP URL builder. `UPCRetailerData.instacartItemId` means the Instacart product id used by `InstacartAvailabilityUpdater`, Instacart batch updaters, and Instacart list-scraper/list-check paths. When debugging or proving availability for a retailer that may have both, check the retailer-specific `itemId` and updater path first; only then check `instacartItemId`, Instacart URZAs, Instacart batch inventory lists, or shared Instacart fallback/list computation.
+
 ## Repo Tactics
 
 Read `references/repo-tactics.md` when choosing a static updater vs batch updater, deciding cache keys/TTLs, handling store context, or diagnosing status writeback. It summarizes patterns and gotchas mined from current availability updater and batch availability updater code.
