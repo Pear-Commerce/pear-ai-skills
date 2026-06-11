@@ -25,15 +25,19 @@ Any user mention of `PR`, `pull request`, `review`, `reviewers`, `Copilot`, `rea
 
 Treat converting a draft PR to ready-for-review as a PR-readying operation, not as a standalone metadata flip. After marking a Codex-authored Pear PR non-draft, immediately run the Reviewer Workflow, request Copilot, create or update the review-watch automation, and satisfy the New PR Completion Gate before sending the final response.
 
-## Codex Authorship Signature
+## Agent Authorship Signature
 
-When Codex authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by:
+When an AI agent authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by the signature matching the agent doing the work: `- Claude` when you are Claude (Claude Code), `- Codex` when you are Codex.
+
+```text
+- Claude
+```
 
 ```text
 - Codex
 ```
 
-Do not duplicate the signoff if it is already present. Treat both the current `- Codex` signoff and legacy `Thanks,\nCodex` signoff as existing Codex authorship signatures when checking whether a PR/comment/reply is Codex-authored or already signed. When adding a new signoff, always use `- Codex`. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
+Do not duplicate the signoff if it is already present. Treat the current `- Claude` and `- Codex` signoffs and the legacy `Thanks,\nCodex` signoff as existing agent authorship signatures when checking whether a PR/comment/reply is agent-authored or already signed. When adding a new signoff, always use the signature for your own identity; never sign as the other agent. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
 
 ## PR Body Context
 
@@ -156,7 +160,7 @@ PR is ready for review: [repo #PR](PR_URL)
 
 Could I get reviews when you have a minute?
 
-- Codex
+- <Claude or Codex, matching the agent posting>
 ```
 
 If the PR is urgent, a hotfix, or already landed, say that plainly and include the deploy or merge status if known.
@@ -185,7 +189,7 @@ For user-facing admin, offers, dashboard, or extension changes, add screenshots 
 
 ## Review Follow-Up Loop
 
-When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Treat explicit phrases like "fix issues", "fix blockers", "fix the unit tests", "fix the PR", or "fix the unit tests and update the PR" as approval to make targeted PR follow-up fixes, push the PR branch, and re-request review. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, rebase the PR branch against the latest base branch, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End Codex-authored replies and commit messages with the Codex authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request. For recurring automations, only perform these fix-and-push actions automatically when the user has opted into auto-fixing comments.
+When the user asks to handle PR feedback, inspect every GitHub feedback surface before editing, not just Copilot or currently unresolved threads. Use the GitHub comment-handler skill for thread-aware review data, then also inspect flat PR review comments, top-level issue/PR comments, requested-changes reviews, reviewdog/github-actions bot comments, check annotations when available, timeline review requests, and existing Codex replies. Treat actionable comments from any author as feedback, including bots. Treat explicit phrases like "fix issues", "fix blockers", "fix the unit tests", "fix the PR", or "fix the unit tests and update the PR" as approval to make targeted PR follow-up fixes, push the PR branch, and re-request review. Fix every actionable issue that has not already been addressed by a later Codex reply or code change, or reply with a clear reason when a requested change is not appropriate. After code changes, rebase the PR branch against the latest base branch, rerun the relevant focused checks, amend the existing branch commit instead of adding a noisy follow-up commit, force-push with lease, and reply to each addressed GitHub thread or comment with what changed and what was verified. End agent-authored replies and commit messages with the agent authorship signature above. When the follow-up pass is done, re-request GitHub Copilot review with the same Copilot workflow above and verify the timeline shows the new request. For recurring automations, only perform these fix-and-push actions automatically when the user has opted into auto-fixing comments.
 
 ## CI-First Verification Guardrails
 
@@ -234,14 +238,14 @@ Interpret explicit requests like "handle comments as they come in", "keep fixing
 The recurring task should:
 
 - watch only explicitly named PRs, or open PRs related to the current thread that were authored or materially written by Codex
-- identify Codex-authored PRs by the PR body or Codex-authored comments ending with either the current `- Codex` signature or the legacy `Thanks,\nCodex` signature
+- identify agent-authored (Claude or Codex) PRs by the PR body or agent-authored comments ending with the current `- Claude` or `- Codex` signature or the legacy `Thanks,\nCodex` signature
 - inspect every GitHub feedback source on each pass: all review threads whether unresolved, resolved, or outdated; flat PR review comments; top-level issue/PR comments; requested-changes reviews; reviewdog/github-actions bot comments; Copilot feedback; check annotations when available; timeline review requests; approvals; mergeability; branch status; and required checks
 - do not treat Copilot as the only reviewer. Actionable comments from any author, including `github-actions`, `reviewdog`, humans, and Codex self-review comments, must be evaluated and either addressed or explicitly answered
 - when auto-fix is approved, make the smallest clean code change for every actionable comment that has not already been handled by a later Codex reply or code change, rebase the PR branch against the latest base branch, run focused checks, amend the existing branch commit, and force-push with lease
 - when auto-fix is not approved, report actionable comments back to the thread and ask before changing code, pushing, or posting GitHub replies that imply a fix was made
 - reply to each addressed thread/comment with what changed and what was verified; do not resolve or close feedback conversations immediately after pushing a fix. Keep the back-and-forth visible for reviewer context, then resolve/close finished conversations after they have been quiet for at least 6 hours, when the user explicitly asks, or during landing/merging. Still address new feedback promptly.
 - reply with a concise technical reason when no code change is appropriate
-- end all Codex-authored GitHub replies and commit messages with the Codex authorship signature above
+- end all agent-authored GitHub replies and commit messages with the agent authorship signature above
 - re-request GitHub Copilot review after each completed fix pass and verify the timeline shows the new request
 - avoid unrelated PRs and user-authored PRs that lack the Codex authorship signal
 - for retailer feasibility PRs, explicitly disable Slack review notifications and automated `#engineering` nudges in the watcher prompt unless the user explicitly overrides this for a specific PR
