@@ -56,7 +56,7 @@ Can you reply with:
 
 If yes, I’ll <specific bounded task>, keep it scoped to those targets, and post the summary/results back in this thread.
 
-- Codex
+- <Claude or Codex, matching the agent posting>
 ```
 
 For analysis-backed gates, include a short evidence block before the yes/no ask:

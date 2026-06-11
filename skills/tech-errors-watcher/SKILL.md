@@ -94,7 +94,7 @@ Produce one of three outcomes:
 - plausible explanation and confidence (`medium` or `high`)
 - evidence from Datadog/logs.sh/GitHub in terse bullets
 - why no PR is being proposed, if relevant
-- `- Codex`
+- the agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex)
 
 **Action-needed YES/NO Slack reply:** only if confidence is very high that a specific code/config/JSP/operational action caused or can fix the alert and a surgical scoped action is clear. Use `$handle-in-slack` and, when JSP or production-like operations are involved, `$slack-prod-jsp-approval`. Post one concise thread reply with:
 - `Automatic reply triggered by $tech-errors-watcher.`
@@ -103,19 +103,19 @@ Produce one of three outcomes:
 - direct evidence tying the alert to the change
 - simplest surgical fix
 - YES/NO approval ask with exact scope and execution path
-- `- Codex`
+- the agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex)
 
 Approval UX: follow `$handle-in-slack`. If Slack reactions/buttons are available, use them. If not, ask humans to reply `yes` or `no`. Treat clear yes from any human (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval for only the scoped action named in the prompt. Treat clear no/stop as a decline.
 
-When reading approval, mark the exact Slack message treated as affirmation. Prefer a Slack reaction if available; otherwise post one terse reply: `:hourglass_flowing_sand: Approved; starting fix. - Codex`. Do not mark ambiguous replies as approvals.
+When reading approval, mark the exact Slack message treated as affirmation. Prefer a Slack reaction if available; otherwise post one terse reply: `:hourglass_flowing_sand: Approved; starting fix. - <agent signoff>`. Do not mark ambiguous replies as approvals.
 
 On approval for code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. Create a sibling worktree from the latest base branch, never the user's primary checkout, on a unique `codex/` branch. Make the smallest code/config/test-data fix that addresses the specific alert cause. Run focused practical verification; if local setup would be noisy, use cheap local checks plus CI as source of truth.
 
 On approval for JSP or operational work, use the `$handle-in-slack` JSP/operational path: follow `$slack-prod-jsp-approval` and `$pear-prod-jsp`, create a preview-only JSP first, wait for Run-button approval, and post concise results back to the Slack thread.
 
-Commit, push, and create a PR with a concise body linking the Slack alert thread, Datadog alert/link, logs evidence, and culprit change. Request reviewers/Copilot according to `$pear-pr-review-flow`. Enable auto-merge immediately when normal branch protection allows it. Post one terse PR-created reply such as `:white_check_mark: PR opened: <PR_URL>. Auto-merge enabled. - Codex`.
+Commit, push, and create a PR with a concise body linking the Slack alert thread, Datadog alert/link, logs evidence, and culprit change. Request reviewers/Copilot according to `$pear-pr-review-flow`. Enable auto-merge immediately when normal branch protection allows it. Post one terse PR-created reply such as `:white_check_mark: PR opened: <PR_URL>. Auto-merge enabled. - <agent signoff>`.
 
-Create or update a PR-specific review/watch automation for the PR with model `gpt-5.3-codex` and reasoning effort `xhigh`. It has approval to auto-fix actionable review comments and related CI failures, re-request Copilot after fix passes, keep auto-merge enabled, monitor until quiescent, verify the alert-relevant build/checks, and merge/land once allowed. Post only one final Slack reply, such as `:white_check_mark: Merged: <PR_URL>. Checks green. - Codex`, unless human action is required.
+Create or update a PR-specific review/watch automation for the PR with model `gpt-5.3-codex` and reasoning effort `xhigh`. It has approval to auto-fix actionable review comments and related CI failures, re-request Copilot after fix passes, keep auto-merge enabled, monitor until quiescent, verify the alert-relevant build/checks, and merge/land once allowed. Post only one final Slack reply, such as `:white_check_mark: Merged: <PR_URL>. Checks green. - <agent signoff>`, unless human action is required.
 
 Avoid duplicate work: before opening a branch or PR, search the Slack thread and open GitHub PRs for the Datadog link, monitor name, stack frame/error text, failed endpoint/job, culprit PR, or branch slug. Do not touch unrelated files, unrelated PRs, or user-authored branches unless explicitly approved. Delete/stop this run-specific automation after it posts no reply due low confidence, posts an explanation-only reply, posts a final decline, or hands off to a PR-specific watcher.
 ```

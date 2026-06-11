@@ -44,7 +44,7 @@ Before creating automations, collect or infer:
 - What counts as duplicate work: existing Codex triage, linked PR, run-specific automation, issue, branch slug, or thread marker.
 - Approval phrases for yes and no/stop.
 - Whether approval grants auto-fix, auto-land, auto-merge, reviewer replies, or only PR creation.
-- Slack message budget and signoff. Use `- Codex` for new posts.
+- Slack message budget and signoff. Use your agent signoff for new posts: `- Claude` when you are Claude, `- Codex` when you are Codex.
 - Daily repair schedule and target thread for the sentinel.
 
 If the request is under-specified, make conservative defaults and include them in the created prompt.
@@ -73,16 +73,16 @@ Do not post separate implementation logs, local check summaries, watcher-created
 If the available Slack tool cannot add reactions, use terse replies such as:
 
 ```text
-:hourglass_flowing_sand: Approved; starting fix. - Codex
+:hourglass_flowing_sand: Approved; starting fix. - <Claude or Codex, matching the agent posting>
 ```
 
-End Codex-authored Slack posts, GitHub replies, PR bodies, and commit messages with:
+End agent-authored Slack posts, GitHub replies, PR bodies, and commit messages with your agent signoff — `- Claude` when you are Claude, `- Codex` when you are Codex:
 
 ```text
-- Codex
+- <Claude or Codex, matching the agent posting>
 ```
 
-When detecting Codex-authored prior work, treat both `- Codex` and legacy `Thanks,\nCodex` as Codex signatures.
+When detecting agent-authored prior work, treat `- Claude`, `- Codex`, and legacy `Thanks,\nCodex` as agent signatures.
 
 ## Sentinel Prompt Template
 
@@ -134,15 +134,15 @@ Inspect the source of truth for the failure or request. For GitHub Actions, insp
 
 Before posting, search for duplicate work by source URL/id, failed test name, branch slug, Slack thread links, and open PRs.
 
-Post one concise original Slack thread reply that starts with `Automatic reply triggered by <SKILL_OR_AUTOMATION_NAME>.` Include the findings above, the likely owner/author tag when evidence supports it, and use `$handle-in-slack` for the YES/NO approval ask, exact scope, and execution path. End with `- Codex`.
+Post one concise original Slack thread reply that starts with `Automatic reply triggered by <SKILL_OR_AUTOMATION_NAME>.` Include the findings above, the likely owner/author tag when evidence supports it, and use `$handle-in-slack` for the YES/NO approval ask, exact scope, and execution path. End with your agent signoff.
 
 Treat clear yes replies from any human (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval to perform the approved scope. Treat clear no/stop as a decline. If no approval has arrived, stay quiet except for notable blockers in the Codex thread. If declined, acknowledge once in Slack and delete/stop this run-specific automation.
 
-On approval, mark the approval message. Prefer a Slack reaction if available; otherwise post `:hourglass_flowing_sand: Approved; starting fix. - Codex`.
+On approval, mark the approval message. Prefer a Slack reaction if available; otherwise post `:hourglass_flowing_sand: Approved; starting fix. - <agent signoff>`.
 
 For Pear engineering PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. Create a sibling worktree from the latest base branch, never the user's primary checkout, on a unique `codex/` branch. Make the smallest code/test-data/config/docs fix that addresses the specific finding. Run focused practical verification; if local setup would be noisy, use cheap local checks and CI as the source of truth when appropriate.
 
-Commit, push, and create a PR with a concise body linking the Slack thread and source item. Request reviewers/Copilot according to the repo workflow. Enable auto-merge/auto-land when the user approved it and normal branch protection allows it. Post one terse PR-created Slack reply, such as `:white_check_mark: PR opened: <PR_URL>. Auto-merge enabled. - Codex`.
+Commit, push, and create a PR with a concise body linking the Slack thread and source item. Request reviewers/Copilot according to the repo workflow. Enable auto-merge/auto-land when the user approved it and normal branch protection allows it. Post one terse PR-created Slack reply, such as `:white_check_mark: PR opened: <PR_URL>. Auto-merge enabled. - <agent signoff>`.
 
 Create or update a PR-specific watcher with model `gpt-5.3-codex` and reasoning effort `xhigh` while active. The PR watcher should inspect all feedback/CI surfaces, auto-fix only approved categories, re-request review after fixes, keep auto-merge enabled if approved, verify quiescence, merge/land when allowed, post one terse final Slack reply, and delete/stop itself when done.
 
@@ -180,6 +180,6 @@ Before finishing a new watcher setup, confirm:
 - repair cron exists, is active, and uses a low model/reasoning setting when supported
 - deep worker prompt exists somewhere the sentinel can reference
 - PR watcher instructions capture approval scope and shutdown behavior
-- Slack output budget and `- Codex` signoff are present
-- duplicate detection accepts legacy `Thanks,\nCodex` and current `- Codex`
+- Slack output budget and the agent signoff (`- Claude` or `- Codex`) are present
+- duplicate detection accepts legacy `Thanks,\nCodex` and current `- Claude`/`- Codex`
 - no unrelated files or user-authored branches were touched

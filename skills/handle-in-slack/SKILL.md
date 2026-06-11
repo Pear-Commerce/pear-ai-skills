@@ -65,7 +65,7 @@ Use this path when the user says "handle" and the Slack thread can be resolved b
 Only use this section for action-needed Slack replies. Every action-needed Slack reply must make the requested human action unmistakable:
 
 - Put `Reply: YES or NO` alone near the top of the message.
-- Repeat `Reply: YES or NO` near the bottom, just above `- Codex`.
+- Repeat `Reply: YES or NO` near the bottom, just above your agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex).
 - Keep the message concise: at most three short read-only findings, one proposed action line, and one sentence explaining what happens after yes.
 - Do not bury the ask under analysis. The reader should know immediately that Codex is waiting for a YES/NO decision before doing anything.
 
@@ -85,7 +85,7 @@ If yes, I will <execution path>, keep it scoped to <scope>, and post results bac
 
 Reply: YES or NO
 
-- Codex
+- <Claude or Codex, matching the agent posting>
 ```
 
 For JSP or production-like operational work, use the stricter `$slack-prod-jsp-approval` shape. It must follow the same top-and-bottom YES/NO rule:
@@ -101,7 +101,7 @@ I will prep a preview-only JSP, wait for Run-button approval, then post results 
 
 Reply: YES or NO
 
-- Codex
+- <Claude or Codex, matching the agent posting>
 ```
 
 ## After The Reply
@@ -112,7 +112,7 @@ Reply: YES or NO
 - Treat `no`, `stop`, or equivalent as a decline; acknowledge only if helpful, then stop.
 - If approval is clear but scope is incomplete, ask for the missing exact IDs/names/env before acting.
 - Re-read the thread immediately before acting and record the exact Slack reply that approved the work.
-- Post a terse starting acknowledgement only after approval, for example `Approved; starting the scoped fix. - Codex`.
+- Post a terse starting acknowledgement only after approval, for example `Approved; starting the scoped fix. - <agent signoff>`.
 
 ## 48-Hour Follow-Up Monitor
 
@@ -138,7 +138,7 @@ Monitor prompt requirements:
 - Include the channel id, parent thread timestamp, Slack permalink, start boundary timestamp, and expiration timestamp.
 - Read the Slack thread each pass and process only new human replies after the start boundary.
 - Ignore Codex/ChatGPT/bot replies and skip questions already answered by a later human or Codex reply.
-- For answer-only follow-ups, post a concise evidence-based thread reply and end with `- Codex`.
+- For answer-only follow-ups, post a concise evidence-based thread reply and end with your agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex).
 - For requested side effects such as code/data changes, PRs, JSPs, reruns, Notion edits, or external writes, use this skill's YES/NO approval gate before acting unless exact scoped approval is already present.
 - Prefer read-only sources. Do not mutate code, data, PRs, Notion, or external systems unless an approved action path requires it.
 - When no new unhandled follow-up is present, return a quiet heartbeat status only.

@@ -30,7 +30,7 @@ I’ll prep a preview-only JSP, wait for Run-button approval, then post results 
 
 **Reply: YES or NO**
 
-- Codex
+- <Claude or Codex, matching the agent posting>
 ```
 
 ## Before JSP Work
