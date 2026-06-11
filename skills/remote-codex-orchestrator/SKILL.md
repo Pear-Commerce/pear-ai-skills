@@ -13,6 +13,15 @@ This skill runs inside the orchestrator Codex thread. It owns the orchestrator h
 The orchestrator must not claim queue jobs, renew job leases, execute requester prompts, or publish job results. Slot threads do that.
 The orchestrator should not directly create slot heartbeat automations during normal repair. It should create or refresh its own automation from inside the orchestrator thread, then ask each slot thread to create or refresh its own automation from inside the slot thread.
 
+## Requester Protocol Awareness
+
+Pear API PR `Pear-Commerce/api.pearcommerce.com#5473` added `RemoteCodexJobQueue`, the Java requester-side S3 client used by API code. Orchestrators do not submit or execute jobs, but fleet diagnostics and repairs should understand its behavior:
+
+- Java requester jobs use the same queue and job paths as Codex requester jobs: `queues/{pool}/pending/...`, `jobs/{jobId}/request.json`, `lease.json`, `done.json`, and `attempts/{attemptId}/result.json`.
+- Requester retries are intentionally idempotent. Existing `request.json` plus `lease.json` or `done.json` means the job is already running or terminal; do not ask slots to requeue or rerun it just because a pending marker exists.
+- Stale pending markers may remain after a job is leased or completed. Fleet/task-log summaries should rely on job state (`done.json`, live/stale `lease.json`, cancel marker, request presence), not pending-marker presence alone.
+- S3 `403 AccessDenied` should be reported as an access/configuration blocker. Do not collapse it into "object missing" or "queue empty" in human diagnostics.
+
 ## Inputs
 
 Read config from the current thread prompt and, when available, from:

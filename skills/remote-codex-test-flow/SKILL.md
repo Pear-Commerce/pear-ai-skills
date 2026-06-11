@@ -16,6 +16,16 @@ scripts/remote_codex_client.py
 
 The script can submit tasks, poll status, inspect host heartbeats, tail logs, and validate final result envelopes.
 
+## Java Requester Compatibility
+
+Pear API PR `Pear-Commerce/api.pearcommerce.com#5473` added `com.pear.codex.RemoteCodexJobQueue`, a Java requester-side helper for this same S3 protocol. Test-flow work should treat Java-submitted and Python-script-submitted jobs as interoperable.
+
+- `submit(...)` is idempotent for a stable `jobId`: existing `request.json` is reused, S3 `412 PreconditionFailed` from conditional writes means "already exists", and retries must not create duplicate pending markers.
+- If an existing job already has `lease.json` or `done.json`, requester retries must not republish a consumed pending marker or re-queue the job.
+- Result envelopes are forward-compatible. `data` is optional for `ok=false`, while typed-data helpers parse `data` only from `ok=true` envelopes.
+- `done.resultUri` must resolve under the same job prefix before requester tooling trusts it.
+- S3 `403 AccessDenied` is an access/configuration blocker, not a missing-object state; only `404` means absent.
+
 ## Mandatory Bundle Update
 
 Before testing, use `$remote-codex-updater` to refresh the full remote Codex skill bundle from canonical GitHub.

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
 import os
 import secrets
@@ -41,6 +42,13 @@ def safe_part(value, name):
     if any(ch not in allowed for ch in value):
         raise ValueError(f"{name} has unsafe characters for remote Codex S3 keys: {value}")
     return value
+
+
+def safe_tie_breaker(value, name):
+    safe = safe_part(value, name)
+    if "-" in safe:
+        raise ValueError(f"{name} must not contain '-' because pending keys use '-' delimiters")
+    return safe
 
 
 def positive_int(value):
@@ -224,6 +232,7 @@ def result_key(args, job_id, attempt_id):
 
 
 def pending_key(args, job_id, created_ms, random_part):
+    random_part = safe_tie_breaker(random_part, "random")
     return (
         f"{root(args.root_prefix)}/queues/{safe_part(args.pool, 'pool')}/pending/"
         f"{int(args.priority):03d}-{created_ms:013d}-{random_part}-{safe_part(job_id, 'jobId')}.json"
@@ -233,7 +242,7 @@ def pending_key(args, job_id, created_ms, random_part):
 def default_schema():
     return {
         "type": "object",
-        "required": ["ok", "summary", "data"],
+        "required": ["ok", "summary"],
         "properties": {
             "ok": {"type": "boolean"},
             "summary": {"type": "string"},
@@ -255,6 +264,10 @@ def default_prompt(test_id):
     )
 
 
+def deterministic_tie_breaker(job_id):
+    return hashlib.sha256(job_id.encode("utf-8")).hexdigest()[:8]
+
+
 def submit(args):
     created = utc_now()
     created_ms = int(created.timestamp() * 1000)
@@ -263,7 +276,6 @@ def submit(args):
     random_part = secrets.token_hex(4)
     req_key = request_key(args, job_id)
     resp_schema_key = schema_key(args, job_id)
-    pend_key = pending_key(args, job_id, created_ms, random_part)
     schema = default_schema()
     prompt = args.prompt or default_prompt(test_id)
     request = {
@@ -273,6 +285,7 @@ def submit(args):
         "priority": args.priority,
         "createdAt": iso(created),
         "createdBy": args.created_by,
+        "pendingTieBreaker": random_part,
         "prompt": prompt,
         "mode": args.mode,
         "limits": {
@@ -288,25 +301,35 @@ def submit(args):
             "kind": "remote-codex-e2e",
         },
     }
+    request_created = put_json(args.bucket, req_key, request, if_none_match="*")
+    canonical = request if request_created else (get_json(args.bucket, req_key) or request)
+    canonical_created = parse_time(canonical.get("createdAt")) or created
+    canonical_created_ms = int(canonical_created.timestamp() * 1000)
+    canonical_job_id = canonical.get("jobId") or job_id
+    canonical_random = canonical.get("pendingTieBreaker") or deterministic_tie_breaker(canonical_job_id)
+    pend_key = pending_key(args, canonical_job_id, canonical_created_ms, canonical_random)
+    canonical_schema_uri = ((canonical.get("response") or {}).get("schemaUri"))
+    canonical_schema_key = s3_uri_key(args, canonical_schema_uri) if canonical_schema_uri else resp_schema_key
+    canonical_test_id = ((canonical.get("test") or {}).get("testId")) or test_id
     marker = {
         "version": 1,
-        "jobId": job_id,
-        "pool": args.pool,
-        "priority": args.priority,
-        "createdAt": iso(created),
+        "jobId": canonical_job_id,
+        "pool": canonical.get("pool") or args.pool,
+        "priority": canonical.get("priority") or args.priority,
+        "createdAt": canonical.get("createdAt") or iso(created),
         "requestUri": s3_uri(args.bucket, req_key),
-        "responseSchemaUri": s3_uri(args.bucket, resp_schema_key),
-        "testId": test_id,
+        "responseSchemaUri": s3_uri(args.bucket, canonical_schema_key),
+        "testId": canonical_test_id,
     }
-    put_json(args.bucket, req_key, request, if_none_match="*")
-    put_json(args.bucket, resp_schema_key, schema, if_none_match="*")
-    put_json(args.bucket, pend_key, marker, if_none_match="*")
+    put_json(args.bucket, canonical_schema_key, schema, if_none_match="*")
+    if request_created or not (head(args.bucket, lease_key(args, job_id)) or head(args.bucket, done_key(args, job_id))):
+        put_json(args.bucket, pend_key, marker, if_none_match="*")
     out = {
         "jobId": job_id,
-        "testId": test_id,
+        "testId": canonical_test_id,
         "pendingKey": pend_key,
         "requestUri": s3_uri(args.bucket, req_key),
-        "responseSchemaUri": s3_uri(args.bucket, resp_schema_key),
+        "responseSchemaUri": s3_uri(args.bucket, canonical_schema_key),
     }
     print(json.dumps(out, indent=2, sort_keys=True))
     return out
@@ -358,7 +381,11 @@ def read_result(args, status):
     result_uri = done.get("resultUri")
     if not result_uri:
         return None
-    return get_json(args.bucket, s3_uri_key(args, result_uri))
+    result_object_key = s3_uri_key(args, result_uri)
+    expected_prefix = f"{job_prefix(args, status['jobId'])}/"
+    if not result_object_key.startswith(expected_prefix):
+        raise ValueError(f"result URI is outside job prefix {expected_prefix}: {result_uri}")
+    return get_json(args.bucket, result_object_key)
 
 
 def validate_result(result, expected_test_id=None):

@@ -48,6 +48,8 @@ After updating, compare the installed bundle version reported by the script to t
 
 This version gate applies only to Codex skill bundles, thread prompts, and automation prompts. It must never be used as a queued-job compatibility check. Do not compare `remoteCodexBundleVersion` from `request.json`, pending markers, logs, or other job-owned S3 objects to the installed bundle version when deciding whether a worker may execute a job. Existing queued jobs from older bundle versions remain eligible as long as their request shape, pool, timeout, cancel, max-attempt, and lease state permit execution.
 
+Pear API PR `Pear-Commerce/api.pearcommerce.com#5473` added the Java `RemoteCodexJobQueue` requester for API-side callers. The updater's version gate must remain skill/automation-only so Java-submitted jobs and Codex-script-submitted jobs continue to interoperate across bundle refreshes. If a job has an existing `request.json`, `lease.json`, or `done.json`, treat that protocol state as authoritative instead of trying to infer compatibility from skill bundle metadata.
+
 ## Caller Responsibilities
 
 The updater does not know enough context to rebuild every automation by itself. The caller must do the context-specific repair:

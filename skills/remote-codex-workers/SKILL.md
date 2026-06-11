@@ -16,6 +16,8 @@ Use this skill to configure a Codex-native worker host. The worker system is S3-
 - One heartbeat automation owned and self-created by each slot thread.
 - S3 stores queue markers, leases, heartbeats, logs, and results.
 
+Requester clients may be Codex-native scripts or the Java `RemoteCodexJobQueue` added in Pear API PR `Pear-Commerce/api.pearcommerce.com#5473`. Worker setup must preserve protocol compatibility with both: stable idempotent submissions, pending markers ordered by `{priority}-{createdAtMillis}-{random}-{jobId}.json`, jobs terminalized by `done.json`, active ownership represented by `lease.json`, and results written under the owning job attempt prefix.
+
 Do not start a local daemon, background shell loop, launchd service, or PID-based supervisor.
 Do not create child heartbeat automations from the setup thread. The setup thread delegates bootstrapping to the child, and the child creates or refreshes its own automation from inside its own turn.
 

@@ -13,6 +13,17 @@ This skill runs inside a slot Codex thread. The slot owns queue polling, job cla
 Do not create other worker slots. Do not maintain host capacity. The orchestrator does that.
 Do create or refresh this slot thread's own heartbeat automation from inside the slot thread before claiming queue work. Do not rely on the orchestrator or setup thread to own this automation.
 
+## Requester Compatibility
+
+Pear API PR `Pear-Commerce/api.pearcommerce.com#5473` introduced the Java `RemoteCodexJobQueue` requester. Slot workers must remain compatible with jobs submitted by that helper and by `remote_codex_client.py`:
+
+- Pending markers are shaped as `{priority}-{createdAtMillis}-{random}-{jobId}.json`. Split on the first three dashes only; `jobId` may contain dashes. The requester-side random/tie-breaker segment must not contain dashes, but workers should still parse defensively.
+- Retried requester submissions can reuse an existing `request.json` and pending key. Treat S3 `412 PreconditionFailed` from conditional writes as a normal race/already-exists signal, not as corruption.
+- If a job has `done.json`, it is terminal; never reclaim or re-execute it even if a pending marker still exists.
+- If a job has a live `lease.json`, do not create a new lease unless the lease is expired and reclaimed with the correct ETag.
+- Workers should write `result.json` under `{rootPrefix}/jobs/{jobId}/attempts/{attemptId}/result.json` and set `done.resultUri` to that same job prefix. Requesters now reject result URIs outside the job prefix.
+- Successful results should use `{ "ok": true, "summary": "...", "data": ... }`. Error results may omit `data` and should carry useful error fields/message; do not invent placeholder data just to satisfy schema wrapping.
+
 ## Inputs
 
 Read config from the current thread prompt and, when available, from:
