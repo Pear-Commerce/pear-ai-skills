@@ -11,6 +11,14 @@ Keep Pear code work grounded in repo patterns, real data, and the actual browser
 
 Canonical repo: `https://github.com/Pear-Commerce/pear-ai-skills`. For skill edits, update and push `skills/pear-engineering-workflow/SKILL.md` there first, then sync installed/vendored copies. For app repos other than `api.pearcommerce.com`, commit synced copies directly after verification; for `api.pearcommerce.com`, use a `codex/` branch and PR.
 
+## Shell Environment
+
+Pear repos rely on Alex's interactive shell setup for common tools such as `gh`, `node`, `npm`, `npx`, `zx`, `nvm`, SSH agent state, and repo helpers like `devops/env.sh`. For Pear work, keep commands in the default Codex login shell or run them through `zsh -lc '...'` when the command may need those tools.
+
+Avoid switching to non-login Bash, especially `shell=/bin/bash` with `login=false`, for deploys, GitHub CLI work, Node-backed scripts, `devops/*` helpers, dry runs that call repo scripts, or checks that shell out to Pear tooling. If Bash is genuinely needed, first seed `PATH` from a known-good login `zsh` or explicitly include the active `nvm` Node bin directory, then verify with `command -v gh npx node npm` before running the real command. If a Pear command fails with `gh`, `node`, `npm`, `npx`, or `zx` missing, treat it as a shell-environment issue before debugging repo behavior.
+
+For CloudWatch, RDS, or other AWS-backed investigations, also check the login shell before deciding tools are missing: `zsh -lc 'command -v aws python3 pip3'`. Prefer Pear repo helpers such as `devops/logs.sh`, `db.sh`, and `pear-prod-jsp` when they answer the question. If direct AWS API access is genuinely needed and `aws`/`boto3` is unavailable, keep any temporary Python dependency install in a temp venv/path outside the repo, avoid changing repo dependency files, and describe that as a local tooling workaround rather than a production or application finding.
+
 ## Offers Deploy Safety
 
 For `offers.pearcommerce.com`, never repair or deploy CDN/static asset content by pushing local workstation files to S3/R2/CloudFront/Cloudflare or any production bucket. Do not use `aws s3 cp`, `aws s3 sync`, `s3api put-object`, R2 object writes, Cloudflare direct uploads, or equivalent local artifact pushes for Offers production or staging assets, including emergency fixes.
