@@ -40,10 +40,35 @@ Required config:
   "hostId": "host-user",
   "desiredSlots": 4,
   "orchestratorIntervalMinutes": 5,
+  "orchestratorNoChangeBackoffMaxMinutes": 15,
   "slotIntervalMinutes": 1,
   "leaseSeconds": 600
 }
 ```
+
+Optional backoff config:
+
+```json
+{
+  "orchestratorNoChangeBackoffBaseMinutes": 5,
+  "orchestratorNoChangeBackoffMaxMinutes": 15
+}
+```
+
+When these fields are missing or null, use a 5-minute base and 15-minute maximum.
+
+## Orchestrator No-Change Backoff
+
+The orchestrator heartbeat automation must use exponential backoff only after wakes with no material changes:
+
+- Start and reset the orchestrator heartbeat interval to 5 minutes.
+- Treat a wake as having material changes when it creates or replaces slot threads, asks a slot thread to self-refresh, marks extra slots retiring, emits any new task events, sees task-event read errors, handles stale-version repair, or observes a material local slot state change such as status/job/backoff fields changing.
+- Do not count routine host heartbeat refresh, orchestrator state refresh, fleet-status printing, task-log cursor confirmation with zero new events, or refreshing this orchestrator automation prompt as material changes by themselves.
+- When a wake has no material changes, increment `consecutiveNoChangeWakes`, double the previous orchestrator no-change interval, and cap the next heartbeat interval at 15 minutes. With the default base, the sequence is 5 -> 10 -> 15 -> 15 minutes.
+- Persist the backoff state in `orchestrator.json` and host heartbeat where practical, including `consecutiveNoChangeWakes`, `orchestratorBackoffMinutes`, `orchestratorBackoffMaxMinutes`, `nextHeartbeatIntervalMinutes`, `lastMaterialChangeAt`, and `lastMaterialChangeReasons`.
+- Before ending the wake, update or recreate this orchestrator's own heartbeat automation with `FREQ=MINUTELY;INTERVAL=<nextHeartbeatIntervalMinutes>`.
+- As soon as any material change occurs, reset `consecutiveNoChangeWakes` to `0`, reset `orchestratorBackoffMinutes` and `nextHeartbeatIntervalMinutes` to `5`, publish that reset in state, and refresh this orchestrator heartbeat automation back to `FREQ=MINUTELY;INTERVAL=5`.
+- Do not sleep inside the orchestrator turn to implement backoff. Backoff is represented only by the next heartbeat automation interval.
 
 ## Thread Placement
 
@@ -63,7 +88,7 @@ If this orchestrator thread is already running in the `api.pearcommerce.com` pro
 
 1. Use `$remote-codex-updater` before doing anything else.
 2. If Codex thread or automation tools are not loaded, use tool search for `create_thread`, `read_thread`, `list_threads`, `send_message_to_thread`, and `automation_update`.
-3. Create or refresh this orchestrator thread's own heartbeat automation on a 5-minute cadence. Prefer `destination=thread` when running in the orchestrator thread; if updating by id, keep `targetThreadId` equal to the current orchestrator thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.20`.
+3. Create or refresh this orchestrator thread's own heartbeat automation on the adaptive cadence from the Orchestrator No-Change Backoff rules: 5 minutes while changes are active or recently observed, then exponential backoff after no-change wakes up to 15 minutes. Prefer `destination=thread` when running in the orchestrator thread; if updating by id, keep `targetThreadId` equal to the current orchestrator thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.20`.
 4. If the updater reports this invocation or automation is stale, finish the self-refresh above, ask existing slot threads to self-refresh their automations, publish a heartbeat that says `staleVersionRefreshed: true`, and stop this invocation before maintaining capacity or touching jobs.
 5. Read existing slot summaries from:
    ```text
@@ -97,19 +122,19 @@ If this orchestrator thread is already running in the `api.pearcommerce.com` pro
    ```text
    {rootPrefix}/hosts/{hostId}/orchestrator.json
    ```
-   Include `lastReportedTaskEventKey` set only to the last event key actually included in `REMOTE_CODEX_TASK_LOG_JSON`, plus `taskEventPrefixUri`, `lastFleetStatusPrintedAt`, `fleetStatusPrefixUri`, `lastTaskEventBatchCount`, and `taskEventBacklogRemaining` when known. Never advance `lastReportedTaskEventKey` to the newest listed key if that key was not emitted.
+   Include `lastReportedTaskEventKey` set only to the last event key actually included in `REMOTE_CODEX_TASK_LOG_JSON`, plus `taskEventPrefixUri`, `lastFleetStatusPrintedAt`, `fleetStatusPrefixUri`, `lastTaskEventBatchCount`, `taskEventBacklogRemaining`, and orchestrator no-change backoff fields when known. Never advance `lastReportedTaskEventKey` to the newest listed key if that key was not emitted.
 13. If there are extra slots above `desiredSlots`, mark them `retiring: true`; do not delete or archive a slot that may still own a job.
 
 ## Orchestrator Automation Prompt
 
 Use a heartbeat automation attached to this orchestrator thread:
 
-Schedule it every 5 minutes.
+Start it every 5 minutes. The orchestrator then adjusts its own heartbeat schedule after each wake using the Orchestrator No-Change Backoff rules: double after no-change wakes, cap at 15 minutes, and reset to 5 minutes whenever material changes are observed.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-orchestrator.
 remoteCodexBundleVersion: 2026-06-08.20
-Run one orchestrator maintenance cycle for the configured remote Codex worker host: self-refresh this orchestrator automation if stale, ensure slot threads exist, ask slot threads to self-refresh their own automations, publish host heartbeat, print REMOTE_CODEX_FLEET_STATUS_JSON from S3 host and slot heartbeats, print cursored REMOTE_CODEX_TASK_LOG_JSON from slot task events, and repair drift. Format the final response as readable markdown with fenced JSON blocks; do not inline JSON and do not wrap output in XML or CDATA. Do not execute queue jobs in the orchestrator.
+Run one orchestrator maintenance cycle for the configured remote Codex worker host: self-refresh this orchestrator automation if stale, ensure slot threads exist, ask slot threads to self-refresh their own automations, publish host heartbeat, print REMOTE_CODEX_FLEET_STATUS_JSON from S3 host and slot heartbeats, print cursored REMOTE_CODEX_TASK_LOG_JSON from slot task events, repair drift, and update this orchestrator automation with exponential no-change backoff capped at 15 minutes. Reset the orchestrator automation to a 5-minute interval whenever material changes are observed. Format the final response as readable markdown with fenced JSON blocks; do not inline JSON and do not wrap output in XML or CDATA. Do not execute queue jobs in the orchestrator.
 ```
 
 ## Slot Thread Prompt
