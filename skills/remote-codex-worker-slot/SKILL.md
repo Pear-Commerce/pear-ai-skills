@@ -51,11 +51,24 @@ Optional config:
 ```json
 {
   "maxSequentialJobsPerWake": null,
-  "wakeStopAfterSeconds": null
+  "wakeStopAfterSeconds": null,
+  "emptyQueueBackoffBaseMinutes": 1,
+  "emptyQueueBackoffMaxMinutes": 15
 }
 ```
 
-These optional fields are safety caps, not queue fairness defaults. When they are missing or null, keep looping until no eligible task is found or another safety stop applies. Regardless of caps, a slot must own at most one active job lease at a time.
+These optional fields are safety caps and idle-polling controls, not queue fairness defaults. When the safety caps are missing or null, keep looping until no eligible task is found or another safety stop applies. When the backoff fields are missing or null, use a 1-minute base and 15-minute maximum. Regardless of caps, a slot must own at most one active job lease at a time.
+
+## Empty Queue Backoff
+
+Slot automations must use exponential backoff only when there are no eligible tasks:
+
+- Use a 1-minute heartbeat interval while the slot has an active job, finds work, claims work, completes work, loses a lease, hits an S3/AWS blocker, or stops for any reason other than `queue_empty`.
+- When a wake stops with `wakeStopReason: "queue_empty"` and no job was claimed or continued during that wake, increment `consecutiveEmptyWakes`, double the previous empty-queue interval, and cap the next heartbeat interval at 15 minutes. If no previous backoff state exists, treat the previous interval as 1 minute, so the first empty wake schedules the next wake for 2 minutes.
+- Persist the idle backoff state in the slot heartbeat, including `consecutiveEmptyWakes`, `emptyQueueBackoffMinutes`, `emptyQueueBackoffMaxMinutes`, and `nextHeartbeatIntervalMinutes`.
+- Before ending a `queue_empty` wake, update or recreate this slot's own heartbeat automation with `FREQ=MINUTELY;INTERVAL=<nextHeartbeatIntervalMinutes>`.
+- As soon as any eligible job is found, claimed, continued, or completed, reset `consecutiveEmptyWakes` to `0`, reset `emptyQueueBackoffMinutes` and `nextHeartbeatIntervalMinutes` to `1`, publish that reset in the slot heartbeat, and refresh the heartbeat automation back to `FREQ=MINUTELY;INTERVAL=1`.
+- Do not sleep inside the worker turn to implement backoff. Backoff is represented only by the next heartbeat automation interval.
 
 ## Wake Cycle
 
@@ -70,7 +83,7 @@ The invariant is one active lease at a time. Do not prefetch leases. Do not clai
 
 1. Use `$remote-codex-updater` before doing anything else.
 2. Print a concise diagnostic plan for this wake: slot id, whether you expect to inspect an existing job or scan pending work, that this wake will repeat until empty with at most one active lease, and the major steps you will take.
-3. Create or refresh this slot thread's own heartbeat automation on a 1-minute cadence. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.20`.
+3. Create or refresh this slot thread's own heartbeat automation on the adaptive cadence from the Empty Queue Backoff rules: 1 minute while work is active or recently found, then exponential backoff after `queue_empty` wakes up to 15 minutes. Prefer `destination=thread` when running in the slot thread; if updating by id, keep `targetThreadId` equal to the current slot thread id. The prompt must include `remoteCodexBundleVersion: 2026-06-08.20`.
 4. If the updater reports this invocation or automation is stale, finish the self-refresh above, publish a stale-version slot heartbeat that says `staleVersionRefreshed: true`, print a diagnostic explaining that work was skipped because the automation was stale, and stop before claiming or continuing work.
 5. Publish a slot heartbeat/status object under:
    ```text
@@ -83,12 +96,12 @@ The invariant is one active lease at a time. Do not prefetch leases. Do not clai
    - If the active job has `cancel.json`, write a canceled result if this slot owns the lease, clear the slot, publish an idle heartbeat, and continue the loop unless a safety stop applies.
    - If this slot still owns the active job lease, renew it with `If-Match: <etag>` and continue bounded work for that job.
    - If the active job lease is missing, expired and reclaimable, or owned by another slot, clear local slot state, publish an idle heartbeat, and continue the loop unless a safety stop applies.
-   - If idle and there is no active job, list pending queue markers and try to claim the earliest eligible job. If no eligible job can be claimed after scanning candidates, set `wakeStopReason: "queue_empty"` and stop cleanly.
-   - After one claim succeeds, set `activeJobId` and increment `jobsClaimedThisWake`. Do not inspect or claim any other pending marker until this active job is terminal, released, or lost.
+   - If idle and there is no active job, list pending queue markers and try to claim the earliest eligible job. If no eligible job can be claimed after scanning candidates, set `wakeStopReason: "queue_empty"`, compute and persist the next empty-queue backoff interval, refresh this slot's heartbeat automation to that interval, and stop cleanly.
+   - After one claim succeeds, set `activeJobId`, increment `jobsClaimedThisWake`, reset any empty-queue backoff state to the 1-minute cadence, and publish the reset slot heartbeat. Do not inspect or claim any other pending marker until this active job is terminal, released, or lost.
    - Execute or continue bounded work for the active job.
    - Publish logs/status/result.
    - If the job is still running, blocked on user/external input, canceled, timed out, or only made bounded progress, set `wakeStopReason` to that state and stop; the next automation wake will continue it.
-   - If the job completed terminally and the slot cleared `currentJobId`, increment counters, publish an updated idle slot heartbeat with `wakeStopReason: "completed_job_continuing"`, clear `activeJobId`, and immediately continue the loop.
+   - If the job completed terminally and the slot cleared `currentJobId`, increment counters, reset empty-queue backoff to the 1-minute cadence, publish an updated idle slot heartbeat with `wakeStopReason: "completed_job_continuing"`, clear `activeJobId`, and immediately continue the loop.
 8. Stop the repeat-until-empty loop when any safety stop applies:
    - the queue has no eligible pending jobs;
    - the updater was stale and the automation was refreshed;
@@ -104,12 +117,12 @@ The invariant is one active lease at a time. Do not prefetch leases. Do not clai
 
 Use a heartbeat automation attached to this slot thread:
 
-Schedule it every 1 minute.
+Start it every 1 minute. The slot must adjust its own heartbeat schedule after each wake using the Empty Queue Backoff rules: double the interval only after `queue_empty` wakes, cap at 15 minutes, and reset to 1 minute whenever work is found or active.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
 remoteCodexBundleVersion: 2026-06-08.20
-Run one bounded repeat-until-empty worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, self-refresh this slot automation if stale, renew or release the current job lease, claim one eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, then loop back to scan for another eligible pending job only after the active job is terminal, released, or lost and the slot has cleared currentJobId. Never prefetch leases; own at most one active job lease at a time. Stop cleanly with a wakeStopReason when the queue is empty or a safety stop applies. Mirror major diagnostics into job log chunks when an attempt exists.
+Run one bounded repeat-until-empty worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, self-refresh this slot automation if stale, renew or release the current job lease, claim one eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, then loop back to scan for another eligible pending job only after the active job is terminal, released, or lost and the slot has cleared currentJobId. Never prefetch leases; own at most one active job lease at a time. Stop cleanly with a wakeStopReason when the queue is empty or a safety stop applies. If wakeStopReason is queue_empty and no task was claimed or continued, update this slot automation to use exponential empty-queue backoff capped at 15 minutes; reset the automation to a 1-minute interval whenever work is found or active. Mirror major diagnostics into job log chunks when an attempt exists.
 ```
 
 ## Queue Listing

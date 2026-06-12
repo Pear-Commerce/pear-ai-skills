@@ -73,7 +73,7 @@ If this orchestrator thread is already running in the `api.pearcommerce.com` pro
 7. For each slot:
    - If the slot has no thread id, create a Codex thread using the Thread Placement rules above.
    - If the thread is missing, archived, inaccessible, or clearly wrong for this host/slot, create a replacement thread using the Thread Placement rules above.
-   - Ask the slot thread to self-bootstrap or self-refresh its repeat-until-empty heartbeat automation on a 1-minute cadence. Do this by creating the slot with the self-bootstrap prompt below, or by sending the existing slot thread a follow-up prompt. Do not directly create a slot automation from the orchestrator unless the slot thread cannot be messaged and the user explicitly asked for emergency repair.
+   - Ask the slot thread to self-bootstrap or self-refresh its repeat-until-empty heartbeat automation on an adaptive cadence: 1 minute while work is active or recently found, then exponential backoff after `queue_empty` wakes up to 15 minutes. Do this by creating the slot with the self-bootstrap prompt below, or by sending the existing slot thread a follow-up prompt. Do not directly create a slot automation from the orchestrator unless the slot thread cannot be messaged and the user explicitly asked for emergency repair.
    - Read the slot thread status when possible and include it in the slot summary, along with `threadPlacement: "api-project"` or `threadPlacementFallback: "projectless"` when known.
 8. Write each slot summary to:
    ```text
@@ -135,7 +135,7 @@ Config:
   "maxCandidatesPerWake": 20
 }
 
-On your first turn, create or refresh your own heartbeat automation attached to this slot thread, print concise diagnostics about the wake plan, major state changes, and material task action/fallback steps, then run one bounded repeat-until-empty worker wake cycle. Loop: find one task; if none found, stop the wake; if found, execute it; after it is terminal, released, or lost and currentJobId is cleared, go back to find the next task. Never prefetch leases; own at most one active job lease at a time. When you claim or complete a job, write host task events for the orchestrator task log and mirror major diagnostics into job log chunks.
+On your first turn, create or refresh your own heartbeat automation attached to this slot thread, print concise diagnostics about the wake plan, major state changes, and material task action/fallback steps, then run one bounded repeat-until-empty worker wake cycle. Loop: find one task; if none found, stop the wake; if found, execute it; after it is terminal, released, or lost and currentJobId is cleared, go back to find the next task. Use exponential empty-queue backoff for your own heartbeat automation: start/reset at 1 minute, double only after `queue_empty` wakes, and cap at 15 minutes. Never prefetch leases; own at most one active job lease at a time. When you claim or complete a job, write host task events for the orchestrator task log and mirror major diagnostics into job log chunks.
 ```
 
 ## Slot Self-Refresh Prompt
@@ -145,19 +145,19 @@ When a slot exists but its automation is missing or stale, send the slot thread 
 ```text
 Use $remote-codex-updater, then $remote-codex-worker-slot.
 remoteCodexBundleVersion: 2026-06-08.20
-Self-bootstrap this slot: create or refresh your own heartbeat automation attached to this slot thread, publish slot heartbeat, print concise diagnostics about the wake plan, major state changes, and material task action/fallback steps, and then run one bounded repeat-until-empty worker wake cycle if it is safe to do so. Loop: find one task; if none found, stop the wake; if found, execute it; after it is terminal, released, or lost and currentJobId is cleared, go back to find the next task. Never prefetch leases; own at most one active job lease at a time. When you claim or complete a job, write host task events for the orchestrator task log and mirror major diagnostics into job log chunks.
+Self-bootstrap this slot: create or refresh your own heartbeat automation attached to this slot thread, publish slot heartbeat, print concise diagnostics about the wake plan, major state changes, and material task action/fallback steps, and then run one bounded repeat-until-empty worker wake cycle if it is safe to do so. Loop: find one task; if none found, stop the wake; if found, execute it; after it is terminal, released, or lost and currentJobId is cleared, go back to find the next task. Use exponential empty-queue backoff for your own heartbeat automation: start/reset at 1 minute, double only after `queue_empty` wakes, and cap at 15 minutes. Never prefetch leases; own at most one active job lease at a time. When you claim or complete a job, write host task events for the orchestrator task log and mirror major diagnostics into job log chunks.
 ```
 
 ## Slot Automation Prompt
 
 Each slot creates this heartbeat automation from inside its own slot thread:
 
-Schedule it every 1 minute.
+Start it every 1 minute. The slot then adjusts the interval itself: double after `queue_empty` wakes with no task claimed or continued, cap at 15 minutes, and reset to 1 minute whenever work is found or active.
 
 ```text
 Use $remote-codex-updater first, then $remote-codex-worker-slot.
 remoteCodexBundleVersion: 2026-06-08.20
-Run one bounded repeat-until-empty worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, renew or release the current job lease, claim one eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, then loop back to scan for another eligible pending job only after the active job is terminal, released, or lost and the slot has cleared currentJobId. Never prefetch leases; own at most one active job lease at a time. Stop cleanly with a wakeStopReason when the queue is empty or a safety stop applies. Mirror major diagnostics into job log chunks when an attempt exists. If the updater reports this automation is stale, update/recreate this automation prompt to the current version and stop before claiming work.
+Run one bounded repeat-until-empty worker wake cycle for this configured slot: print concise worker diagnostics including task action and fallback steps, renew or release the current job lease, claim one eligible pending job if idle, write host task start/complete events, perform bounded work, publish logs/status/result to S3, then loop back to scan for another eligible pending job only after the active job is terminal, released, or lost and the slot has cleared currentJobId. Never prefetch leases; own at most one active job lease at a time. Stop cleanly with a wakeStopReason when the queue is empty or a safety stop applies. If wakeStopReason is queue_empty and no task was claimed or continued, update this slot automation to use exponential empty-queue backoff capped at 15 minutes; reset the automation to a 1-minute interval whenever work is found or active. Mirror major diagnostics into job log chunks when an attempt exists. If the updater reports this automation is stale, update/recreate this automation prompt to the current version and stop before claiming work.
 ```
 
 ## Host Heartbeat Shape
