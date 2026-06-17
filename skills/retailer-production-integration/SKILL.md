@@ -68,7 +68,7 @@ Feasibility `*Plan.java` scratch helpers may be static while exploring, but prom
 
 ## Class Goals
 
-`RetailPartner` setup migrations register the retailer in Pear's data model. Their goal is to create or complete the retailer row, enum wiring, ecommerce URL, display assets, color, and availability/import flags without overwriting meaningful non-default data that may already exist.
+`RetailPartner` setup migrations register the retailer in Pear's data model. Their goal is to create or complete the retailer row, enum wiring, ecommerce URL, display assets, color, and availability/import flags without overwriting meaningful non-default data that may already exist. These migrations should only run once, in the background, and unless needed for testing, never be included in CI migrations.
 
 `ItemIdInfoResolver` classes translate Pear product identity into retailer product identity. Their goal is to take a UPC and, when needed, product name/brand context, then return the retailer item id, PDP URL, and supporting product metadata with enough UPC evidence for UPCResoGraph to trust the match. They should not own availability scanning unless the retailer route truly combines identity and stock.
 
