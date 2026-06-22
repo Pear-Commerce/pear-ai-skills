@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retailer Go-Live Plan"
+  short_description: "Plan and verify retailer go-live"
+  default_prompt: "Use $retailer-go-live-plan to build a repeatable go-live checklist for a Pear retailer integration, then prove deployment, live runtime wiring, production retailer-list presence, Offers picker button visibility, and final retailer PDP click-through."
