@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vendor Recipe Ingestor"
+  short_description: "Add vendor-specific recipe ingestion"
+  default_prompt: "Use $vendor-recipe-ingestor to add or update a bespoke recipe ingestor for this vendor domain."
