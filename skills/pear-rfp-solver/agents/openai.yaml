@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pear RFP Solver"
+  short_description: "Answer Pear RFP and security questionnaires"
+  default_prompt: "Use $pear-rfp-solver to draft accurate, sourced responses to this Pear Commerce RFP questionnaire."
