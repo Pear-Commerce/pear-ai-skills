@@ -1,6 +1,6 @@
 ---
 name: pear-engineering-workflow
-description: Pear engineering workflow for editing, reviewing, debugging, implementing, syncing deploy branches, or deploying in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, worktrees, db.sh real-data checks, production JSP probes for live JVM/service/controller checks, dev-DB startup, PearEntity serialization, deploy commands, and browser E2E verification.
+description: Pear engineering workflow for editing, reviewing, debugging, implementing, syncing deploy branches, or deploying in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, DevRev ticket links, worktrees, db.sh real-data checks, production JSP probes for live JVM/service/controller checks, dev-DB startup, PearEntity serialization, deploy commands, and browser E2E verification.
 ---
 
 # Pear Engineering Workflow
@@ -37,6 +37,21 @@ curl -fsS -H "x-pear-trusted-edge: ${PEAR_TRUSTED_EDGE_VALUE}" "https://api.pear
 ```
 
 Use this only for Pear API hosts. Do not add it to third-party retailer APIs, `partners.pearcommerce.com`, raw Offers page loads, Cloudflare's own API, or unrelated domains. If the trusted-edge header still returns a Cloudflare block, switch to browser verification or a narrow JSP/server-side read path instead of escalating local curl variants.
+
+## DevRev Ticket Links
+
+Every Pear PR should carry a DevRev work link before it is opened for review or handed back as ready. Before creating, updating, or backfilling a PR in Pear repos, check the title and body for an existing DevRev ID or link, such as `ISS-7045`, `TKT-717`, or `https://app.devrev.ai/pearcommerce/works/ISS-7045`.
+
+If no DevRev work exists for the change, create one before the PR is ready for review whenever DevRev tooling or credentials are available. The ticket should be specific enough to stand on its own: use the PR or task title, summarize the user-visible change or operational reason, include the repo name, PR URL if one exists, and enough implementation/testing context for a reviewer to understand why the code changed. If DevRev access is unavailable, do not silently skip the link; mark the PR as blocked on ticket creation or report the missing credential/tooling in the final response.
+
+Use this PR body format unless the repo template already has a better location:
+
+```markdown
+## DevRev Ticket
+https://app.devrev.ai/pearcommerce/works/ISS-####
+```
+
+For newly created Codex PRs, include the DevRev link in the initial body. For existing PRs, edit the PR body rather than leaving the ticket only in a comment. For closed and merged PR backfills, only process PRs whose `mergedAt`/`merged_at` is set; skip closed-unmerged PRs. Create or reuse one DevRev work item per PR unless the user explicitly asks to group related PRs, then edit the historical PR body with a `## DevRev Ticket` section so future searches find the link.
 
 ## Review Rules
 
