@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intern App DB Access"
+  short_description: "Give an intern app its own database on the shared intern MySQL RDS"
+  default_prompt: "Use $intern-app-db-access to give this intern app its own database on the shared intern MySQL RDS instance, after or alongside $intern-app-hosting."
