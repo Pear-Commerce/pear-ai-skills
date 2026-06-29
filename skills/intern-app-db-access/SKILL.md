@@ -103,10 +103,11 @@ SG_ID=$(aws ec2 describe-security-groups --region us-east-1 \
 
 for ip in $(curl -fsSL https://www.cloudflare.com/ips-v4); do
   aws ec2 authorize-security-group-ingress --region us-east-1 \
-    --group-id "$SG_ID" --protocol tcp --port 3306 --cidr "$ip" \
-    --description "Cloudflare egress (Worker apps)"
+    --group-id "$SG_ID" --protocol tcp --port 3306 --cidr "$ip"
 done
 ```
+
+> Do not pass `--description` to `authorize-security-group-ingress` with the simple `--cidr` form; it is not accepted on current AWS CLI v2 and the call fails silently inside a loop. If you want rule descriptions for auditability, use the `--ip-permissions` form instead: `--ip-permissions "IpProtocol=tcp,FromPort=3306,ToPort=3306,IpRanges=[{CidrIp=$ip,Description=Cloudflare-egress}]"`.
 
 **c. Allow 3306 from the Lightsail VPC CIDR** (so Lightsail apps can reach the DB). Lightsail peers to the default VPC; its VPC CIDR is stable per account/region:
 
@@ -119,8 +120,7 @@ aws lightsail peer-vpc --region us-east-1 >/dev/null 2>&1 || true
 #     --filters Name=status.code,Values=active \
 #     --query 'VpcPeeringConnections[?AccepterVpcInfo.VpcId==`'"$DEFAULT_VPC"'`].RequesterVpcInfo.CidrBlock' --output text
 aws ec2 authorize-security-group-ingress --region us-east-1 \
-  --group-id "$SG_ID" --protocol tcp --port 3306 --cidr 172.26.0.0/16 \
-  --description "Lightsail egress (intern apps)"
+  --group-id "$SG_ID" --protocol tcp --port 3306 --cidr 172.26.0.0/16
 ```
 
 > Refresh Cloudflare IPs periodically (they change rarely). Re-run step (b) on a schedule or when a Worker app cannot connect. Document this in the app's README.
