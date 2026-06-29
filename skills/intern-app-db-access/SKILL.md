@@ -129,7 +129,7 @@ aws ec2 authorize-security-group-ingress --region us-east-1 \
 
 ```bash
 ADMIN_PASS=$(aws secretsmanager get-random-password --region us-east-1 \
-  --exclude-characters '"@/\' --query 'RandomPassword' --output text)
+  --exclude-characters "'\"\\@/; " --query 'RandomPassword' --output text)
 
 aws secretsmanager create-secret --region us-east-1 \
   --name pear-intern-db-admin \
@@ -204,7 +204,7 @@ HOST=$(aws secretsmanager get-secret-value --region us-east-1 \
 APP_DB="intern_$(echo "$APP_SLUG" | tr - _)"
 APP_USER="$APP_DB"
 APP_PASS=$(aws secretsmanager get-random-password --region us-east-1 \
-  --exclude-characters '"@/\'' --query 'RandomPassword' --output text)
+  --exclude-characters "'\"\\@/; " --query 'RandomPassword' --output text)
 
 MYSQL_PWD="$ADMIN_PASS" mysql -h "$HOST" -u admin --ssl-mode=REQUIRED <<SQL
 CREATE DATABASE IF NOT EXISTS \`$APP_DB\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
