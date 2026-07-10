@@ -44,6 +44,8 @@ Every Pear PR should carry a DevRev work link before it is opened for review or 
 
 If no DevRev work exists for the change, create one before the PR is ready for review whenever DevRev tooling or credentials are available. The ticket should be specific enough to stand on its own: use the PR or task title, summarize the user-visible change or operational reason, include the repo name, PR URL if one exists, and enough implementation/testing context for a reviewer to understand why the code changed. If DevRev access is unavailable, do not silently skip the link; mark the PR as blocked on ticket creation or report the missing credential/tooling in the final response.
 
+This requirement applies to process-only, documentation-only, skill-only, and compliance-only changes too; do not skip DevRev linkage just because the change has no application runtime behavior.
+
 Use this PR body format unless the repo template already has a better location:
 
 ```markdown
