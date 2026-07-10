@@ -40,7 +40,7 @@ Use this only for Pear API hosts. Do not add it to third-party retailer APIs, `p
 
 ## DevRev Ticket Links
 
-Every Pear PR should carry a DevRev work link before it is opened for review or handed back as ready. Before creating, updating, or backfilling a PR in Pear repos, check the title and body for an existing DevRev ID or link, such as `ISS-7045`, `TKT-717`, or `https://app.devrev.ai/pearcommerce/works/ISS-7045`.
+Every Pear PR should carry a DevRev work link before it is opened for review or handed back as ready. Treat this as a SOC2 auditability requirement: code changes need a durable work record that ties intent, approval context, implementation, and verification back to the merged PR. Before creating, updating, or backfilling a PR in Pear repos, check the title and body for an existing DevRev ID or link, such as `ISS-7045`, `TKT-717`, or `https://app.devrev.ai/pearcommerce/works/ISS-7045`.
 
 If no DevRev work exists for the change, create one before the PR is ready for review whenever DevRev tooling or credentials are available. The ticket should be specific enough to stand on its own: use the PR or task title, summarize the user-visible change or operational reason, include the repo name, PR URL if one exists, and enough implementation/testing context for a reviewer to understand why the code changed. If DevRev access is unavailable, do not silently skip the link; mark the PR as blocked on ticket creation or report the missing credential/tooling in the final response.
 
