@@ -55,6 +55,14 @@ https://app.devrev.ai/pearcommerce/works/ISS-####
 
 For newly created Codex PRs, include the DevRev link in the initial body. For existing PRs, edit the PR body rather than leaving the ticket only in a comment. For closed and merged PR backfills, only process PRs whose `mergedAt`/`merged_at` is set; skip closed-unmerged PRs. Create or reuse one DevRev work item per PR unless the user explicitly asks to group related PRs, then edit the historical PR body with a `## DevRev Ticket` section so future searches find the link.
 
+Once a DevRev work ID is known for new work, prefix the commit subject with that ID and a colon. Use the same primary ID that appears in the PR body:
+
+```bash
+git commit -m "ISS-1234: Add foo to bar"
+```
+
+If a branch genuinely spans multiple DevRev works, use the primary issue or ticket that best describes the PR. Do not rewrite old merged commits solely to retrofit this convention during historical PR-body backfills.
+
 ## Review Rules
 
 Before calling code changes done, read the PR-improvement guide. Prefer:
