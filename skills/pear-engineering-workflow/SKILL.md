@@ -42,7 +42,9 @@ Use this only for Pear API hosts. Do not add it to third-party retailer APIs, `p
 
 Every Pear PR should carry a DevRev work link before it is opened for review or handed back as ready. Treat this as a SOC2 auditability requirement: code changes need a durable work record that ties intent, approval context, implementation, and verification back to the merged PR. Before creating, updating, or backfilling a PR in Pear repos, check the title and body for an existing DevRev ID or link, such as `ISS-7045`, `TKT-717`, or `https://app.devrev.ai/pearcommerce/works/ISS-7045`.
 
-If no DevRev work exists for the change, create one before the PR is ready for review whenever DevRev tooling or credentials are available. The ticket should be specific enough to stand on its own: use the PR or task title, summarize the user-visible change or operational reason, include the repo name, PR URL if one exists, and enough implementation/testing context for a reviewer to understand why the code changed. If DevRev access is unavailable, do not silently skip the link; mark the PR as blocked on ticket creation or report the missing credential/tooling in the final response.
+If no DevRev work exists for the change, create one before the PR is ready for review whenever DevRev tooling or credentials are available. The ticket should be specific enough to stand on its own: use the PR or task title, summarize the user-visible change or operational reason, include the repo name, PR URL if one exists, and enough implementation/testing context for a reviewer to understand why the code changed. Assign the DevRev work to the PR submitter when that GitHub author can be resolved to an active DevRev user; for historical backfills this is more accurate than assigning everything to the operator running the backfill. If the PR submitter cannot be resolved, use the best accountable fallback owner and record that fallback in the ticket body or backfill notes. If DevRev access is unavailable, do not silently skip the link; mark the PR as blocked on ticket creation or report the missing credential/tooling in the final response.
+
+This requirement applies to process-only, documentation-only, skill-only, and compliance-only changes too; do not skip DevRev linkage just because the change has no application runtime behavior.
 
 Use this PR body format unless the repo template already has a better location:
 
@@ -52,6 +54,14 @@ https://app.devrev.ai/pearcommerce/works/ISS-####
 ```
 
 For newly created Codex PRs, include the DevRev link in the initial body. For existing PRs, edit the PR body rather than leaving the ticket only in a comment. For closed and merged PR backfills, only process PRs whose `mergedAt`/`merged_at` is set; skip closed-unmerged PRs. Create or reuse one DevRev work item per PR unless the user explicitly asks to group related PRs, then edit the historical PR body with a `## DevRev Ticket` section so future searches find the link.
+
+Once a DevRev work ID is known for new work, prefix the commit subject with that ID and a colon. Use the same primary ID that appears in the PR body:
+
+```bash
+git commit -m "ISS-1234: Add foo to bar"
+```
+
+If a branch genuinely spans multiple DevRev works, use the primary issue or ticket that best describes the PR. Do not rewrite old merged commits solely to retrofit this convention during historical PR-body backfills.
 
 ## Review Rules
 
