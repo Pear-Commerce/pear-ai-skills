@@ -13,8 +13,8 @@ description: >-
   default is a quiz; use `--explain` for a direct reference answer instead.
   Answers are progressively disclosed (hint → names → full context). Tracks
   per-concept mastery across sessions so previously-missed concepts resurface.
-  Produces linked-markdown atlas entries under `scrum-qa/concepts/` that
-  accrete into an institutional map. Use when someone pastes a Pear meeting
+  Produces linked-markdown atlas entries under `~/.pear-atlas/concepts/`
+  that accrete into an institutional map. Use when someone pastes a Pear meeting
   transcript, names a Pear domain term and wants to be tested, asks for
   study/drill material on Pear internals, or wants to atlas a subsystem.
   **BEFORE running any drill, read this skill's `LESSONS.md` — it encodes
@@ -152,7 +152,8 @@ For each concept, capture:
 
 **T6. Load mastery state.**
 
-Read `~/pear-src/pear-ai-skills/scrum-qa/mastery.json` if it exists. Shape:
+Read `$PEAR_ATLAS_DIR/mastery.json` (default `~/.pear-atlas/mastery.json`)
+if it exists. Shape:
 
 ```json
 {
@@ -178,8 +179,9 @@ If the file doesn't exist, create an empty `{"concepts": {}}` and continue.
 
 **T7. Assemble the drill doc.**
 
-Write to `~/pear-src/pear-ai-skills/scrum-qa/YYYY-MM-DD.md` (or
-`YYYY-MM-DD-{shortname}.md` if a matching-date file exists).
+Write to `$PEAR_ATLAS_DIR/drills/YYYY-MM-DD.md` (default
+`~/.pear-atlas/drills/YYYY-MM-DD.md`, or `YYYY-MM-DD-{shortname}.md` if a
+matching-date file exists).
 
 Structure — see the **Concept entry template** section below.
 
@@ -221,8 +223,9 @@ mode — this is meant to be answered in-conversation).
 ## Atlas entries — the persistent artifact
 
 Alongside the mastery.json quiz state, the drill produces **atlas entries**:
-concept-shaped markdown files under `~/pear-src/pear-ai-skills/scrum-qa/concepts/`.
-These are the durable output — retroactive DDD ubiquitous-language mapping.
+concept-shaped markdown files under `$PEAR_ATLAS_DIR/concepts/` (default
+`~/.pear-atlas/concepts/`). These are the durable output — retroactive DDD
+ubiquitous-language mapping.
 
 **File naming:** kebab-case concept name, e.g. `retailer-zones.md`,
 `instacart-list-pipeline.md`, `nationwide-availability.md`. Named for the
@@ -387,8 +390,8 @@ After a drill, the user reports results with phrasing like:
 - "mark all as got-it"
 - "mark all as missed" (rare — usually means the drill was miscalibrated)
 
-On each such report, update
-`~/pear-src/pear-ai-skills/scrum-qa/mastery.json`:
+On each such report, update `$PEAR_ATLAS_DIR/mastery.json` (default
+`~/.pear-atlas/mastery.json`):
 - Increment `attempts`.
 - Increment `misses` if missed.
 - Update `last_asked`.
@@ -400,8 +403,19 @@ Then confirm in chat:
 
 ## Inputs and paths
 
-- **Transcript source:** pasted inline, or a file path (`~/Downloads/*.vtt`,
-  `~/pear-src/pear-ai-skills/scrum-qa/transcripts/*.txt`).
+- **Atlas root:** `$PEAR_ATLAS_DIR` if set, else `~/.pear-atlas/`. The
+  skill honors the environment variable so an engineer who wants their
+  atlas in a private git repo, Dropbox, or elsewhere can point at it
+  without editing the skill.
+- **Atlas subdirs (create if missing):**
+  - `$PEAR_ATLAS_DIR/concepts/` — durable atlas entries (the map)
+  - `$PEAR_ATLAS_DIR/drills/` — dated quiz drill docs (ephemeral)
+  - `$PEAR_ATLAS_DIR/plans/` — design docs that came out of atlas work
+    (atlas-adjacent; optional)
+- **Mastery file:** `$PEAR_ATLAS_DIR/mastery.json`.
+- **Transcript source:** pasted inline, or a file path (`~/Downloads/*.vtt`
+  or wherever the user stores them). Not stored inside the atlas by default —
+  transcripts are input, not output.
 - **Notion source:** `collection://d0799c72-db62-48f8-95a3-e4accd8b4d27`
   (Meeting Notes DB). If stale, `notion-search` for the standup page title
   still resolves.
@@ -412,10 +426,6 @@ Then confirm in chat:
   - `~/pear-src/admin.pearcommerce.com`
   - `~/pear-src/offers.pearcommerce.com`
   - `~/pear-src/pear-dashboard`, `~/pear-src/pear-dashboard-api`
-- **Drill doc dir:** `~/pear-src/pear-ai-skills/scrum-qa/` (create if missing).
-- **Atlas dir:** `~/pear-src/pear-ai-skills/scrum-qa/concepts/` (create if
-  missing).
-- **Mastery file:** `~/pear-src/pear-ai-skills/scrum-qa/mastery.json`.
 
 ## Notes
 
