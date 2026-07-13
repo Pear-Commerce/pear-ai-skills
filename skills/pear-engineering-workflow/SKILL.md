@@ -46,6 +46,8 @@ If no DevRev work exists for the change, create one before the PR is ready for r
 
 This requirement applies to process-only, documentation-only, skill-only, and compliance-only changes too; do not skip DevRev linkage just because the change has no application runtime behavior.
 
+When creating a new (non-backfill) DevRev issue for a PR, set `applies_to_part` to **PROD-9 "Engineering Projects"** as the default, unless the change clearly belongs to a more specific existing part (e.g. a named capability like Locator or PDP). Reserve **ENH-27 "SOC2"** for work that is actually about SOC2/compliance itself (audit findings, control implementation, compliance-driven remediation) — not as a catch-all for general PR-traceability tickets just because DevRev linkage is a SOC2 auditability requirement.
+
 Use this PR body format unless the repo template already has a better location:
 
 ```markdown
