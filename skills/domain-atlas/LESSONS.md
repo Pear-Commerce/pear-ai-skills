@@ -298,6 +298,39 @@ maintainers understand *what kind of artifact* they're reading.
 - The atlas is *institutional memory* once it accretes. Don't underweight
   entries just because they're small — they compound.
 
+### 15. Park edges with a pointer, not with silence
+
+When a question surfaced during a drill isn't worth chasing right now —
+because the answer is historical curiosity, the current architecture
+works, or the cost of investigation exceeds the value of the knowledge —
+**record the decision not to chase, with a pointer to how the next
+investigator would pick it up.** Don't just move on.
+
+**Why:** the failure mode this prevents is the *silent-drop*. An open
+question surfaced in the drill, both parties acknowledged it, both
+moved on, and six months later a new investigator wonders "why didn't
+anyone chase this?" — with no way to know whether it was investigated
+and dismissed, or just forgotten. Named 2026-07-13 during atlas work
+on `PurchaseEventFireJob`'s migration history: Keith identified a
+git-archaeology entry point (commit hash) for the Lambda→proxy→Playwright
+migration's failed middle hop, decided *"I'm not sure if it's worth the
+drill down,"* and I captured the decision with the entry point preserved.
+The atlas edge reads *"parked; here's where you'd start"* rather than
+disappearing.
+
+**How to apply:**
+- When you decide not to chase an edge, note *why* — cost, urgency,
+  operational relevance — so future readers understand the scope
+  judgment, not just the omission.
+- Include a **pointer** to the entry point that would resume the
+  investigation: a commit hash, a specific file/line, a query to run,
+  a person to ask. The pointer makes the parked edge cheap to resume.
+- Mark the owner as `parked` (not `open`, not blank) — this signals the
+  decision-not-to-chase was deliberate.
+- This is distinct from Lesson 8 (edges are interesting) — Lesson 8 is
+  about not fabricating false completeness; Lesson 15 is about handling
+  the specific subset of edges that are *known and consciously deferred*.
+
 ---
 
 ## Atlas-writing conventions
@@ -331,3 +364,45 @@ them existed.
 - This convention differs from the other lessons in that it's a
   **rule about atlas entries**, not a rule about running the drill.
   Included here because entries that skip it produce silent misreads.
+
+### 16. Read one hop past the top-level file before drawing DB/thread/transaction conclusions
+
+When atlasing a code path — especially one that touches the database,
+holds locks, or runs on a scheduled/concurrent substrate — read the
+**immediate callees** the top-level file invokes before drawing
+conclusions about DB behavior, thread safety, or transaction shape.
+The interesting behavior often lives in the ORM `save()`, the loader's
+`load()`, the base class's transactional bracketing, or an inline
+helper — not in the orchestrator you started reading.
+
+**Why:** named 2026-07-13 during atlas work on the `PurchaseEventFireJob`
+ghost-transaction question. Initial analysis claimed *"no `AtomicLong`
+in the file"* — literally true for `PurchaseEventFireJob.java`. Keith
+pushed back: `AtomicLong` shows up in `PageLoad.save()` at
+`PageLoad.java:308, 319`, which is called *by* the job. The AtomicLongs
+turned out to be Java-lambda-idiom mutable-boxes (not cross-thread
+primitives) so the ghost-transaction conclusion didn't change, *but the
+correction was real*: the analysis had been one-file-shallow. If those
+`AtomicLong`s had been thread-coordination primitives, the whole
+conclusion would have moved.
+
+**How to apply:**
+- When atlasing a job, controller, or orchestrator that touches DB,
+  hold locks, or runs concurrently — before drawing conclusions, grep
+  for the ORM/utility calls it makes and open at least the ones on the
+  hot path.
+- Especially: `save()`, `load()`, `loadSingleWhere()`, `executeUpdate()`,
+  anything with a transactional-substrate implication. Pear's
+  `PearEntity.save()` in particular carries transactional shape that
+  child classes often extend with pre-write work; reading only the
+  child class misses the transactional bracketing.
+- If you don't read the callee, **name that explicitly in the atlas
+  entry** — "analysis was one-file-shallow at `<name>.java`; the natural
+  next hop is `<callee>` for definitive answers on DB/thread behavior."
+  A shallow read is fine when flagged as shallow; the failure mode is a
+  shallow read presented as complete.
+- This applies to *reads*, not to atlas entries about pure business
+  concepts. An atlas entry on "retailer zones" as a data-model shape
+  doesn't need call-graph depth. An entry that makes a claim about
+  "this job holds a transaction for the duration of a Playwright call"
+  absolutely does.
