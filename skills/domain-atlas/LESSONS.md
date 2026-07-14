@@ -406,3 +406,55 @@ conclusion would have moved.
   doesn't need call-graph depth. An entry that makes a claim about
   "this job holds a transaction for the duration of a Playwright call"
   absolutely does.
+
+### 17. Expect read paths to be graphs, not trees — cross-link entanglement explicitly
+
+Pear's codebase does not separate concerns along the boundaries a
+reader-from-outside would expect. Internal callers reach directly into
+shared storage (URD, URZA, LURD, `PageLoad`, `OfferDOMInsertions`, etc.)
+without service interfaces between them. That means **any read path
+touches other subsystems** — reading URD in the map-display path
+interacts with URZA freshness (a scanning-system concern), touches
+LURD overrides (an editorial/admin concern), reads offer config (a
+customer-configuration concern), and hits `RetailPartner` (a
+retailer-integration concern). None of these are behind an interface
+that enforces read discipline.
+
+**Why:** named 2026-07-14 during atlas work on `urd-read-path-perf.md`.
+The pattern kept surfacing: Alex's rejected shortcut for URD fetch
+(*"it'll come back in the stores-for-location thing"*), `PageLoad.save()`
+calling into `AtomicLong` stream filters that the outer file's analysis
+missed, `PurchaseEventFireJob` reaching into `pageLoad.save()` which
+reaches into `super.save()`. The atlas boundary between concepts is
+usually cleaner than the code boundary between subsystems. That is a
+fact about this codebase, not a personal reading preference.
+
+**How to apply:**
+- **Cross-link liberally between atlas entries.** Every entry that
+  touches shared storage should name what other atlas entries also
+  touch the same table/field. `[[wikilinks]]` are cheap; missed
+  entanglement is expensive.
+- **When atlasing a subsystem, name adjacent subsystems that read or
+  write the same storage even if the current entry doesn't discuss
+  them.** A reader following one entry needs to know where the
+  invisible dependencies live.
+- **Do not assume the atlas can inherit a clean subsystem boundary
+  from the code.** If you find yourself writing "the X subsystem
+  does Y" and there's no `X.java` or `XService.java`, the subsystem
+  boundary is atlas-imposed, not code-enforced. Say so explicitly:
+  *"There is no explicit `AvailabilityService`; callers reach directly
+  into URD/URZA. The subsystem boundary named here is an atlas
+  convention, not a code fact."*
+- **When a read path has scaling implications, name them descriptively
+  without advocating a specific fix.** *"Both scanning writes and
+  map-display reads share InnoDB pressure on a single-instance Aurora
+  cluster. This is fine at current scale; it becomes a constraint at
+  some future scale. Engineers evaluating scaling questions should
+  hold this shape in mind rather than assuming the substrate is
+  arbitrary-scale."* Descriptive — leaves the "what to do about it"
+  to design conversations elsewhere.
+- **This is why atlas entries need "Related:" sections at the top and
+  cross-references throughout, not just at the end.** A reader who
+  jumps into `urd-read-path-perf.md` needs to see the URZA, LURD, and
+  offer-config touchpoints named on the first read, because they'll
+  matter to whatever question the reader arrived with.
