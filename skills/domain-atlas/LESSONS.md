@@ -458,3 +458,72 @@ fact about this codebase, not a personal reading preference.
   jumps into `urd-read-path-perf.md` needs to see the URZA, LURD, and
   offer-config touchpoints named on the first read, because they'll
   matter to whatever question the reader arrived with.
+
+### 18. Ask about scale before executing on stored advice — flags fan out multiplicatively
+
+When applying a config or flag to N rows, ask what the read path costs
+per-request when N is 10 vs 1000 vs 100000. Advice that is correct
+mechanically may still be wrong operationally at bulk scale — the
+mechanism doesn't change, but its production cost does.
+
+**Why:** named 2026-07-15 during a production incident. Peter Brengel
+correctly identified on 2026-07-14 that Instacart-mediated retailers
+onboarded without `servicesEverywhere = true` and
+`itemAvailabilityDependsOnZip = true` would be silently invisible to
+shoppers outside their explicit zip mappings — the flag-composition
+observation atlased in [[retailer-zones]] and [[nationwide-availability]].
+Keith set both flags on ~2000 new retailers. That night, non-Peapod
+retailer-list p50 latency tripled without a deploy or config change;
+Aurora query volume doubled. Root cause: `servicesEverywhere = true`
+pulls the retailer into the candidate pool for *every request in the
+matching country* (bypasses the `RetailPartner_to_Zipcode` filter).
+At N=1 retailer, that's one row in the fanout — invisible. At N=2000
+retailers, that's +2000 rows in the fanout per request — production
+regression.
+
+**The mechanism was correct.** Peter's advice was right for the case
+he had in mind: onboarding one or a few IC retailers. Neither Peter
+nor Keith had "2000 retailers" in mental view at the moment of the
+advice. Peter later noted (2026-07-15 09:51 AM Slack) that
+[[retail-partner-postal-code-prefix]] already handles the geographic
+coverage `servicesEverywhere` was providing — so at bulk scale, the
+correct answer is *"use the prefix table, skip `servicesEverywhere`
+entirely"*. That path wasn't surfaced yesterday because the
+conversation was calibrated to small-scale onboarding.
+
+**How to apply:**
+
+- **Before executing a bulk config change, ask *"how many rows am I
+  affecting, and does the read path treat this flag as O(1)-per-row
+  or as a fanout multiplier?"*** If the flag bypasses a filter (which
+  is what "always a candidate" flags do), the read-path cost is
+  multiplicative against every incoming request, not additive.
+- **When authoritative advice is given without scale context, ask for
+  scale before executing.** *"Sure, I'll set these — how many are we
+  talking about, and is that OK at that count?"* is a cheap question.
+  The confirmation is cheap. The incident is not cheap.
+- **Re-check scale on stored advice.** Advice given yesterday assumed
+  yesterday's context. Today's execution may be at different scale.
+  If you're about to run a task from a note or memory or Slack thread,
+  and the count has changed since the advice, re-verify.
+- **Atlas entries encoding onboarding rules must name the scale
+  assumption.** *"For US IC-mediated retailers with zones — set both
+  flags"* is scale-blind. *"For onboarding one IC retailer at a time,
+  set both flags. For backfilling many, verify the prefix table is
+  populated and skip `servicesEverywhere`"* is scale-aware. The
+  scale-blind version got atlased on 2026-07-14; it was operationally
+  incorrect at the scale it got applied to on 2026-07-15.
+
+**Related lessons:**
+
+- Lesson 11 (senior uncertainty is data) — the inverse: senior
+  *confidence* calibrated to a different scale than yours is *also*
+  data, harder to catch. Lesson 11 fires on senior-hesitates; this
+  lesson fires on senior-is-confident-but-about-a-different-context.
+- Lesson 17 (read paths are graphs, not trees) — the fanout regression
+  is exactly the graph-shape firing at production scale. Lesson 17
+  named the shape; Lesson 18 names that the shape has a scale-cost
+  dimension.
+- Lesson 8 (edges are interesting) — an atlas rule that looks polished
+  can go stale silently in the *scale-dimension*, not just the
+  *mechanism-dimension*. Rules must name their operating range.
