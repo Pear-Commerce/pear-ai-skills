@@ -1,6 +1,6 @@
 ---
 name: instacart-list-scraper
-description: Understand, operate, and tune the Instacart prewarm/list-scraper subsystem in api.pearcommerce.com. Use when working with InstacartBatchInventoryList processing, list staleness, the Instacart prewarm Quartz job, AppConfig knobs under instacart-prewarm-pool, URZA daily-update triggers, or the no-recipes prewarm dashboard. Operational and architectural reference, not an investigation playbook.
+description: Operate and tune Pear's Instacart prewarm/list-scraper subsystem.
 ---
 
 # Instacart List Scraper
