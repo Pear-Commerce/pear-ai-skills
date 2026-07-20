@@ -1,0 +1,4 @@
+interface:
+  display_name: "Availability Investigator"
+  short_description: "Debug Pear availability outcomes and logs via API, data, and code"
+  default_prompt: "Use $availability-investigator to explain this availability result, inspect or rerun it API-first, show the newest relevant logs, validate multi-UPC inputs, or diagnose why a map pin, retailer-list row, picker button, PDP, or ATC link is missing."
