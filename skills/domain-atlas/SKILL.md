@@ -51,6 +51,58 @@ AppConfig kill switches, the older-flag-vs-newer-flag pairs, the
 parallelization axes, the strategy objects that should exist but don't yet.
 That combinatorial layer is what the drill targets.
 
+## The atlas has two layers: the durable entries, and the staging session
+
+The atlas as an artifact lives at `~/.pear-atlas/`: concept entries under
+`concepts/`, drill docs under `drills/`, design docs under `plans/`,
+per-concept mastery state in `mastery.json`. Those files are the durable
+output — retroactive DDD ubiquitous-language mapping that accretes over
+months and survives across sessions.
+
+But the atlas as a *practice* also has a working layer that isn't
+committed to disk: **the drill conversation itself is the staging space
+where observations get named, stress-tested, argued about, and either
+promoted to atlas entries or dropped.** Not every observation surfaced
+during a drill earns atlas placement. Filtering-before-committing is
+part of the practice — it's what prevents the atlas from filling with
+unearned entries that go stale silently.
+
+**Concretely: during a drill session you will notice patterns.** Some
+are one-off oddities. Some are legitimate but ticket-shaped (DevRev, not
+atlas). Some are behavioral memories about how the user works (personal
+memory, not atlas). Some are early sightings of what may be a real
+substrate pattern but hasn't hit enough instances to prove itself.
+**Only the substrate patterns with repeated evidence earn atlas
+placement.** Everything else lives in the drill conversation as staging
+material — named, remembered for the current session, and either promoted
+to a durable artifact later or allowed to fall out of context.
+
+**How to tell the difference (rough heuristics):**
+
+- **One instance = observation. Two = coincidence. Three or more = pattern
+  worth atlasing.** Substrate observations especially deserve accumulated
+  evidence before they get codified as a project memory or a lesson.
+- **If the observation names how the user works** (feedback about their
+  process, preferences, cognitive load) — it's a personal-memory
+  candidate, not atlas.
+- **If the observation names a specific bug or ticket** — DevRev / PR /
+  task queue, not atlas.
+- **If the observation names a fact about the codebase that survives
+  a rewrite of any single file** — it's atlas material. Verify against
+  code, cite by search criteria not name-enumeration (see Lesson 12
+  and its companion conventions in LESSONS.md), then commit.
+- **If the observation names an aspiration ("we should someday
+  consolidate X")** — it's not atlas. Atlas describes what's here, not
+  what should be built. Aspirations belong in design docs or a personal
+  engineering-directions doc.
+
+**Practical implication for anyone running this skill:** the drill
+conversation is not just a Q&A generator or a research assistant. It is
+the *anteroom* to the atlas. Observations pile up there; only the ones
+that earn passage move into `~/.pear-atlas/`. Being disciplined about
+the anteroom — knowing what to stage vs. what to commit — is as
+important as running the drills themselves.
+
 ## Arguments
 
 Parsed loosely from `$ARGUMENTS` and the surrounding user turn:
