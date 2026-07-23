@@ -192,6 +192,8 @@ Store import methods:
 - `storeImportCountryCodes(...)` should return the country codes where the retailer operates.
 - Do not override `determineCountryCodes(...)` unless the user asks; it should usually derive from `storeImportCountryCodes(...)` and retailer fields.
 - Treat `canUseStoreIdAndDatabaseContainsRetailerImportedStores(...)` as final infrastructure; do not override or change it during retailer production work.
+- Before persisting upstream store ids, verify their maximum length and shape against `Store.storeId`, availability/zone columns, and Pear's legacy Instacart-zone classifier. UUID-shaped or other long/hyphenated ids can overflow columns or be misclassified as Instacart stores.
+- When a store id is too long or has an unsafe shape, use a retailer-owned reversible compact codec rather than a lossy hash. Encode at the store-import boundary before the id reaches `Store`, `RetailerZone`, `ZipRetailerZone`, or availability rows; decode immediately before every retailer API request that needs the upstream id. Keep raw upstream ids accepted during rollout, and test known-value round trips, full-range/random round trips when applicable, invalid/raw compatibility, import encoding, and live availability through an encoded id.
 
 It is acceptable to load stores from the normalized JSON artifact produced during feasibility for the first production pass because it is fast and stable. Keep the original live store scraping code in the `@Script` production test so the store list can be regenerated and verified later.
 
@@ -250,6 +252,19 @@ For PDP URL fixes, strongly prefer an abridged resolution-to-availability `@Scri
 
 Reuse the plan test's sample UPCs, names, store ids, expected item ids, expected URLs, proxy route assertions, and comments where practical. Keep the test out of CI with `@Script`.
 
+## PR Reviewer Audit Evidence
+
+Make every retailer-production PR description easy to audit without requiring reviewers to reconstruct identifiers from the diff. Include a dedicated test-examples or reviewer-audit section that:
+
+- names the representative production test method(s)
+- lists the exact upstream store id(s) asserted or selected
+- lists the exact persisted Pear store id when it differs from the upstream id because of encoding or translation
+- lists the exact retailer item id(s), secondary id(s), UPC(s), and expected PDP URL used by resolver or availability tests, including only fields relevant to that integration
+- states the expected status/result for each availability example without depending on a mutable total store count
+- explains any identifier transformation boundary, such as encoding on store import and decoding before retailer API calls
+
+Use real non-secret identifiers that already appear in tests. Never include cookies, CSRF tokens, authorization values, customer ids, or other session credentials in the PR description.
+
 ## Completion
 
 Before opening the PR:
@@ -259,4 +274,5 @@ Before opening the PR:
 - run the Pear engineering cleanup pass
 - ensure no passing production code uses `Type.NO_PROXY`
 - summarize required proxy types, store import source, item-id route, availability route, and whether batch updating was added
+- include the required PR reviewer-audit evidence with representative store and item identifiers
 - create/update and monitor the PR with `$pear-pr-review-flow`
