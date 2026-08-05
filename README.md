@@ -66,6 +66,7 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 - `retailer-store-import-feasibility`: discover, implement, verify, and preserve retailer store-import routes and `Store.SStore` artifacts.
 - `retailer-upc-resolution-feasibility`: discover, implement, and verify UPC-to-retailer-item-ID resolution.
 - `screenshot`: capture desktop, app, window, or region screenshots when OS-level capture is needed.
+- `snowflake-jdbc`: Snowflake JDBC gotchas for Pear Java code — uppercase column labels, connection pool, and streaming patterns.
 - `step9-golden-test-and-fix`: run and stabilize Step9 golden residential retailer tests.
 - `step9-phase4-stabilization`: supervise Step9 Phase 4 runs, parity checks, tracker updates, and final waves.
 - `upc-resolution-code-changes`: guide UPC resolution graph, resolver, and verification code changes.
