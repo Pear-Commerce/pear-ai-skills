@@ -1,6 +1,6 @@
 # Pear AI Skills
 
-Canonical public home for Pear-authored AI assistant skills, currently used with Codex-compatible clients and Claude Desktop.
+Canonical public home for Pear-authored AI assistant skills, currently used with Codex-compatible clients, Claude Desktop, and OpenCode.
 
 ## Skills
 
@@ -77,17 +77,17 @@ Canonical public home for Pear-authored AI assistant skills, currently used with
 
 ## Get Set Up and Stay Synced
 
-Most people should run the installer once. It checks out this canonical repo, installs missing basics such as Homebrew, Git, and GitHub CLI when possible, syncs Pear's shared skills into both Codex-compatible and Claude Desktop skill folders, and can be safely rerun whenever skills change.
+Most people should run the installer once. It checks out this canonical repo, installs missing basics such as Homebrew, Git, and GitHub CLI when possible, syncs Pear's shared skills into Codex-compatible, Claude Desktop, and OpenCode skill folders, and can be safely rerun whenever skills change.
 
 ## Fast Path: Ask Your Assistant
 
-In Codex or Claude, start with this short prompt:
+In Codex, Claude, or OpenCode, start with this short prompt:
 
 ```text
 Find Pear-Commerce/pear-ai-skills and add all Pear skills to this assistant. If anything basic is missing, bootstrap Homebrew/Git/GitHub CLI as needed, clone or update the repo, run its installer with --bootstrap-tools, and then list the installed skills.
 ```
 
-If that works, start a fresh chat and mention skills normally. Claude Desktop may need a restart before it sees newly synced skills.
+If that works, start a fresh chat and mention skills normally. OpenCode discovers newly synced skills in a fresh session; Claude Desktop may need a restart.
 
 If the assistant cannot find or run the installer, use the manual fallback below.
 
@@ -106,6 +106,7 @@ What it does:
 - Clones or updates the repo at `$HOME/pear-ai-skills`.
 - Syncs Pear's shared skills into `${CODEX_HOME:-$HOME/.codex}/skills`.
 - Syncs Pear's shared skills into `$HOME/.claude/skills`.
+- Syncs Pear's shared skills into `${XDG_CONFIG_HOME:-$HOME/.config}/opencode/skills`.
 - Preserves local repo changes instead of overwriting them.
 - Falls back to a GitHub archive snapshot if Git cannot be installed yet.
 
@@ -115,7 +116,7 @@ If you already have the repo checked out, run:
 ./scripts/install-all-skills.sh --bootstrap-tools
 ```
 
-Claude Desktop may need a restart before it sees newly synced skills.
+OpenCode discovers newly synced skills in a fresh session. Claude Desktop may need a restart.
 
 ## Install All Skills: Codex-Compatible Target
 
@@ -127,6 +128,12 @@ Claude Desktop may need a restart before it sees newly synced skills.
 
 ```bash
 ./scripts/install-all-skills.sh --claude-only
+```
+
+## Install All Skills: OpenCode Target
+
+```bash
+./scripts/install-all-skills.sh --opencode-only
 ```
 
 ## Updating Skills
