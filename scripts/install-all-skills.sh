@@ -6,8 +6,10 @@ REPO_DIR="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
 BRANCH="${PEAR_AI_SKILLS_BRANCH:-main}"
 CODEX_SKILLS_DIR="${CODEX_SKILLS_DIR:-${CODEX_HOME:-$HOME/.codex}/skills}"
 CLAUDE_SKILLS_DIR="${CLAUDE_SKILLS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/skills}"
+OPENCODE_SKILLS_DIR="${OPENCODE_SKILLS_DIR:-${OPENCODE_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}/skills}"
 INSTALL_CODEX=1
 INSTALL_CLAUDE=1
+INSTALL_OPENCODE=1
 COLOR_MODE="${COLOR:-auto}"
 BOOTSTRAP_TOOLS="${PEAR_AI_SKILLS_BOOTSTRAP_TOOLS:-0}"
 RETIRED_SKILLS="sstore-store-extractor pear-upc-resolution-graph-code-changes pear-upc-resolution-verification"
@@ -24,6 +26,7 @@ Options:
   --branch NAME     Checkout/update this branch (default: main)
   --codex-only      Import only to the Codex-compatible skill target
   --claude-only     Import only to the Claude Desktop skill target
+  --opencode-only   Import only to the OpenCode skill target
   --bootstrap-tools Install missing local basics where possible
                    (macOS: Homebrew if needed, then Git and GitHub CLI)
   --no-color        Disable colored output
@@ -37,6 +40,9 @@ Environment:
   CODEX_SKILLS_DIR          Exact Codex-compatible skills directory
   CLAUDE_HOME               Claude home directory (default: \$HOME/.claude)
   CLAUDE_SKILLS_DIR         Exact Claude Desktop skills directory
+  OPENCODE_HOME             OpenCode home directory
+                            (default: \${XDG_CONFIG_HOME:-\$HOME/.config}/opencode)
+  OPENCODE_SKILLS_DIR       Exact OpenCode skills directory
   PEAR_AI_SKILLS_BOOTSTRAP_TOOLS=1
                             Install missing local basics before importing
 EOF
@@ -57,11 +63,19 @@ while [ "$#" -gt 0 ]; do
     --codex-only)
       INSTALL_CODEX=1
       INSTALL_CLAUDE=0
+      INSTALL_OPENCODE=0
       shift
       ;;
     --claude-only)
       INSTALL_CODEX=0
       INSTALL_CLAUDE=1
+      INSTALL_OPENCODE=0
+      shift
+      ;;
+    --opencode-only)
+      INSTALL_CODEX=0
+      INSTALL_CLAUDE=0
+      INSTALL_OPENCODE=1
       shift
       ;;
     --bootstrap-tools)
@@ -89,7 +103,7 @@ case "$BOOTSTRAP_TOOLS" in
   *) BOOTSTRAP_TOOLS=0 ;;
 esac
 
-if [ "$INSTALL_CODEX" -eq 0 ] && [ "$INSTALL_CLAUDE" -eq 0 ]; then
+if [ "$INSTALL_CODEX" -eq 0 ] && [ "$INSTALL_CLAUDE" -eq 0 ] && [ "$INSTALL_OPENCODE" -eq 0 ]; then
   echo "Nothing to install. Pick at least one target." >&2
   exit 2
 fi
@@ -386,6 +400,9 @@ main() {
   fi
   if [ "$INSTALL_CLAUDE" -eq 1 ]; then
     import_to_target "Claude Desktop target" "$CLAUDE_SKILLS_DIR"
+  fi
+  if [ "$INSTALL_OPENCODE" -eq 1 ]; then
+    import_to_target "OpenCode target" "$OPENCODE_SKILLS_DIR"
   fi
 
   step "3. Next steps"
