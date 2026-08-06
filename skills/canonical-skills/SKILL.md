@@ -38,7 +38,7 @@ What this installer should handle:
 - Install Git and GitHub CLI when possible.
 - Fall back to a GitHub archive snapshot if Git still is not available, so skill import can continue.
 - Replace an old archive snapshot with a normal Git checkout after Git becomes available.
-- Import all canonical Pear skills into Codex-compatible and Claude Desktop skill folders.
+- Import all canonical Pear skills into Codex-compatible, Claude Desktop, and OpenCode skill folders.
 
 If a tool install asks for a password, browser login, or device-code confirmation, explain the prompt plainly and wait for the user to finish it. If installing tools is blocked by device policy, continue with archive-based skill import when possible and report exactly which later actions, such as pushing to GitHub, still require setup.
 
@@ -108,13 +108,22 @@ PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
 "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --claude-only --no-color
 ```
 
+OpenCode target:
+
+```bash
+PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
+"$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --opencode-only --no-color
+```
+
+OpenCode's default target is `${XDG_CONFIG_HOME:-$HOME/.config}/opencode/skills`. Start a fresh OpenCode session after syncing so newly installed skills are discovered.
+
 Tell the user Claude may need a restart before it sees newly synced skills.
 
 ## Creating or Updating Skills
 
 All Pear skill creation and edits start in the canonical repo. This is mandatory: whenever a user asks to create, edit, update, modify, inspect-and-fix, sync, or push a skill, or whenever you are about to edit any `SKILL.md`, first use this `canonical-skills` workflow even if another task-specific skill also applies.
 
-Do not make an installed or repo-local skill copy the source of truth. Installed copies under `$HOME/.codex/skills`, Claude Desktop, or app repos are mirrors. If you accidentally edited a mirror first, treat it as a scratch diff: port the change into `$HOME/pear-ai-skills`, commit and push the canonical repo, then run the installer to sync the mirror back before the final response.
+Do not make an installed or repo-local skill copy the source of truth. Installed copies under `$HOME/.codex/skills`, `$HOME/.claude/skills`, `${XDG_CONFIG_HOME:-$HOME/.config}/opencode/skills`, or app repos are mirrors. If you accidentally edited a mirror first, treat it as a scratch diff: port the change into `$HOME/pear-ai-skills`, commit and push the canonical repo, then run the installer to sync the mirror back before the final response.
 
 Do not end a skill-editing turn with only local or installed-copy changes unless pushing is genuinely blocked. Skill edits must be committed and pushed to `Pear-Commerce/pear-ai-skills` in the same turn, immediately after the requested edit and any lightweight verification. Do not batch skill changes for a later turn, and do not leave canonical skill diffs sitting only in the local checkout.
 
@@ -151,7 +160,7 @@ Do not make a repo-local skill copy the source of truth. Repo-local copies are v
 
 ## Quick Install
 
-To install this bootstrap skill and immediately get set up with Pear's shared skills in both Codex-compatible and Claude Desktop targets, run:
+To install this bootstrap skill and immediately get set up with Pear's shared skills in Codex-compatible, Claude Desktop, and OpenCode targets, run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/scripts/install-all-skills.sh \
@@ -165,4 +174,4 @@ PEAR_AI_SKILLS_REPO="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}"
 "$PEAR_AI_SKILLS_REPO/scripts/install-all-skills.sh" --bootstrap-tools --no-color
 ```
 
-Then start a new chat in that assistant and mention skills normally. Claude Desktop may need a restart before it sees newly synced skills.
+Then start a new chat in that assistant and mention skills normally. OpenCode discovers newly synced skills in a fresh session; Claude Desktop may need a restart.
