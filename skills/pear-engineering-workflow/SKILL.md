@@ -19,6 +19,51 @@ Avoid switching to non-login Bash, especially `shell=/bin/bash` with `login=fals
 
 For CloudWatch, RDS, or other AWS-backed investigations, also check the login shell before deciding tools are missing: `zsh -lc 'command -v aws python3 pip3'`. Prefer Pear repo helpers such as `devops/logs.sh`, `db.sh`, and `pear-prod-jsp` when they answer the question. If direct AWS API access is genuinely needed and `aws`/`boto3` is unavailable, keep any temporary Python dependency install in a temp venv/path outside the repo, avoid changing repo dependency files, and describe that as a local tooling workaround rather than a production or application finding.
 
+## AppConfig Changes And Publishing
+
+Use the bundled [`scripts/appconfig-set-value.sh`](scripts/appconfig-set-value.sh) for Pear API `Base (All)` AppConfig changes. It encodes the production IDs, preserves JSON types, uses optimistic version locking, creates the hosted version with `fileb://`, deploys it, and verifies both the value and deployment state.
+
+Before changing a value, inspect the exact code callsite and its default. Confirm the namespace, key, expected type, and whether the code reads it live or only during startup. A normal `getBooleanNow`/`getIntegerNow`/`getStringNow` call is live-read and normally needs no application restart; startup-gated behavior may still require a service redeploy.
+
+Run a no-write preview first:
+
+```bash
+APP_CONFIG_SETTER="${PEAR_AI_SKILLS_REPO:-$HOME/pear-ai-skills}/skills/pear-engineering-workflow/scripts/appconfig-set-value.sh"
+"$APP_CONFIG_SETTER" \
+  --namespace instacart-prewarm-pool \
+  --key max-workers \
+  --json-value '300' \
+  --label ic-workers-300 \
+  --description 'Set list-scraper worker limit to 300'
+```
+
+Only add `--publish` when the user has explicitly authorized the live change and publication:
+
+```bash
+"$APP_CONFIG_SETTER" \
+  --namespace instacart-prewarm-pool \
+  --key max-workers \
+  --json-value '300' \
+  --label ic-workers-300 \
+  --description 'Set list-scraper worker limit to 300' \
+  --publish
+```
+
+`--json-value` must be valid typed JSON: use `'true'`, `'120'`, or `'"text"'`, not unquoted text. Existing keys preserve their schema. For a genuinely new key, also pass `--type boolean|number|string`; the script adds the matching flag attribute and refuses to exceed AppConfig's 25-attribute namespace limit. Do not repurpose or delete an existing attribute merely to bypass that limit without explicit approval.
+
+Canonical Pear API AppConfig resources are application `k54elgs` (`Pear API`), profile `dohcrfo` (`Base (All)`), environment `zxye02b` (`Base (All)`), region `us-east-1`, and immediate deployment strategy `id0iigs`. Override these only when intentionally targeting a different resource.
+
+Common first-attempt failures this script avoids:
+
+- Updating only `.values` for a new key while omitting `.flags.<namespace>.attributes.<key>`.
+- Passing a string where the schema expects a boolean or number.
+- Using `file://` instead of `fileb://` for `create-hosted-configuration-version`.
+- Creating from a stale base version; `--latest-version-number` must match the current hosted version.
+- Treating a created hosted version as published; `start-deployment` is a separate required call.
+- Reporting success without checking `get-deployment` and re-reading the new hosted value.
+
+If the helper is unavailable, reproduce its sequence exactly: download the latest hosted version, update it with `jq --argjson`, validate with `jq -e`, create a new version with `--latest-version-number`, start a deployment, then verify the deployment state and hosted value. Never edit a stale local AppConfig JSON file and publish it over newer changes.
+
 ## Offers Deploy Safety
 
 For `offers.pearcommerce.com`, never repair or deploy CDN/static asset content by pushing local workstation files to S3/R2/CloudFront/Cloudflare or any production bucket. Do not use `aws s3 cp`, `aws s3 sync`, `s3api put-object`, R2 object writes, Cloudflare direct uploads, or equivalent local artifact pushes for Offers production or staging assets, including emergency fixes.
