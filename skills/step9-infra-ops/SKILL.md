@@ -84,8 +84,8 @@ bash /Users/eric/pear-step9-browser-agent/scripts/read-health.sh summary
 ## Known Failure Modes and Fixes
 
 ### "fetch failed" (AGENT_SERVICE_UNAVAILABLE)
-**Cause:** MCP process on Mac mini crashed or Chrome stopped.
-**Fix:** Restart MCP on Mac mini:
+**Cause:** MCP process on Mac mini crashed, Chrome stopped, OR fp proxy is too slow (14s/request).
+**Fix (MCP crash):** Restart MCP on Mac mini:
 ```bash
 sshpass -p 'n69Dwjmgg' ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no eric@192.168.7.237 "
 kill -9 \$(lsof -ti :8787) 2>/dev/null
@@ -99,6 +99,10 @@ lsof -i :8787 | head -3
 "
 ```
 The ngrok tunnel usually survives — it's the MCP process behind it that crashes.
+
+**IMPORTANT:** MCP restart script requires Chrome to be running first (it waits for DevTools on port 9222). Start Chrome with `restartMcp: true` in the start payload — this starts Chrome AND MCP together.
+
+**Fix (fp proxy slow):** The `tls-client-api` Go sidecar inside the fp proxy container adds ~14 seconds per HTTPS request for TLS fingerprint matching. This makes interactive browser automation through the agent service effectively impossible — the agent's internal opencode process times out before completing store switches. The proxy still captures traffic (600+ rows per session), but the agent can't drive the browser fast enough. This is a known infrastructure bottleneck. Options: fix tls-client-api performance, increase agent timeouts, bypass fingerprinting for capture sessions, or drive browser manually via MCP.
 
 ### "sessionA is empty"
 **Cause:** Session IDs in `context.json` don't exist in dev DB.
