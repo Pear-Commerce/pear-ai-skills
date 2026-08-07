@@ -102,7 +102,45 @@ The ngrok tunnel usually survives — it's the MCP process behind it that crashe
 
 **IMPORTANT:** MCP restart script requires Chrome to be running first (it waits for DevTools on port 9222). Start Chrome with `restartMcp: true` in the start payload — this starts Chrome AND MCP together.
 
-**Fix (fp proxy slow):** The `tls-client-api` Go sidecar inside the fp proxy container adds ~14 seconds per HTTPS request for TLS fingerprint matching. This makes interactive browser automation through the agent service effectively impossible — the agent's internal opencode process times out before completing store switches. The proxy still captures traffic (600+ rows per session), but the agent can't drive the browser fast enough. This is a known infrastructure bottleneck. Options: fix tls-client-api performance, increase agent timeouts, bypass fingerprinting for capture sessions, or drive browser manually via MCP.
+**Fix (fp proxy slow / high memory):** The `tls-client-api` Go sidecar accumulates memory from infinite proxy loops. If the sidecar is using >500MB RAM, the proxy is likely in a loopback loop. Symptoms: every request times out at exactly 30s, logs show `request_time: 30.002...` and `failed to do request: Get "https://<EC2-OWN-IP>:8080/"`. Fix: push code changes to `~/fingerprint-2025` repo (auto-deploys via GitHub Actions), then recycle the ASG instance (see below).
+
+### fp proxy deploy / ECS troubleshooting
+
+**Repo:** `~/fingerprint-2025` — push to `main` triggers GitHub Actions → builds Docker image → pushes to ECR → registers new ECS task definition → updates ECS service.
+
+**Common deploy failure: `TaskFailedToStart: ATTRIBUTE`**
+This happens when the old container is still running and holding ports/memory. The ECS agent can't place the new task. Fix:
+1. Kill the old Docker container: `docker kill sharp_wright; docker rm sharp_wright`
+2. Stop the stuck ECS task: `aws ecs stop-task --cluster browser-fingerprint --task <task-arn> --region us-east-1`
+3. Force new deployment: `aws ecs update-service --cluster browser-fingerprint --service browser-fingerprint --force-new-deployment --region us-east-1`
+
+**If ECS agent is completely stuck (tasks stuck at PROVISIONING, agent not placing tasks):**
+The nuclear option is to recycle the ASG instance:
+```bash
+cd ~/fingerprint-2025 && bash recycle_asg_instance.sh
+```
+This terminates the EC2 instance and the ASG spins up a fresh one. Wait ~5 minutes for the new instance to boot, ECS agent to register, and the task to start. The new instance ID will be different.
+
+**IMPORTANT:** After recycling, update any scripts/health checkers that reference the old instance ID (i-07d9de8dc9a11dfdc). The new instance ID can be found with:
+```bash
+aws autoscaling describe-auto-scaling-groups --region us-east-1 --auto-scaling-group-names ecs-browser-fingerprint-asg --query 'AutoScalingGroups[0].Instances[0].InstanceId' --output text
+```
+
+**SSM commands may hang when ECS agent is starting** — `systemctl start ecs` blocks. Use `nohup` or run in background.
+
+**Verify new deploy has code changes:**
+```bash
+aws ssm send-command --instance-ids <NEW_INSTANCE_ID> --document-name "AWS-RunShellScript" --parameters 'commands=["docker exec <container-name> grep -c <keyword> /opt/mitm/tlsclient_api_upstream.py"]' --region us-east-1
+```
+
+**Verify proxy health after deploy:**
+```bash
+# Check memory (should be <500MB total)
+aws ssm send-command --instance-ids <INSTANCE_ID> --document-name "AWS-RunShellScript" --parameters 'commands=["docker exec <container-name> ps aux", "free -m"]' --region us-east-1
+
+# Check tls-client-api logs (should NOT have 30s timeout loops)
+aws ssm send-command --instance-ids <INSTANCE_ID> --document-name "AWS-RunShellScript" --parameters 'commands=["docker exec <container-name> tail -20 /var/log/mitm/tls-client-api.log"]' --region us-east-1
+```
 
 ### "sessionA is empty"
 **Cause:** Session IDs in `context.json` don't exist in dev DB.
