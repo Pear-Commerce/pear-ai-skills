@@ -1,13 +1,44 @@
 ---
 name: step9-golden-test-and-fix
-description: Run and stabilize Step9 golden residential retailer tests in /Users/eric/api.pearcommerce.com. Use when Codex is asked to run the golden harness, residential Stage9, artifact curl parity, A/C artifact comparisons, retailer queues, Step9 failure triage, or a fixer-plus-watchdog subagent workflow for Step9 golden failures and artifact mismatches.
+description: Run and stabilize Step9 golden residential retailer tests. Use when Codex is asked to run the golden harness, residential Stage9, artifact curl parity, A/C artifact comparisons, retailer queues, Step9 failure triage, or a fixer-plus-watchdog subagent workflow for Step9 golden failures and artifact mismatches.
 ---
 
 # Step9 Golden Test And Fix
 
+## Which Repo?
+
+There are TWO Step9 repos:
+
+1. **`/Users/eric/api.pearcommerce.com`** — original repo, used for Phase 4 stabilization runs
+2. **`/Users/eric/api.pearcommerce.com-step9-rearch/`** — rearch branch (`codex/step9-browser-agent-rearch`), used for genericness refactor + gold test work
+
+**For genericness refactor / gold test work**: use the rearch worktree.
+**For Phase 4 stabilization / tracker runs**: use the original repo.
+
+Also load the `step9-infra-ops` skill for infrastructure operations (dev DB, MCP, fp proxy, session capture, health checkers).
+
+## Rearch Genericness Refactor (Aug 7, 2026)
+
+The rearch worktree has a completed genericness refactor:
+
+- **All deterministic heuristics disabled** in `FlowRuntimeLlmKeyClassifier`, `FlowRuntimeContextCarrierProfiles`, `FlowRuntimeChainEliminator`, `DependencyDiscovery`, `Phase9SolverHookGenerator`, `StoreAddressStoreIdResolver`
+- **KeyRole-based semantic roles** replace all hardcoded English field names. Store class uses `Map<KeyRole, List<SemanticFieldBinding>>` instead of `addressLine1`/`locationName`/`state` etc.
+- **`run(Map<String, String>)` API** replaces old `run(String zip, String latitude, String longitude)` overloads
+- **LLM-first store resolver** — `StoreAddressStoreIdResolver` redesigned to send chunked candidates to LLM instead of using deterministic address/ID shape heuristics
+- **3 under-rewrite carrier fixes**: scalar cookie admission (CONTEXT_LINKED only), case-insensitive cookie lookup, BODY invariant synthesis
+- **639 tests pass** across 6 test classes (BehaviorTest, ContractsTest, ResolverTest, ArtifactTranspilePlanRuntimePolicyTest, Phase9SolverHookGeneratorLockStepParityTest, ArtifactParityReplayTest)
+- **Oracle signed off** on all genericness fixes and carrier fixes
+
+### Non-negotiable coding standards (from deepwork file lines 1-45)
+- NO hardcoded English field names, cookie names, header names, URL patterns, or address formats in the generator framework
+- All semantics must come from `FlowRuntimeLlmKeyClassifier.KeyRole` enum
+- Generated flow files (Phase9Flow.java etc.) CAN have retailer-specific values — they're codegen output
+- Framework infrastructure files under `flow/` must be generic
+- Oracle must review and sign off on every commit
+
 ## First Moves
 
-Work from `/Users/eric/api.pearcommerce.com`.
+Work from `/Users/eric/api.pearcommerce.com-step9-rearch/` (rearch) or `/Users/eric/api.pearcommerce.com` (original).
 
 Before changing anything under `src/com/pear/codegen`, read:
 
@@ -16,7 +47,8 @@ sed -n '1,220p' src/com/pear/codegen/Step9SolverHarness.md
 sed -n '1,220p' src/com/pear/codegen/Step9PipelineContracts.md
 ```
 
-Also read `/Users/eric/.codex/skills/step9-phase4-stabilization/SKILL.md` when supervising long Step9 runs or updating the tracker.
+Also read the `step9-phase4-stabilization` skill when supervising long Step9 runs or updating the tracker.
+Also read the `step9-infra-ops` skill for infrastructure operations (dev DB, MCP, fp proxy, session capture).
 
 If prior runs/heartbeats exist, inspect them first. Do not accidentally resume a paused run.
 
@@ -189,7 +221,14 @@ Goblin codename: <short goblin name>. Use this codename in your final response.
 
 You are fixing a Step9 golden residential failure for <retailer>.
 
-Use /Users/eric/api.pearcommerce.com. Read Step9SolverHarness.md and Step9PipelineContracts.md before codegen changes.
+Use /Users/eric/api.pearcommerce.com-step9-rearch/ (rearch worktree). Read Step9SolverHarness.md and Step9PipelineContracts.md before codegen changes. Also read the `step9-infra-ops` skill for infrastructure details.
+
+CRITICAL GENERICNESS RULES (non-negotiable):
+- NO hardcoded English field names, cookie names, header names, URL patterns, or address formats in the generator framework
+- All semantics must come from KeyRole enum (ZIP_POSTAL, ADDRESS, LATITUDE, LONGITUDE, STATE_REGION, STORE_CONTEXT, STORE_ALIAS, NAME, etc.)
+- Generated flow files (Phase9Flow.java etc.) CAN have retailer-specific values — they're codegen output
+- Framework infrastructure files under flow/ must be generic
+- All deterministic heuristics are DISABLED — the LLM is the only source of semantic decisions
 
 Failure evidence:
 - harness/artifact timestamp: <ts>
