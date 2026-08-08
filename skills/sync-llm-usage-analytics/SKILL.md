@@ -10,7 +10,7 @@ Use the in-app Browser with the existing authenticated sessions. Do not substitu
 ## Daily workflow
 
 1. Set `target_date` to the previous completed UTC day unless the user specifies another date.
-2. Open OpenAI Admin Analytics (`https://admin.openai.com/analytics/leaderboards?tab=users`). Set the date range to that single day. Read/export each user's estimated USD cost, credits, and tokens. Normalize to:
+2. Open OpenAI Admin Analytics (`https://admin.openai.com/analytics/leaderboards?tab=users`). Set the date range to that single day, choose **Export data → JSON → User leaderboard**, and read each user's exact credits and tokens from the downloaded JSON. The browser export does not provide USD; set `costUsd:0` and never treat credits as dollars. Normalize to:
    ```json
    {"provider":"openai","date":"YYYY-MM-DD","totalCostUsd":0,"users":[{"name":"","email":"","costUsd":0,"credits":0,"tokens":0,"product":"codex","model":null}]}
    ```
@@ -21,7 +21,7 @@ Use the in-app Browser with the existing authenticated sessions. Do not substitu
 
 ## Upload
 
-The uploader reads the ingestion credential from macOS Keychain service `llm-usage-ingest-token`; never place it in prompts, source, logs, or committed files.
+The uploader reads the ingestion credential from macOS Keychain service `llm-usage-ingest-token`; never place it in prompts, source, logs, or committed files. If Pear's transient Cloudflare WAF returns its branded 403 page before the Worker runs, the uploader writes the same validated snapshot directly through the authenticated Wrangler KV binding.
 
 ```bash
 node scripts/upload-snapshot.mjs /absolute/path/openai.json
