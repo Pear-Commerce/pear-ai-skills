@@ -10,7 +10,7 @@ Use the in-app Browser with the existing authenticated sessions. Do not substitu
 ## Daily workflow
 
 1. Set `target_date` to the previous completed UTC day unless the user specifies another date.
-2. Open OpenAI Admin Analytics (`https://admin.openai.com/analytics/leaderboards?tab=users`). Set the date range to that single day, choose **Export data → JSON → User leaderboard**, and read each user's exact credits and tokens from the downloaded JSON. The browser export does not provide USD; set `costUsd:0` and never treat credits as dollars. Normalize to:
+2. Open OpenAI Admin Analytics (`https://admin.openai.com/analytics/leaderboards?tab=users`). Set the date range to that single day, choose **Export data → JSON → User leaderboard**, and read each user's exact credits and tokens from the downloaded JSON. The exported metered credits are cent-denominated spend: set each user's `costUsd` to `credits / 100` and set `totalCostUsd` to the sum of users. Included usage can legitimately have tokens with zero credits and zero spend. Normalize to:
    ```json
    {"provider":"openai","date":"YYYY-MM-DD","totalCostUsd":0,"users":[{"name":"","email":"","costUsd":0,"credits":0,"tokens":0,"product":"codex","model":null}]}
    ```
