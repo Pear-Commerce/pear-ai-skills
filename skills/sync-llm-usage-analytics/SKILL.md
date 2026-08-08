@@ -1,6 +1,6 @@
 ---
 name: sync-llm-usage-analytics
-description: Pull daily per-user OpenAI Codex and Anthropic Enterprise usage through authenticated browser analytics pages and upload normalized snapshots to llm-usage.intern.pearcommerce.com. Use for daily LLM cost syncs, browser-export backfills, missing OpenAI/Claude dashboard days, or requests to attribute OpenAI and Anthropic spend by teammate.
+description: Pull daily per-user OpenAI Codex usage through authenticated browser analytics and maintain the Anthropic Enterprise browser fallback for llm-usage.intern.pearcommerce.com. Use for daily LLM cost syncs, browser-export backfills, missing OpenAI/Claude dashboard days, or requests to attribute OpenAI and Anthropic spend by teammate. Anthropic is API-first when its Enterprise read:analytics key is configured.
 ---
 
 # Sync LLM Usage Analytics
@@ -14,7 +14,7 @@ Use the in-app Browser with the existing authenticated sessions. Do not substitu
    ```json
    {"provider":"openai","date":"YYYY-MM-DD","totalCostUsd":0,"users":[{"name":"","email":"","costUsd":0,"credits":0,"tokens":0,"product":"codex","model":null}]}
    ```
-3. Open Pear Commerce Claude Enterprise Analytics (`https://claude.ai/analytics/usage`). Set the same day. Include Chat, Claude Code, and Cowork. Prefer the export when available; otherwise read the visible member table and paginate. Normalize to the same shape with `provider:"anthropic"` and the visible product/model fields.
+3. Anthropic is API-first in the dashboard. Its Enterprise `user_cost_report` endpoint supports `bucket_width=1d` and product grouping across Chat, Claude Code, Cowork, and other surfaces. Until the Worker has an `ANTHROPIC_ANALYTICS_KEY` beginning with `sk-ant-api01-` and scope `read:analytics`, open Pear Commerce Claude Enterprise Analytics (`https://claude.ai/analytics/usage`) as the fallback. Set the same day, include Chat, Claude Code, and Cowork, and prefer the export when available. Normalize to the same shape with `provider:"anthropic"` and the visible product/model fields.
 4. Validate that every amount is numeric, the total approximately equals the sum of users, and the date is exact. Never infer missing user dollars from rank/order.
 5. Write each normalized object to a temporary JSON file, upload it with `scripts/upload-snapshot.mjs`, then delete the temporary file.
 6. Report provider totals, user counts, and any partial/missing export. A provider failure must not prevent uploading the other provider.
@@ -32,7 +32,7 @@ For backfills, repeat one UTC day at a time so uploads are idempotent and daily 
 
 ## Boundaries
 
-- OpenAI Business and Claude Enterprise browser analytics are the sources of truth for these snapshots.
+- OpenAI Business browser analytics is the source of truth for OpenAI snapshots. Claude Enterprise Analytics API is preferred for Anthropic; its authenticated browser analytics is the fallback until the Primary Owner provides the scoped key.
 - Fireworks and OpenRouter are API-backed directly by the dashboard and are not browser-scraped.
 - Do not create, rotate, expose, or request provider keys during a routine pull.
 - If authentication expires, leave the relevant page open and ask Eric to sign in; continue the other provider when possible.
