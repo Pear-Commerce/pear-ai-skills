@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync LLM Usage Analytics"
+  short_description: "Pull browser analytics into the LLM dashboard"
+  default_prompt: "Use $sync-llm-usage-analytics to pull yesterday’s OpenAI and Anthropic user spend into the LLM dashboard."
