@@ -27,7 +27,7 @@ Treat converting a draft PR to ready-for-review as a PR-readying operation, not 
 
 ## Agent Authorship Signature
 
-When an AI agent authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by the signature matching the agent doing the work: `- Claude` when you are Claude (Claude Code), `- Codex` when you are Codex.
+When an AI agent authored or materially edited a PR body, GitHub issue/PR comment, review-thread reply, Slack post, or commit message, end the written text with a blank line followed exactly by the signature matching the agent doing the work: `- Claude` when you are Claude (Claude Code), `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode).
 
 ```text
 - Claude
@@ -37,7 +37,11 @@ When an AI agent authored or materially edited a PR body, GitHub issue/PR commen
 - Codex
 ```
 
-Do not duplicate the signoff if it is already present. Treat the current `- Claude` and `- Codex` signoffs and the legacy `Thanks,\nCodex` signoff as existing agent authorship signatures when checking whether a PR/comment/reply is agent-authored or already signed. When adding a new signoff, always use the signature for your own identity; never sign as the other agent. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
+```text
+- OpenCode
+```
+
+Do not duplicate the signoff if it is already present. Treat the current `- Claude`, `- Codex`, and `- OpenCode` signoffs and the legacy `Thanks,\nCodex` signoff as existing agent authorship signatures when checking whether a PR/comment/reply is agent-authored or already signed. When adding a new signoff, always use the signature for your own identity; never sign as another agent. If the user explicitly supplies exact text to post unchanged, treat that as user-authored and do not add the signoff unless they ask.
 
 ## PR Body Context
 
@@ -160,7 +164,7 @@ PR is ready for review: [repo #PR](PR_URL)
 
 Could I get reviews when you have a minute?
 
-- <Claude or Codex, matching the agent posting>
+- <Claude, Codex, or OpenCode, matching the agent posting>
 ```
 
 If the PR is urgent, a hotfix, or already landed, say that plainly and include the deploy or merge status if known.
@@ -238,7 +242,7 @@ Interpret explicit requests like "handle comments as they come in", "keep fixing
 The recurring task should:
 
 - watch only explicitly named PRs, or open PRs related to the current thread that were authored or materially written by Codex
-- identify agent-authored (Claude or Codex) PRs by the PR body or agent-authored comments ending with the current `- Claude` or `- Codex` signature or the legacy `Thanks,\nCodex` signature
+- identify agent-authored (Claude, Codex, or OpenCode) PRs by the PR body or agent-authored comments ending with the current `- Claude`, `- Codex`, or `- OpenCode` signature or the legacy `Thanks,\nCodex` signature
 - inspect every GitHub feedback source on each pass: all review threads whether unresolved, resolved, or outdated; flat PR review comments; top-level issue/PR comments; requested-changes reviews; reviewdog/github-actions bot comments; Copilot feedback; check annotations when available; timeline review requests; approvals; mergeability; branch status; and required checks
 - do not treat Copilot as the only reviewer. Actionable comments from any author, including `github-actions`, `reviewdog`, humans, and Codex self-review comments, must be evaluated and either addressed or explicitly answered
 - when auto-fix is approved, make the smallest clean code change for every actionable comment that has not already been handled by a later Codex reply or code change, rebase the PR branch against the latest base branch, run focused checks, amend the existing branch commit, and force-push with lease
