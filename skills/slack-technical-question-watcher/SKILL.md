@@ -50,7 +50,7 @@ Before creating, readying, or updating a PR in a Pear repo:
 - load and follow `$pear-pr-review-flow`
 - use a sibling `codex/` worktree unless the current checkout is already task-owned for this exact PR/thread
 - complete the Pear engineering Pre-PR Cleanup Gate, including the PR-improvement guide, final diff cleanup, and focused verification or a clear statement that verification was blocked
-- create or update the PR with the agent authorship signature (`- Claude` for Claude, `- Codex` for Codex) when the agent authored the body
+- create or update the PR with the agent authorship signature (`- Claude` for Claude, `- Codex` for Codex, `- OpenCode` for OpenCode (Sisyphus / OhMyOpenCode)) when the agent authored the body
 - request individual engineering reviewers and GitHub Copilot through the PR review flow, verifying the Copilot request in the timeline when possible
 - create or update the PR-specific watch automation with the user's approved auto-fix/auto-land scope, or set it report-only if approval is absent
 - include the PR URL and reviewer/Copilot/watch status in the Slack thread reply or final user response
@@ -78,7 +78,7 @@ Out of scope: vague complaints without an investigable system/question, product 
 
 For each candidate message:
 - read the thread before doing any analysis
-- skip if Codex already posted a reply in the thread, including replies ending `- Claude`, `- Codex`, or legacy `Thanks,\nCodex`
+- skip if an agent already posted a reply in the thread, including replies ending `- Claude`, `- Codex`, `- OpenCode`, or legacy `Thanks,\nCodex`
 - skip if the thread already has a linked PR/fix flow or a run-specific automation for the same item
 - skip if a human has already provided a concrete answer/fix that appears sufficient
 - extract the channel id, parent timestamp, message permalink, short problem statement, named customer/vendor/retailer/system, URLs, IDs, UPCs, SKUs, account/vendor IDs, stack traces, and any explicitly requested output
@@ -102,7 +102,7 @@ Post at most one short thread reply per item only when you have a useful, eviden
 - include one concrete next step when a rerun/deploy/data refresh/owner decision is needed
 - tag a likely owner only when evidence strongly supports it
 - avoid secrets, credentials, private query outputs, or noisy implementation logs
-- end with your agent signoff: `- Claude` when you are Claude, `- Codex` when you are Codex
+- end with your agent signoff: `- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode)
 
 If confidence is low, tools are unavailable, the question is too ambiguous, or the investigation would require risky mutation, stay quiet in Slack unless a short clarification request would be clearly helpful. Prefer no reply over speculative noise.
 

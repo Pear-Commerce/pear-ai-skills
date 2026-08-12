@@ -65,7 +65,7 @@ Use this path when the user says "handle" and the Slack thread can be resolved b
 Only use this section for action-needed Slack replies. Every action-needed Slack reply must make the requested human action unmistakable:
 
 - Put `Reply: YES or NO` alone near the top of the message.
-- Repeat `Reply: YES or NO` near the bottom, just above your agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex).
+- Repeat `Reply: YES or NO` near the bottom, just above your agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode)).
 - Keep the message concise: at most three short read-only findings, one proposed action line, and one sentence explaining what happens after yes.
 - Do not bury the ask under analysis. The reader should know immediately that Codex is waiting for a YES/NO decision before doing anything.
 
@@ -138,7 +138,7 @@ Monitor prompt requirements:
 - Include the channel id, parent thread timestamp, Slack permalink, start boundary timestamp, and expiration timestamp.
 - Read the Slack thread each pass and process only new human replies after the start boundary.
 - Ignore Codex/ChatGPT/bot replies and skip questions already answered by a later human or Codex reply.
-- For answer-only follow-ups, post a concise evidence-based thread reply and end with your agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex).
+- For answer-only follow-ups, post a concise evidence-based thread reply and end with your agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode)).
 - For requested side effects such as code/data changes, PRs, JSPs, reruns, Notion edits, or external writes, use this skill's YES/NO approval gate before acting unless exact scoped approval is already present.
 - Prefer read-only sources. Do not mutate code, data, PRs, Notion, or external systems unless an approved action path requires it.
 - When no new unhandled follow-up is present, return a quiet heartbeat status only.

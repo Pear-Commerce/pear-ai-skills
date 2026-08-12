@@ -94,7 +94,7 @@ Produce one of three outcomes:
 - plausible explanation and confidence (`medium` or `high`)
 - evidence from Datadog/logs.sh/GitHub in terse bullets
 - why no PR is being proposed, if relevant
-- the agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex)
+- the agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode))
 
 **Action-needed YES/NO Slack reply:** only if confidence is very high that a specific code/config/JSP/operational action caused or can fix the alert and a surgical scoped action is clear. Use `$handle-in-slack` and, when JSP or production-like operations are involved, `$slack-prod-jsp-approval`. Post one concise thread reply with:
 - `Automatic reply triggered by $tech-errors-watcher.`
@@ -103,7 +103,7 @@ Produce one of three outcomes:
 - direct evidence tying the alert to the change
 - simplest surgical fix
 - YES/NO approval ask with exact scope and execution path
-- the agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex)
+- the agent signoff (`- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode))
 
 Approval UX: follow `$handle-in-slack`. If Slack reactions/buttons are available, use them. If not, ask humans to reply `yes` or `no`. Treat clear yes from any human (`yes`, `y`, `fix it`, `go`, `please fix`, `do it`, or equivalent) as approval for only the scoped action named in the prompt. Treat clear no/stop as a decline.
 

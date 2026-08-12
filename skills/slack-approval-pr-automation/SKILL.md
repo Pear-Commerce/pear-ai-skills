@@ -44,7 +44,7 @@ Before creating automations, collect or infer:
 - What counts as duplicate work: existing Codex triage, linked PR, run-specific automation, issue, branch slug, or thread marker.
 - Approval phrases for yes and no/stop.
 - Whether approval grants auto-fix, auto-land, auto-merge, reviewer replies, or only PR creation.
-- Slack message budget and signoff. Use your agent signoff for new posts: `- Claude` when you are Claude, `- Codex` when you are Codex.
+- Slack message budget and signoff. Use your agent signoff for new posts: `- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode).
 - Daily repair schedule and target thread for the sentinel.
 
 If the request is under-specified, make conservative defaults and include them in the created prompt.
@@ -73,16 +73,16 @@ Do not post separate implementation logs, local check summaries, watcher-created
 If the available Slack tool cannot add reactions, use terse replies such as:
 
 ```text
-:hourglass_flowing_sand: Approved; starting fix. - <Claude or Codex, matching the agent posting>
+:hourglass_flowing_sand: Approved; starting fix. - <Claude, Codex, or OpenCode, matching the agent posting>
 ```
 
-End agent-authored Slack posts, GitHub replies, PR bodies, and commit messages with your agent signoff — `- Claude` when you are Claude, `- Codex` when you are Codex:
+End agent-authored Slack posts, GitHub replies, PR bodies, and commit messages with your agent signoff — `- Claude` when you are Claude, `- Codex` when you are Codex, `- OpenCode` when you are OpenCode (Sisyphus / OhMyOpenCode):
 
 ```text
-- <Claude or Codex, matching the agent posting>
+- <Claude, Codex, or OpenCode, matching the agent posting>
 ```
 
-When detecting agent-authored prior work, treat `- Claude`, `- Codex`, and legacy `Thanks,\nCodex` as agent signatures.
+When detecting agent-authored prior work, treat `- Claude`, `- Codex`, `- OpenCode`, and legacy `Thanks,\nCodex` as agent signatures.
 
 ## Sentinel Prompt Template
 
@@ -180,6 +180,6 @@ Before finishing a new watcher setup, confirm:
 - repair cron exists, is active, and uses a low model/reasoning setting when supported
 - deep worker prompt exists somewhere the sentinel can reference
 - PR watcher instructions capture approval scope and shutdown behavior
-- Slack output budget and the agent signoff (`- Claude` or `- Codex`) are present
-- duplicate detection accepts legacy `Thanks,\nCodex` and current `- Claude`/`- Codex`
+- Slack output budget and the agent signoff (`- Claude`, `- Codex`, or `- OpenCode`) are present
+- duplicate detection accepts legacy `Thanks,\nCodex` and current `- Claude`/`- Codex`/`- OpenCode`
 - no unrelated files or user-authored branches were touched
