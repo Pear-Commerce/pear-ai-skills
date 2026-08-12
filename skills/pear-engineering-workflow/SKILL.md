@@ -1,6 +1,6 @@
 ---
 name: pear-engineering-workflow
-description: Pear engineering workflow for editing, reviewing, debugging, implementing, syncing deploy branches, or deploying in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, DevRev ticket links, worktrees, db.sh real-data checks, production JSP probes for live JVM/service/controller checks, dev-DB startup, PearEntity serialization, deploy commands, and browser E2E verification.
+description: Pear engineering workflow for editing, reviewing, debugging, implementing, syncing deploy branches, or deploying in api.pearcommerce.com, admin.pearcommerce.com, offers.pearcommerce.com, and related Pear repos. Covers PR cleanup rules, DevRev ticket links, worktrees, VictoriaLogs investigations through pear-log-search, db.sh real-data checks, production JSP probes, dev-DB startup, PearEntity serialization, deploy commands, and browser E2E verification.
 ---
 
 # Pear Engineering Workflow
@@ -17,7 +17,7 @@ Pear repos rely on Alex's interactive shell setup for common tools such as `gh`,
 
 Avoid switching to non-login Bash, especially `shell=/bin/bash` with `login=false`, for deploys, GitHub CLI work, Node-backed scripts, `devops/*` helpers, dry runs that call repo scripts, or checks that shell out to Pear tooling. If Bash is genuinely needed, first seed `PATH` from a known-good login `zsh` or explicitly include the active `nvm` Node bin directory, then verify with `command -v gh npx node npm` before running the real command. If a Pear command fails with `gh`, `node`, `npm`, `npx`, or `zx` missing, treat it as a shell-environment issue before debugging repo behavior.
 
-For CloudWatch, RDS, or other AWS-backed investigations, also check the login shell before deciding tools are missing: `zsh -lc 'command -v aws python3 pip3'`. Prefer Pear repo helpers such as `devops/logs.sh`, `db.sh`, and `pear-prod-jsp` when they answer the question. If direct AWS API access is genuinely needed and `aws`/`boto3` is unavailable, keep any temporary Python dependency install in a temp venv/path outside the repo, avoid changing repo dependency files, and describe that as a local tooling workaround rather than a production or application finding.
+For CloudWatch, RDS, or other AWS-backed investigations, also check the login shell before deciding tools are missing: `zsh -lc 'command -v aws python3 pip3'`. Use `$pear-log-search` for saved or cross-environment application logs, `db.sh` for data, and `pear-prod-jsp` for live JVM state. Reserve `devops/logs.sh` for immediate single-instance tailing. If direct AWS API access is genuinely needed and `aws`/`boto3` is unavailable, keep any temporary Python dependency install in a temp venv/path outside the repo, avoid changing repo dependency files, and describe that as a local tooling workaround rather than a production or application finding.
 
 ## AppConfig Changes And Publishing
 
@@ -228,7 +228,7 @@ When data would clarify behavior, edge cases, IDs, ownership, or UI state, query
 
 Kill orphaned long-running reads. A `db.sh` session, JSP read, local test, or `bootRun` query that is Ctrl-C'd, disconnected, or abandoned client-side can leave the server-side read transaction running. Long-running InnoDB read transactions hold undo history, and on shared dev/analytics databases that lets undo length (history list length) spiral out of control for everyone. When discovery or implementation work runs queries that may go long, verify your sessions actually terminated; before finishing, check `SHOW FULL PROCESSLIST` (or `information_schema.PROCESSLIST`) for long-running reads you started and `KILL` those query IDs rather than leaving them orphaned.
 
-For live server logs, use `devops/logs.sh -e <env>`. For UPC resolution, `devops/logs.sh -e upc-resolution --single` streams one server instead of threading all UPC-resolution instances together.
+For searchable server logs, load and use `$pear-log-search`. VictoriaLogs/Grafana is the default for historical, cross-environment, field/facet, Jurl, and incident searches; do not use the Scalyr API. Use `devops/logs.sh -e <env>` only when an immediate live tail from one instance is specifically useful. For UPC resolution live tails, `devops/logs.sh -e upc-resolution --single` avoids threading all instances together.
 
 ## Live Java Instance Probes
 

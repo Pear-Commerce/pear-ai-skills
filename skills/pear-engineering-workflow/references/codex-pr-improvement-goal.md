@@ -220,7 +220,7 @@ For availability updaters, batch updaters, retailer-list, URZA loaders, Pulse, a
 - Do not move response-usability validation out of `goThen` to appease a checker; suppress the checker when validation belongs to the retry/cache boundary.
 - Use `throwOnNon200(true)` when non-200 means fetch failure.
 - Return `Optional.empty()`/sentinel only for cacheable no-data, not transient fetch failure.
-- Throw `JurlException` when request/response details help Sentry/Scalyr/Datadog debugging.
+- Throw `JurlException` when request/response details help Sentry/VictoriaLogs/Datadog debugging. Use `$pear-log-search` for the VictoriaLogs investigation path.
 - Prefer structured API/ld+json/schema.org over CSS selectors when available.
 - Put `@JsonIgnoreProperties(ignoreUnknown = true)` on external DTOs for future upstream fields.
 - For Pear API responses backed by `PearEntity`, never add client-visible values as `transient` fields. Real PearEntity/SimpleORM serialization emits only `id` and `@SimpleORMField` fields; `transient` fields, plain computed public fields, and `@JsonProperty` decorations can vanish from the actual endpoint JSON even when local `ObjectMapper` tests pass. Use an explicit response DTO or mapper for computed/hydrated response data, and only add `@SimpleORMField` for intentional stored schema.
@@ -275,14 +275,14 @@ If absent, prefer query improvement, batching, dedupe, or reusing fetched result
 
 ### Logging, Metrics, Errors
 
-- Log exception objects, not only messages, so stack traces reach Sentry/Scalyr.
+- Log exception objects, not only messages, so stack traces reach Sentry and VictoriaLogs.
 - Expected invalid-data conditions should be domain results, not tracked exceptions.
 - Add metrics/tags where context exists: updater class, retailerId, storeId, UPC, status, job phase, cache-hit/live, proxy type.
 - Avoid log spam. Suppressed/skipped exceptions should be omitted or classified consistently.
 - Include enough context to debug production without leaking secrets.
 - Avoid `Try.getOrNull()` for unexpected failures; use `onFailure(logger::error)` before null/empty conversion, or explicit catch if swallowing is intended.
 - Prefer specific catches over broad `catch (Exception)`, especially where interruption matters.
-- If errors are absent from Sentry/Scalyr/Datadog/DLQs, treat missing observability as a bug.
+- If errors are absent from Sentry/VictoriaLogs/Datadog/DLQs, treat missing observability as a bug and use `$pear-log-search` to verify the VictoriaLogs path.
 - In incidents, ask what needs replaying and where failure should have surfaced: metrics, step completion, DLQs, dashboards, job logs.
 - Do not mistake downstream saturation for root cause; correlate deploys, traffic, dependency behavior, locks, and pool metrics.
 

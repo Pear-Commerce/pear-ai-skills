@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pear Log Search"
+  short_description: "Search Pear logs with VictoriaLogs"
+  default_prompt: "Use $pear-log-search to investigate recent Pear logs with VictoriaLogs."
