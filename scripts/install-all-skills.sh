@@ -407,6 +407,7 @@ main() {
 
   step "3. Next steps"
   info "Start a fresh chat in the assistant you use."
+  info "OpenCode discovers newly synced skills in a fresh session."
   info "Claude Desktop may need a restart before it sees newly synced skills."
   info "You can safely rerun this installer whenever Pear skills change."
   say ""

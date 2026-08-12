@@ -226,6 +226,8 @@ When updating an existing PR branch with latest `master`, `main`, or another PR 
 
 When data would clarify behavior, edge cases, IDs, ownership, or UI state, query `db.sh` instead of guessing. Prefer the safest relevant env, usually `db.sh -e test`; use production only when requested or clearly required. Default to read-only queries and summarize facts instead of dumping broad output.
 
+Kill orphaned long-running reads. A `db.sh` session, JSP read, local test, or `bootRun` query that is Ctrl-C'd, disconnected, or abandoned client-side can leave the server-side read transaction running. Long-running InnoDB read transactions hold undo history, and on shared dev/analytics databases that lets undo length (history list length) spiral out of control for everyone. When discovery or implementation work runs queries that may go long, verify your sessions actually terminated; before finishing, check `SHOW FULL PROCESSLIST` (or `information_schema.PROCESSLIST`) for long-running reads you started and `KILL` those query IDs rather than leaving them orphaned.
+
 For live server logs, use `devops/logs.sh -e <env>`. For UPC resolution, `devops/logs.sh -e upc-resolution --single` streams one server instead of threading all UPC-resolution instances together.
 
 ## Live Java Instance Probes
