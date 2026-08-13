@@ -28,7 +28,7 @@ Do not print secret values. It is okay to print secret key names or identity met
 - `devops/logs.sh -e PROD|TEST|dashboard|jobs|upc-resolution|availabilities`: live logs. It uses Fargate/Copilot for whitelisted Fargate envs, AppRunner for that special case, otherwise EB EC2 over SSM.
 - `devops/ec2-exec.sh -e ENV script.sh`: upload and run a script on EB instances through SSM. Add `--single` when only one instance should run it.
 - `devops/ec2-shell.sh` / `devops/shell.sh`: interactive shell wrappers over SSM. Use a TTY.
-- `devops/db.sh`: DB helper. Defaults to the DB/bastion path when no env is given; `--analytics` or `--dev` connects to analytics/dev. It fetches `prod-db-10-2025` from Secrets Manager.
+- `devops/db.sh`: DB helper. Defaults to the DB/bastion path when no env is given; `--analytics` or `--dev` connects to analytics/dev. It fetches `prod-db-10-2025` from Secrets Manager. Takes SQL directly, but the SSM/eval chain strips shell quotes — write string literals as MySQL hex (`0x...`, see `$pear-engineering-workflow` Real Data).
 - `devops/jsp.sh`: one-off live JSP workflow. Also load `$pear-prod-jsp` for JSP tasks because that skill has the detailed safety pattern.
 - `devops/fg-exec.sh`, `devops/fg-jsp.sh`, `devops/fg-logs.mjs`, `devops/fg-shell.sh`: Fargate/Copilot paths.
 - `devops/env.mjs` and `devops/environments.json`: source of truth for env aliases, EB CNAMEs, Copilot env names, Datadog services, and domains.

@@ -55,6 +55,8 @@ Common patterns:
 - `devops/db.sh -e PROD "<SQL>"`
 - `devops/db.sh -e test --read "<SQL>"`
 
+Quoting: `db.sh` joins args with `$*` and the SSM/eval chain strips shell quotes, so `'...'` / `"..."` string literals in SQL break with `ERROR 1064 near '%...%'`. Use MySQL hex literals for string constants instead, e.g. `retailerNameEnum LIKE 0x25686f707269746525` for `LIKE '%hoprite%'` (`echo -n '%hoprite%' | xxd -p`, prefix `0x`). Same rule as `$pear-engineering-workflow` Real Data.
+
 Good tables and joins for this skill:
 
 - `UPCRetailerZipAvailability`

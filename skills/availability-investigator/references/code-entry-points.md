@@ -22,7 +22,7 @@ If those exact paths are not present, inspect equivalent checked-out copies firs
 
 Operational helpers in `api.pearcommerce.com`:
 
-- `devops/db.sh`
+- `devops/db.sh` (SQL string literals as MySQL hex `0x...` — SSM strips shell quotes; see `$pear-engineering-workflow` Real Data)
 - `devops/logs.sh`
 - `devops/jsp.sh`
 - `devops/jspx`
