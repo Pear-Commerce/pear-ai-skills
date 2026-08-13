@@ -37,5 +37,5 @@ Use Slack search for nuance and recency, especially before answering legal/secur
 
 - Search `"RFP" "Pear"` to find RFP discussions, old GPT references, customer-specific RFP context, and RFP-related files.
 - Search `"security questionnaire" "Pear"` for security questionnaire precedents. Creation research found a Blue Buffalo/TikTok data-flow answer and a McCormick SIG completion note.
-- Search `subprocessor Pear data AWS Datadog Sentry Snowflake` before answering subprocessors. Creation research found a 2025-11-07 #partners-internal discussion: scope matters; if pseudonymous click data is in scope, the normal list discussed internally included AWS/CloudWatch, Datadog, Sentry, Scalyr, and Snowflake. Verify before sending.
+- Search `subprocessor Pear data AWS Datadog Sentry Snowflake` before answering subprocessors. Creation research found a 2025-11-07 #partners-internal discussion: scope matters; if pseudonymous click data is in scope, the normal list discussed internally included AWS/CloudWatch, Datadog, Sentry, and Snowflake. (Scalyr was also listed historically but has since been canceled; VictoriaLogs is self-hosted and not a subprocessor.) Verify before sending.
 - If Slack file reads are unavailable because the connector lacks scope, use the search result as a breadcrumb and search Drive for the same title.

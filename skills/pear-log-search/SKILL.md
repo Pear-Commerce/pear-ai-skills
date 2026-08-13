@@ -1,6 +1,6 @@
 ---
 name: pear-log-search
-description: Search and investigate Pear application logs in the self-hosted VictoriaLogs/Grafana system. Use for production or test log searches, cross-environment incidents, request/Jurl debugging, error counts, field discovery, log-volume checks, oversized response-body retrieval, or whenever Pear code/workflows previously referenced Scalyr. Prefer this over the Scalyr API; use devops/logs.sh only for immediate single-instance tailing.
+description: Search and investigate Pear application logs in the self-hosted VictoriaLogs/Grafana system. Use for production or test log searches, cross-environment incidents, request/Jurl debugging, error counts, field discovery, log-volume checks, oversized response-body retrieval, or whenever Pear code/workflows previously referenced Scalyr (now canceled — VictoriaLogs is the replacement). Use devops/logs.sh only for immediate single-instance tailing.
 ---
 
 # Pear Log Search
@@ -12,7 +12,7 @@ Use VictoriaLogs as Pear's primary searchable log store. The human UI is [logs.i
 - Use Grafana Explore when the user wants to see or interact with results. Set the time range in Grafana; do not put `_time` in AI prompts.
 - Use `scripts/query-victorialogs.sh` for read-only agent searches, exact evidence, counts, field discovery, or automation. It resolves the current `victorialogs-intern` EC2 instance and queries VictoriaLogs locally through SSM.
 - Use `api.pearcommerce.com/devops/logs.sh -e <env>` only for an immediate live tail from one instance, such as watching startup or a reproduction. It is not the default for historical or fleet-wide searches.
-- Do not use the Scalyr API for new investigations.
+- Scalyr has been canceled and is no longer available. VictoriaLogs is the sole log search system. For agent-accessible queries from a terminal, use `$fetch-pear-logs` (session-cookie CLI) or the `scripts/query-victorialogs.sh` helper below (SSM-based).
 
 ## Query Safely
 

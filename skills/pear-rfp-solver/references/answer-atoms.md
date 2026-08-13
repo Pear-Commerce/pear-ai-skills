@@ -28,7 +28,7 @@ Use these as starting points, not final copy. Confirm customer scope, dates, and
 - Always define the scoped data first. Pear often does not process regulated/confidential scoped data or direct identifiers in standard experiences, but pseudonymous click/session data can still be in scope depending on the customer wording.
 - Do not say "no subprocessors" without checking the question's data scope. Creation research found internal guidance that the answer changes if pseudonymous data is included.
 - Common processor categories to verify: cloud hosting and logs/observability, code/security tooling, IP-to-geo, maps/geocoding, retailers and affiliate networks, customer-provided ad/analytics pixels, and data warehouse/reporting tools.
-- Names seen in source or Slack research include AWS/CloudWatch, Datadog, Sentry, Scalyr, Snowflake, GitHub, MaxMind, Stadia Maps, Walmart, Target, Impact, Meta, TTD, LiveRamp, and Google. Verify the active list and country/processing details before sending a customer-facing table.
+- Names seen in source or Slack research include AWS/CloudWatch, Datadog, Sentry, Snowflake, GitHub, MaxMind, Stadia Maps, Walmart, Target, Impact, Meta, TTD, LiveRamp, and Google. Scalyr was previously used for log search but has been canceled; VictoriaLogs (self-hosted) is the current log store. Verify the active list and country/processing details before sending a customer-facing table.
 
 ## Security Controls
 
