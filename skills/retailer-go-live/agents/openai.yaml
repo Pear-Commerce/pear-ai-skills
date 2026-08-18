@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retailer Go-Live"
+  short_description: "Launch landed Pear retailer integrations in sandbox"
+  default_prompt: "Use $retailer-go-live to launch retailer X in the sandbox by importing store zones and validating availability end-to-end."
