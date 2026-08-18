@@ -1,6 +1,6 @@
 ---
 name: pear-aws
-description: Pear-specific AWS infrastructure, tooling, credentials, SSM, OAuth, AppConfig, Elastic Beanstalk, Fargate/Copilot, S3/CloudFront, Secrets Manager, and AWS CLI guidance. Use when Codex needs to inspect, debug, deploy, or explain anything in Pear AWS; run AWS CLI commands; check production/test logs or health; use SSM Session Manager; fetch AWS Secrets Manager credentials; work with AppConfig; investigate AWS cost/CloudTrail; or modify Pear AWS-backed tooling.
+description: Pear-specific AWS infrastructure, tooling, credentials, SSM, OAuth, AppConfig, Elastic Beanstalk, S3/CloudFront, Secrets Manager, and AWS CLI guidance. Use when Codex needs to inspect, debug, deploy, or explain anything in Pear AWS; run AWS CLI commands; check production/test logs or health; use SSM Session Manager; fetch AWS Secrets Manager credentials; work with AppConfig; investigate AWS cost/CloudTrail; or modify Pear AWS-backed tooling.
 ---
 
 # Pear AWS
@@ -25,12 +25,11 @@ Do not print secret values. It is okay to print secret key names or identity met
 
 ## Tooling Map
 
-- `devops/logs.sh -e PROD|TEST|dashboard|jobs|upc-resolution|availabilities`: live logs. It uses Fargate/Copilot for whitelisted Fargate envs, AppRunner for that special case, otherwise EB EC2 over SSM.
+- `devops/logs.sh -e PROD|TEST|dashboard|jobs|upc-resolution|availabilities`: live logs. Uses AppRunner for the availabilities env, otherwise EB EC2 over SSM.
 - `devops/ec2-exec.sh -e ENV script.sh`: upload and run a script on EB instances through SSM. Add `--single` when only one instance should run it.
 - `devops/ec2-shell.sh` / `devops/shell.sh`: interactive shell wrappers over SSM. Use a TTY.
 - `devops/db.sh`: DB helper. Defaults to the DB/bastion path when no env is given; `--analytics` or `--dev` connects to analytics/dev. It fetches `prod-db-10-2025` from Secrets Manager. Takes SQL directly, but the SSM/eval chain strips shell quotes — write string literals as MySQL hex (`0x...`, see `$pear-engineering-workflow` Real Data).
 - `devops/jsp.sh`: one-off live JSP workflow. Also load `$pear-prod-jsp` for JSP tasks because that skill has the detailed safety pattern.
-- `devops/fg-exec.sh`, `devops/fg-jsp.sh`, `devops/fg-logs.mjs`, `devops/fg-shell.sh`: Fargate/Copilot paths.
 - `devops/env.mjs` and `devops/environments.json`: source of truth for env aliases, EB CNAMEs, Copilot env names, Datadog services, and domains.
 
 If the Copilot CLI is not installed, do not stall. Use EB, EC2, SSM, CloudWatch Logs, or `aws elasticbeanstalk` APIs directly for read-only diagnosis, and mention that Copilot-specific actions need the CLI.
@@ -160,7 +159,6 @@ Pear uses S3 for dev/test data, archived JSPs, static assets, EB Dockerrun bundl
 
 - CI downloads `s3://github-data-files/dev-data.sql`.
 - `devops/jsp.sh` archives source under `s3://assets.pearcommerce.com/jsp-log/`.
-- Fargate helper scripts use `s3://assets.pearcommerce.com/fg-exec/`.
 - EB build uploads Dockerrun bundles before `create-application-version`.
 
 Do not repair or deploy `offers.pearcommerce.com` production or staging static assets by manually pushing local workstation files to S3/R2/CloudFront/Cloudflare. Do not use `aws s3 cp`, `aws s3 sync`, `s3api put-object`, R2 writes, or direct Cloudflare uploads for Offers production/staging emergency fixes. Fix source, PR, CI, or the intended deployment path instead. Narrow data/report uploads and JSP/tool artifacts are okay when scoped and approved.

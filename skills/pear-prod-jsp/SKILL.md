@@ -43,12 +43,11 @@ Before inventing a pattern, inspect current examples:
 
 ```bash
 sed -n '1,240p' devops/jsp.sh
-sed -n '1,180p' devops/fg-jsp.sh
 sed -n '1,180p' devops/jspx
 sed -n '1,180p' WebContent/invalidate-urzas.jsp
 sed -n '1,120p' WebContent/pull-new-prod-retailers.jsp
 rg --files WebContent | rg '\.jsp$'
-git log --date=short --pretty=format:'%h %ad %an %s' -- devops/jsp.sh devops/fg-jsp.sh devops/jspx
+git log --date=short --pretty=format:'%h %ad %an %s' -- devops/jsp.sh devops/jspx
 ```
 
 Inspect archived one-off JSPs when local examples are not enough:
@@ -69,7 +68,6 @@ Useful patterns seen in history:
 - `devops/jsp.sh` gives each run a timestamp/user/random nonce name, uploads source to `s3://assets.pearcommerce.com/jsp-log/`, copies it into the live container, and curls it with `pear_debug=true`.
 - Older archived scripts sometimes used `--single` for side effects. With the current button-approval workflow, deploy the no-param preview without `--single`; reserve `--single` for legacy helper-curl execution or per-instance diagnostics.
 - `jsp.sh -j some.jsp?x=y` strips the query string; do not rely on arbitrary query params with `jsp.sh`. Use hard-coded constants, put real work behind the preview page's `Run` button, or use an existing repo JSP with `jspx` only after confirming that path still works for the target environment.
-- For Fargate/FG environments, read the current `jsp.sh` and `fg-jsp.sh` branch before side effects. Delegation and `--task` handling may differ from EC2.
 
 ## Formal Output Exception
 
