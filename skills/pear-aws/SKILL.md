@@ -7,17 +7,19 @@ description: Pear-specific AWS infrastructure, tooling, credentials, SSM, OAuth,
 
 ## Start Here
 
-Prefer Pear's repo helpers over raw AWS commands when they exist. From `/Users/alexwyler/api.pearcommerce.com`, inspect the current helper before using it because these scripts evolve:
+Prefer Pear's repo helpers over raw AWS commands when they exist. From the api.pearcommerce.com repo root, every agent-facing helper is self-describing via `-h`/`--help` (prints usage and exits 0 before any AWS calls; unknown flags are rejected with usage):
 
 ```bash
 PATH=/opt/homebrew/bin:/usr/local/bin:$PATH command -v aws jq session-manager-plugin copilot || true
 PATH=/opt/homebrew/bin:/usr/local/bin:$PATH aws sts get-caller-identity --output json
-sed -n '1,220p' devops/logs.sh
-sed -n '1,260p' devops/ec2-exec.sh
-sed -n '1,280p' devops/db.sh
-sed -n '1,220p' devops/jsp.sh
+devops/logs.sh --help
+devops/ec2-exec.sh --help
+devops/db.sh --help
+devops/jsp.sh --help
 ./devops/env.mjs CNAME PROD
 ```
+
+Exception: in `db.sh` and `dump-db.sh`, `-h` is the database-host flag (kept for backwards compatibility) — use `--help` there. Read script source only when you need internals beyond the documented flags.
 
 Use `PATH=/opt/homebrew/bin:/usr/local/bin:$PATH` when `aws` or `session-manager-plugin` is not found from Codex. Homebrew installs the AWS CLI and Session Manager plugin there on Alex's machine.
 
