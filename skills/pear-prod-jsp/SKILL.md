@@ -65,7 +65,7 @@ aws s3 cp s3://assets.pearcommerce.com/jsp-log/<key>.jsp -
 
 Useful patterns seen in history:
 
-- `devops/jsp.sh` uses AWS KMS to generate a one-hour HMAC capability embedded in the temporary JSP filename, uploads the source to `s3://assets.pearcommerce.com/jsp-log/`, copies it into the live container, and curls the same signed path used by the printed browser URL. Unknown JSPs without a valid unexpired capability are rejected even over localhost; retained repo JSPs keep their explicit public/internal/employee policy.
+- `devops/jsp.sh` uses AWS KMS to generate a one-hour HMAC capability embedded in the temporary JSP filename, uploads the source to `s3://assets.pearcommerce.com/jsp-log/`, copies it into the live container, and curls the same signed path used by the printed browser URL. `devops/jspx` uses the same capability helper for its renamed compatibility copies. Unknown JSPs without a valid unexpired capability are rejected even over localhost; retained repo JSPs keep their explicit public/internal/employee policy.
 - The printed URL is a one-hour bearer capability. Do not paste it into Slack, tickets, logs, or other durable/shared locations. Open it directly in the browser, and rerun `jsp.sh` when it expires rather than trying to edit or reuse the filename.
 - Never add `pear_debug` to a `jsp.sh` URL or helper curl. It triggers the RequestFilter employee diagnostic gate and is unrelated to the signed JSP access mechanism.
 - Older archived scripts sometimes used `--single` for side effects. With the current button-approval workflow, deploy the no-param preview without `--single`; reserve `--single` for legacy helper-curl execution or per-instance diagnostics.
