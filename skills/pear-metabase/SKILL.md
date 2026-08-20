@@ -100,6 +100,7 @@ chasing missing transcripts.
 | `PEAR_DB.HUBSPOT.HUBSPOT__COMPANIES_UNNESTED` | `HUBSPOT_ID`, `COMPANY_NAME`, `COMPANY_INDUSTRY`, `PEAR_VENDOR_ID`, `ACTIVE_INACTIVE_STATUS`. No employee count — get that from the HubSpot API. |
 | `PEAR_DB.HUBSPOT.HUBSPOT__DEALS_COMPANY_ID_UNNESTED` | Use `SINGLE_COMPANY_ID` to join. `DEAL_COMPANY_ID` is an ARRAY and joining on it throws `Can not convert parameter of type VARCHAR into expected type ARRAY`. |
 | `PEAR_DB.HUBSPOT.HUBSPOT__DEALS_SUBSCRIPTION_PIPELINE` | Subscription Revenue pipeline, `PIPELINE_ID = 28268628`. |
+| `PEAR_DB.RAW_DATA_HUBSPOT.ENGAGEMENTS_EMAILS` | ~540k rows, full email subject and body. The only source of email *content* — Gong's `EMAILS` is metadata only. See [pear-gong-warehouse](../pear-gong-warehouse/SKILL.md) for the direction enum, the `COMPANIES` ARRAY trap, and stripping quoted history. |
 | `PEAR_DB.HUBSPOT.HUBSPOT__CONTACTS` | Has `CONTACT_BUYING_ROLE` and `COMPANY_SIZE`, both sparsely populated. No job title — pull `jobtitle` from the HubSpot API. |
 
 **Customer definition.** A customer is a company with a closed-won deal on pipeline `28268628`. An ex-customer is the same with `ACTIVE_INACTIVE_STATUS <> 'Active'`. Lifecycle stage is **not** reliable for this, and `ACTIVE_INACTIVE_STATUS` alone is not either — it is populated on companies that never bought.
