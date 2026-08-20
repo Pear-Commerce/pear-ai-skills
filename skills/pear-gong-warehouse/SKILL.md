@@ -275,6 +275,34 @@ Win rate by transcribed call count, same window:
 | 4-6 | 38 | 23 | 60.5% |
 | 7+ | 4 | 4 | 100% |
 
+**Caveat: the table above counts only `opportunity`-linked calls, which
+undercounts.** Reps associate calls inconsistently. On the same 499-deal
+window, 327 deals have a transcribed call via the `opportunity` link but 379
+have one via the `account` link (company id), and 384 via either — the account
+path is the *more* complete of the two. 57 deals look call-free through
+`opportunity` alone and are not; only **115** genuinely have no calls.
+
+Resolve calls to a deal through **both** paths, deduped:
+
+```sql
+-- opportunity link: conversation_contexts.object_id = deal_id
+-- account link:     conversation_contexts.object_id = single_company_id
+--                   (from HUBSPOT__DEALS_COMPANY_ID_UNNESTED; DEAL_COMPANY_ID
+--                    is an ARRAY and throws on a varchar compare)
+```
+
+**Date-bound the account path.** Account-linked calls include every
+conversation with that company — earlier cycles, later renewals, post-sale CS
+calls — so an unbounded account join over-counts as badly as the opportunity
+join under-counts. Restrict to the deal's own open window.
+
+Because call count is measured with error, treat the gradient as attenuated
+(the true effect of meeting count is probably larger) and be alert to a
+confound: if linkage discipline correlates with rep quality, part of what the
+gradient measures is CRM hygiene rather than selling. Worth testing per-rep
+linkage rate against per-rep win rate before using call count as a baseline to
+beat.
+
 **Call count alone spans 5.6% to 60.5%.** Any qualification, coverage, or
 close-probability score built on this data must be shown to beat call count
 before it means anything — it is a far stronger baseline than deal stage and a
