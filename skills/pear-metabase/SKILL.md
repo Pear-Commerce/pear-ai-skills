@@ -72,23 +72,27 @@ Duration analysis needs the change log, not `IS_CURRENT`. Point-in-time counts u
 Joining `UPC` and `UPCRETAILERDATA` in one aggregate fans out and inflates counts — count UPCs and retailer rows in separate queries.
 
 ### Gong
-Use **`GONG.GONG_DATA_CLOUD.*`**, not `PEAR_DB.RAW_DATA_GONG.*`. Two of the latter's views (`CONVERSATION_PARTICIPANTS`, `USERS`) declare fewer columns than the upstream share returns and fail to compile on any select.
+**Read [pear-gong-warehouse](../pear-gong-warehouse/SKILL.md) before writing any
+Gong query.** The tables carry traps that cost about seven minutes and four
+504s to rediscover: `CALL_TRANSCRIPTS` times out on a bare
+`conversation_key` predicate unless paired with an `ETL_MODIFIED_DATETIME`
+bound, the flatten cannot sit left of a `LEFT JOIN`, and
+`CONVERSATION_PARTICIPANTS` has no `TITLE` column while its `SPEAKER_ID` is a
+`NUMBER` rather than text. That skill has the working queries and measured
+timings.
 
-`CALL_TRANSCRIPTS.TRANSCRIPT` is a VARIANT array of monologues — `[{speakerId, topic, sentences:[{start,end,text}]}]`. Flatten and join `speakerId` to `CONVERSATION_PARTICIPANTS.SPEAKER_ID`:
+Orientation only: use **`GONG.GONG_DATA_CLOUD.*`** (the table is `CALLS`, not
+`CALL`), not `PEAR_DB.RAW_DATA_GONG.*` — two of the latter's views
+(`CONVERSATION_PARTICIPANTS`, `USERS`) declare fewer columns than the upstream
+share returns and fail to compile on any select.
+`CALL_TRANSCRIPTS.TRANSCRIPT` is a VARIANT array of monologues —
+`[{speakerId, topic, sentences:[{start,end,text}]}]`.
 
-```sql
-select p.name, p.affiliation, m.index as turn, s.value:text::string as text
-from gong.gong_data_cloud.call_transcripts t,
-     lateral flatten(input => t.transcript) m,
-     lateral flatten(input => m.value:sentences) s
-left join gong.gong_data_cloud.conversation_participants p
-       on p.conversation_key = t.conversation_key
-      and p.speaker_id = m.value:speakerId::string
-where t.conversation_key = '<key>'
-order by m.index, s.index
-```
-
-**`affiliation = 'unclassified'` is external, not unknown.** Phone dial-ins get two participant rows and affect ~15% of calls, often the decision-maker. Safe rule: `company` = Pear, everything else external. Only `status = 'COMPLETED'` calls have transcripts, and 100% of them do — filter on status rather than chasing missing transcripts.
+**`affiliation = 'unclassified'` is external, not unknown.** Phone dial-ins get
+two participant rows and affect ~15% of calls, often the decision-maker. Safe
+rule: `company` = Pear, everything else external. Only `status = 'COMPLETED'`
+calls have transcripts, and 100% of them do — filter on status rather than
+chasing missing transcripts.
 
 ### HubSpot
 | Table | Notes |
@@ -114,5 +118,7 @@ Use `DATE_ENTERED_CLOSED_WON_SUBSCRIPTION_REVENUE_PIPELINE`; the unsuffixed `DAT
 
 ## See also
 
+- `pear-gong-warehouse` — Gong transcripts, participants, and call metadata; the
+  predicate trap and the working flatten query.
 - `snowflake-jdbc` — the Java/JDBC path and its own uppercase-column trap.
 - `pear-prod-jsp`, `mass-update-pear-pixels` — when a read must hit the live primary rather than the delayed replica.
