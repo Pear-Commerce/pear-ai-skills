@@ -28,6 +28,33 @@ Use a temporary JSP when the useful execution context is the live Pear server: p
 - Never put raw secrets, tokens, customer data dumps, or unmasked credentials in the JSP source or output. `jsp.sh` archives the JSP source to `s3://assets.pearcommerce.com/jsp-log/`.
 - Do not use this workflow to repair or deploy Offers production/staging static assets by manually writing local build artifacts to S3/R2/CDN. Fix source/deploy/CI instead. Production data artifacts, catalog/report outputs, and one-off tool uploads are okay when scoped.
 
+## jsp.sh Completion Detection
+
+`devops/jsp.sh` never exits on success: after all deploy/compile-check output it parks holding AWS Client VPN open until Ctrl-C (see Required Safety). Agents and scripts must detect completion by output, not process exit, and must not chain commands after it — `jsp.sh ... && next-cmd` hangs forever even on a fully successful run.
+
+The fixed line `AWS Client VPN is active for the private JSP URL. Press Ctrl-C to close it.` is the end-of-output sentinel. It prints only after every selected instance's deploy/compile-check output is final, and on a failed deploy/exec step the script exits non-zero without ever printing it. The three detection states:
+
+- Sentinel line seen, process still alive: run complete and parked by design. All output above the line is final. SIGINT (Ctrl-C) the process, confirm `Closing AWS Client VPN...` appears, then parse the captured log.
+- Process exited with no sentinel line: the run failed or was interrupted. Read the captured output for the error (compile failure, SSM/upload failure, bad args).
+- Process alive with no sentinel line: still working (SSM upload, compile, localhost curl) or hung. Check whether the captured output is still growing before treating it as a hang.
+
+The private preview URL line prints before the compile-check output; it is not a completion signal.
+
+Background-run pattern for agents:
+
+```bash
+devops/jsp.sh -j /tmp/probe.jsp -e PROD > /tmp/jsp-run.log 2>&1 &
+jsp_pid=$!
+for _ in $(seq 1 600); do
+  grep -q 'Press Ctrl-C to close it' /tmp/jsp-run.log && break
+  kill -0 "$jsp_pid" 2>/dev/null || break
+  sleep 1
+done
+kill -INT "$jsp_pid" 2>/dev/null || true
+wait "$jsp_pid" 2>/dev/null || true
+# /tmp/jsp-run.log now holds the complete deploy/compile-check output
+```
+
 ## Pear API Curl Header
 
 When you curl `https://api.pearcommerce.com` or `https://test.api.pearcommerce.com` directly for JSP previews, raw JSP output, controller probes, cache invalidation, or API verification, include the trusted-edge header used by the Admin/Offers Cloudflare invalidation scripts before interpreting a Cloudflare 403/block page:
