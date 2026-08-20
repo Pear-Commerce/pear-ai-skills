@@ -64,6 +64,17 @@ server-side, so an unbounded query burns warehouse time and returns nothing.
 Snowflake's result cache does not save you here either; a retry re-times-out.
 Bound the query instead of retrying it.
 
+**The 504 is a Metabase-proxy limit, not a Snowflake one.** If the Snowflake CLI
+(`snow`) is set up on the machine, prefer it for transcript pulls — there is no
+nginx in that path, so the `conversation_key` predicate should be usable
+directly and the ETL-bound workaround becomes unnecessary. Setup lives in
+[snowflake-jdbc](../snowflake-jdbc/SKILL.md) (config path, the stale
+`host`/`port` failure signature, credential refresh from the
+`snowflake-2025-12-01` secret). Not yet verified against these Gong tables —
+`snow` was absent on the workstation where the timings above were measured, so
+the Metabase path is what is actually proven here. If you do confirm the CLI
+route, update this section with timings.
+
 ## Pulling a transcript
 
 Two things are wrong with the query documented in `pear-metabase`, and both
