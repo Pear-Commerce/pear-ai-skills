@@ -48,6 +48,75 @@ try {
 ExecutorService pool = Pools.global().getLowPriBackgroundPlatformExecutor();
 ```
 
+## Default Parallelism Implementation (Per-Service Fan-In)
+
+This is the default pattern for a singleton Spring service that consumes a queue or stream
+(SQS consumers, import workers, batch processors). Each such service owns ONE bounded pool
+sized from AppConfig, so per-server parallelism is tunable without a deploy.
+
+```java
+@Service
+public class ExampleQueueService {
+    private static final String FLAG = "example-queue";
+    private static final String POOL_SIZE_KEY = "consumer-pool-size";
+    private static final int DEFAULT_POOL_SIZE = 10;
+
+    private final AWSAppConfigUtil appConfigUtil;
+    private volatile PearThreadPoolExecutor workerPool;
+
+    public ExampleQueueService(AWSAppConfigUtil appConfigUtil) {
+        this.appConfigUtil = appConfigUtil;
+    }
+
+    // Pool size is AppConfig live-read but the pool is created once: resizing requires a restart.
+    private PearThreadPoolExecutor workerPool() {
+        PearThreadPoolExecutor current = workerPool;
+        if (current == null) {
+            synchronized (this) {
+                current = workerPool;
+                if (current == null) {
+                    int size = Math.max(1, appConfigUtil.getIntegerNow(FLAG, POOL_SIZE_KEY, DEFAULT_POOL_SIZE));
+                    current = Parallel.createBoundedPlatformThreadPool(size, "example-workers", false, false);
+                    workerPool = current;
+                }
+            }
+        }
+        return current;
+    }
+
+    private void processBatch(Queue<Message> batch) {
+        Parallel.submitAllAndBlockWhileQueued(workerPool(), batch.stream().map(this::process));
+    }
+
+    private Callable<Void> process(Message message) {
+        return () -> { handle(message); return null; };
+    }
+
+    public void shutdown() {
+        PearThreadPoolExecutor current = workerPool;
+        if (current != null) {
+            current.shutdown();
+        }
+    }
+}
+```
+
+Rules:
+
+- ONE pool per service, created once (double-checked lazy getter or in `startProcessor`); never create/shut pools in a loop.
+- Size comes from injected `AWSAppConfigUtil.getIntegerNow(flag, key, default)`, default as the safe current value.
+  Live-read on creation only — document that resizing needs a service restart.
+- Fan in with `Parallel.submitAllAndBlockWhileQueued` — it backpressures the produce/receive loop at pool
+  saturation instead of buffering unbounded work, so no extra semaphore or queue gate is needed.
+- Size receive batches (e.g., SQS `maxNumberOfMessages`, max 10) to `min(poolSize, cap)` so the pool,
+  not batching, is the concurrency control.
+- Shut the pool down in the service's `shutdown()`.
+- Do NOT hand-roll `new Thread(...)`, unbounded executors, or semaphores+gates when the bounded pool plus
+  `submitAllAndBlockWhileQueued` already provides the bound.
+
+Reference example: `UPCResolutionQueueService` (SQS FIFO consumer in api.pearcommerce.com) uses
+`upc-resolution` / `sqs-consumer-pool-size`, default 10.
+
 ## Submit Helpers
 
 ```java
