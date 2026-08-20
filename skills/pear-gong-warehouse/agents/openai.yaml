@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gong Warehouse Queries"
+  short_description: "Pull Gong transcripts and call data from Snowflake"
+  default_prompt: "Use $pear-gong-warehouse to pull the transcript for this Gong call from Snowflake via Metabase."
