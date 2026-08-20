@@ -110,6 +110,17 @@ git commit -m "ISS-1234: Add foo to bar"
 
 If a branch genuinely spans multiple DevRev works, use the primary issue or ticket that best describes the PR. Do not rewrite old merged commits solely to retrofit this convention during historical PR-body backfills.
 
+## Terse PR Summaries
+
+PR bodies must be as terse as possible; long AI-generated PR descriptions are hard to read and reviewers skip them. Rules:
+
+- Body = DevRev link + a short why (a sentence or two) + at most ~5 bullets, one line each. Must fit one screen.
+- No `Summary` / `Scan notes` / `Validation` / `Test plan` section walls. Link to the CI run, ticket, or log query instead of pasting evidence.
+- Do not restate the diff or the title, and do not narrate process. Say what changed, why, and anything a reviewer could not infer from the code.
+- Titles: imperative and specific, e.g. `Add X to Y`, not `Some changes to X`.
+
+The PR-improvement guide (`codex-pr-improvement-goal.md`, "Terse PR Summaries") enforces the same rules at review time.
+
 ## Review Rules
 
 Before calling code changes done, read the PR-improvement guide. Prefer:

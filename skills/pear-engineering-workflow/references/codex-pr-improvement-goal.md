@@ -300,6 +300,14 @@ If absent, prefer query improvement, batching, dedupe, or reusing fetched result
 - `&& false`/`|| true` are unfinished toggles. Remove truly dead old code; use named constants/AppConfig for recent behavior-bearing toggles.
 - Do not remove IDE/run/format config without equivalent build/README setup instructions.
 
+### Terse PR Summaries
+
+- PR bodies must be terse. Target: DevRev link + at most ~5 short bullets. Hard cap one screen.
+- One line per change: what changed and why, in a single sentence each.
+- No multi-section walls (`Summary` / `Scan notes` / `Validation` / `Test plan` dumps). Link to evidence (CI run, log query, ticket) instead of pasting it.
+- Skip restating the diff, restating the title, and narrating the process ("first we tried..."). Reviewers can read code.
+- Titles: imperative, specific, no filler ("Add X to Y", not "Changes to X and some fixes").
+
 ## Helper Reference
 
 Pear code is helper-rich, not helper-happy. Before adding a utility, search by concept, return type, and domain words. If a helper is close, extend it with focused tests. If unsafe for the new use, say why and keep new code narrowly named.
