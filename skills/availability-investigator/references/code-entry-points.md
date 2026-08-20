@@ -22,10 +22,10 @@ If those exact paths are not present, inspect equivalent checked-out copies firs
 
 Operational helpers in `api.pearcommerce.com`:
 
-- `devops/db.sh` (SQL string literals as MySQL hex `0x...` — SSM strips shell quotes; see `$pear-engineering-workflow` Real Data)
+- `devops/db.sh` (direct private TLS connection over split-tunnel Client VPN; pass SQL as one quoted argument and use ordinary SQL literals)
 - `devops/logs.sh`
-- `devops/jsp.sh`
-- `devops/jspx`
+- `devops/jsp.sh` (SSM upload/compile plus a private-IP browser preview held open by Client VPN until Ctrl-C)
+- `devops/jspx` (retained-JSP compatibility execution through SSM; no public-IP SSH/rsync)
 
 ## Admin Surface
 

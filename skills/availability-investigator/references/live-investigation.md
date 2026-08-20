@@ -49,13 +49,13 @@ Default posture:
 - summarize findings instead of dumping large tables
 - prefer `TEST` or the safest environment that still answers the question
 
-Common patterns:
+Common patterns (all open split-tunnel Client VPN, resolve the current private target, use TLS, and close the VPN when MySQL exits):
 
-- `devops/db.sh -e test "<SQL>"`
-- `devops/db.sh -e PROD "<SQL>"`
-- `devops/db.sh -e test --read "<SQL>"`
+- `devops/db.sh --dev "<SQL>"`
+- `devops/db.sh --prod "<SQL>"`
+- `devops/db.sh --read "<SQL>"`
 
-Quoting: `db.sh` joins args with `$*` and the SSM/eval chain strips shell quotes, so `'...'` / `"..."` string literals in SQL break with `ERROR 1064 near '%...%'`. Use MySQL hex literals for string constants instead, e.g. `retailerNameEnum LIKE 0x25686f707269746525` for `LIKE '%hoprite%'` (`echo -n '%hoprite%' | xxd -p`, prefix `0x`). Same rule as `$pear-engineering-workflow` Real Data.
+Pass SQL as one quoted shell argument. Ordinary SQL string literals now work because `db.sh` connects locally through Client VPN rather than an SSM/eval chain.
 
 Good tables and joins for this skill:
 
@@ -101,7 +101,7 @@ If following a broad or noisy environment, focus on the smallest useful time win
 
 ## JSP Guidance
 
-Use `api.pearcommerce.com/devops/jsp.sh` only when the answer requires live Java behavior rather than just data or saved logs.
+Use `api.pearcommerce.com/devops/jsp.sh` only when the answer requires live Java behavior rather than just data or saved logs. It uploads/compiles through SSM, opens Client VPN, prints a private instance-IP URL, and stays open until Ctrl-C; load and follow `$pear-prod-jsp` for the full browser and cleanup workflow.
 
 Good fits:
 

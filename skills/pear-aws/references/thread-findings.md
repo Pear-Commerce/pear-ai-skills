@@ -7,7 +7,7 @@ This reference records distilled guidance from Codex sessions scanned from 2026-
 - AWS CLI and Session Manager plugin are installed in Homebrew paths on Alex's Mac. Several successful runs used `PATH=/opt/homebrew/bin:/usr/local/bin:$PATH`.
 - Before live AWS work, successful threads checked `command -v aws jq session-manager-plugin copilot` and `aws sts get-caller-identity`.
 - Copilot CLI was sometimes absent. Useful fallback was direct EB/EC2/SSM/CloudWatch AWS CLI reads.
-- SSM is the live EC2 access path. `devops/logs.sh`, `devops/ec2-exec.sh`, `devops/db.sh`, `devops/jsp.sh`, and dump/deploy helpers use SSM Session Manager, not SSH/PEM files.
+- SSM is the live EC2 shell/upload path: `devops/logs.sh`, `devops/ec2-exec.sh`, `devops/jsp.sh`, `devops/jspx`, and deploy helpers use it instead of SSH/PEM files. Database traffic (`db.sh`, `dump-db.sh`, `db-tunnel.sh`) and JSP browser previews use split-tunnel AWS Client VPN to private addresses; `jsp.sh` still uses SSM for upload/compile execution.
 - Interactive SSM sessions often need a PTY. Non-interactive diagnosis was more reliable with `aws ssm send-command`, `wait command-executed`, and `get-command-invocation`/`list-command-invocations`.
 - Outage threads improved after moving from "first instance log stream" to bounded SSM snapshots across all running EB instances.
 - DB and Snowflake credentials came from AWS Secrets Manager. Threads used `prod-db-10-2025` for MySQL and `snowflake-2025-12-01` for Snowflake, then parsed JSON with `jq` without printing values.

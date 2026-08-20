@@ -9,9 +9,9 @@ description: >-
   as a read-only preview + write production JSP via the pear-prod-jsp workflow,
   keyed correctly by Offer.vendorId, with exact-token idempotency guards, an
   S3 offerId change-log, and verification against the LIVE PRIMARY (never the
-  delayed Metabase replica). Trigger phrases: "add the meta pixel to all of
-  <brand>'s offers", "append this pixel to their landing pages", "mass update
-  the tracking sections", "update the pixel on all <vendor> offers".
+  delayed Metabase replica). Trigger phrases: "add the meta pixel to all of a
+  brand's offers", "append this pixel to their landing pages", "mass update
+  the tracking sections", "update the pixel on all vendor offers".
 ---
 
 # Mass-update Pear offer tracking pixels
@@ -122,17 +122,16 @@ Do NOT use Metabase for this number — it will be stale.
 export AWS_PROFILE=<prod-capable-profile> AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1
 devops/jsp.sh -j /tmp/<job>.jsp -e PROD        # no --single; preview is side-effect-free
 ```
-Open the printed URL (no params), confirm the plan + exact offerId list, and
+Keep the command running so Client VPN remains active. Open the printed private-IP URL (no params), confirm the plan + exact offerId list, and
 **stop for the user to click Run** (or to explicitly approve you clicking it).
-Never navigate to `?run=true` to bypass approval.
+Never navigate to `?run=true` to bypass approval. Ctrl-C after verification and confirm the VPN closes.
 
 ### 5. Verify against the primary
 Re-run the step-2 count JSP; confirm the targeted `offerType` is now fully
 covered (missing → 0) and `errors=0`. Point the user to the S3 change-log.
 
 ## Prod-JSP environment prereqs (one-time)
-`devops/jsp.sh` needs, on the operator machine: `session-manager-plugin`
-(`brew install --cask session-manager-plugin`, needs the user's sudo password),
+`devops/jsp.sh` needs, on the operator machine: the one-time guarded Client VPN setup (run `./devops/setup-client-vpn.sh` in the user's terminal if prompted),
 `zx` (`brew install zx`), the `pear-scripts` submodule beside the repo (clone via
 `gh` over HTTPS — SSH host-key verification often fails), and an authenticated
 prod-capable AWS profile (`aws sso login --profile <p>`; export `AWS_PROFILE` +

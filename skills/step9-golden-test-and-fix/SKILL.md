@@ -103,7 +103,7 @@ When the user is away and replying to Step9 status emails, check for Gmail repli
 devops/pull_step9_remote_prompts.sh
 ```
 
-The helper uses the same Gmail OAuth material as `GmailUtil`/`GmailLabelJob`: Eric's `GmailUser` refresh token from the dev/test DB credentials path (`devops/db.sh -e test --dev`) plus `WebContent/WEB-INF/classes/client_secret.json`. It searches Eric's all-mail/sent mail for replies from `eric@pearcommerce.com` to `customer.success@pearcommerce.com` on Step9 subjects, strips quoted history, de-duplicates by Gmail message id, and writes new remote instructions to `/tmp/step9-remote-prompts.md`.
+The helper uses the same Gmail OAuth material as `GmailUtil`/`GmailLabelJob`: Eric's `GmailUser` refresh token from the dev/test DB credentials path (`devops/db.sh --dev`) plus `WebContent/WEB-INF/classes/client_secret.json`. The DB helper connects to the current private dev database through split-tunnel Client VPN. It searches Eric's all-mail/sent mail for replies from `eric@pearcommerce.com` to `customer.success@pearcommerce.com` on Step9 subjects, strips quoted history, de-duplicates by Gmail message id, and writes new remote instructions to `/tmp/step9-remote-prompts.md`.
 
 Treat new entries in `/tmp/step9-remote-prompts.md` as user direction at a distance, subject to the same safety and Step9 contracts as direct thread messages. If a remote instruction changes the workflow, record that source in the tracker and status email. If the helper fails, record the failure and continue the normal heartbeat rather than silently skipping remote direction. Use `--peek` only for testing/discovery because it does not update seen-message state.
 

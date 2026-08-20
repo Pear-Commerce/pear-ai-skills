@@ -78,12 +78,13 @@ Use `browser` for landing-page and click verification. Open the JSP preview URL 
      ```bash
      PATH=/opt/homebrew/bin:$PATH devops/jsp.sh -j /tmp/retailer-verify-thing.jsp -e TEST
      ```
-   - Open the printed URL in the browser with no query params and verify the preview.
+   - Keep that command running: it holds split-tunnel AWS Client VPN open. Open its printed private-IP URL in the browser with no query params and verify the preview. On the first workstation run, relay any `./devops/setup-client-vpn.sh` instruction to the user rather than bypassing the guarded setup.
    - For long-running scans, start logs before clicking `Run`:
      ```bash
      PATH=/opt/homebrew/bin:$PATH devops/logs.sh -e TEST 2>&1 | grep -F --line-buffered '[retailer-verify-prefix]'
      ```
    - Click the visible `Run` button. If the browser request times out or 504s, keep using the log prefix as the output channel.
+   - After verification or failure, Ctrl-C the persistent `jsp.sh` command and confirm `Closing AWS Client VPN...`.
 
 7. Save and report the winner.
    - The JSP should output/log JSON with at least:

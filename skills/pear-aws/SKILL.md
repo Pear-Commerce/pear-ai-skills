@@ -28,17 +28,22 @@ Do not print secret values. It is okay to print secret key names or identity met
 ## Tooling Map
 
 - `devops/logs.sh -e PROD|TEST|dashboard|jobs|upc-resolution|availabilities`: live logs. Uses AppRunner for the availabilities env, otherwise EB EC2 over SSM.
-- `devops/ec2-exec.sh -e ENV script.sh`: upload and run a script on EB instances through SSM. Add `--single` when only one instance should run it.
+- `devops/ec2-exec.sh -e ENV script.sh`: upload and run a script on EB instances through SSM. Add `--single` when only one instance should run it. Automation must add `--non-interactive`, which uses Run Command, prints captured remote stdout/stderr, and propagates the remote failure; omit it only for intentional interactive shell sessions.
 - `devops/ec2-shell.sh` / `devops/shell.sh`: interactive shell wrappers over SSM. Use a TTY.
-- `devops/db.sh`: DB helper. Defaults to the DB/bastion path when no env is given; `--analytics` or `--dev` connects to analytics/dev. It fetches `prod-db-10-2025` from Secrets Manager. Takes SQL directly, but the SSM/eval chain strips shell quotes — write string literals as MySQL hex (`0x...`, see `$pear-engineering-workflow` Real Data).
-- `devops/jsp.sh`: one-off live JSP workflow. Also load `$pear-prod-jsp` for JSP tasks because that skill has the detailed safety pattern.
+- `devops/db.sh`: direct private DB helper. It opens split-tunnel AWS Client VPN, resolves the current private RDS/RDS Proxy target through VPC DNS, fetches `prod-db-10-2025` from Secrets Manager, connects with TLS, and closes the VPN when MySQL exits. Use `--dev`/`--analytics`, `--prod`, or `--read`; normal SQL quoting is preserved because there is no SSM/eval hop.
+- `devops/dump-db.sh`: dumps selected remote tables through VPN-aware `db.sh` and imports them into local MySQL; it no longer uses an EC2 helper or temporary S3 object.
+- `devops/db-tunnel.sh --dev|--prod`: compatibility localhost relay over Client VPN plus `socat`; it no longer uses an SSM bastion.
+- `devops/vpn.sh`: keeps the split-tunnel VPN open until Ctrl-C for local applications that need continuous private VPC access.
+- `devops/ip.sh`: prints private instance IPs by default. `--public` is an explicit inventory-only compatibility view.
+- `devops/jsp.sh`: uploads/compiles through SSM, opens Client VPN, prints a private instance-IP URL on port 8080, and remains open until Ctrl-C. Also load `$pear-prod-jsp` for the detailed safety and browser pattern.
+- `devops/jspx`: retained-JSP compatibility runner using SSM upload/execution, not public-IP SSH/rsync.
 - `devops/env.mjs` and `devops/environments.json`: source of truth for env aliases, EB CNAMEs, Copilot env names, Datadog services, and domains.
 
 If the Copilot CLI is not installed, do not stall. Use EB, EC2, SSM, CloudWatch Logs, or `aws elasticbeanstalk` APIs directly for read-only diagnosis, and mention that Copilot-specific actions need the CLI.
 
 ## SSM Patterns
 
-Session Manager is the default access path. The old SSH/PEM path has been migrated to IAM + SSM.
+Session Manager is the default EC2 shell/upload path. Private database and JSP-browser traffic use AWS Client VPN alongside IAM-authenticated AWS operations; the old SSH/PEM and home-IP allowlist paths are not developer access paths.
 
 Use the plugin check before interactive helpers:
 
@@ -46,7 +51,7 @@ Use the plugin check before interactive helpers:
 PATH=/opt/homebrew/bin:/usr/local/bin:$PATH command -v session-manager-plugin aws jq
 ```
 
-Run interactive helpers with a TTY. Without a TTY, `devops/logs.sh`, `devops/db.sh` interactive sessions, and `aws ssm start-session` may close with `EOF` or hang without useful output.
+Run interactive helpers with a TTY. Without a TTY, `devops/logs.sh`, interactive `devops/db.sh` MySQL sessions, persistent `devops/jsp.sh` VPN sessions, and intentional `aws ssm start-session` shells may close with `EOF` or hang without useful output. `jsp.sh` and `jspx` execute their remote helper through non-interactive Run Command and must print its captured stdout/stderr; do not route them back through `start-session`. The first `db.sh`, `jsp.sh`, or `vpn.sh` invocation may require the user to run `./devops/setup-client-vpn.sh` once in their own terminal; do not bypass its guarded sudo helper or fall back to public access.
 
 For reliable non-interactive fleet diagnostics, prefer `send-command`, then wait/list invocations:
 
