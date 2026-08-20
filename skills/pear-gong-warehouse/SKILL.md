@@ -215,6 +215,51 @@ on the Tillamook account the call titled "Intro/Demo" was the third touch, and
 a call titled "Part 2" sat a month *earlier* in the timeline. Pull every call
 for the account and sort by date.
 
+## Joining calls to HubSpot deals
+
+`CONVERSATION_CONTEXTS` links conversations to CRM objects via `OBJECT_ID` /
+`OBJECT_TYPE`. Three traps, all of which return plausible numbers rather than
+errors:
+
+1. **HubSpot deals appear as `object_type = 'opportunity'`**, not `'deal'`.
+   Filtering `object_type ilike '%deal%'` returns zero rows and looks like
+   "this deal has no calls." Valid types seen: `contact`, `account`,
+   `opportunity`.
+2. **The join fans out** — one row per deal × conversation. `count_if(is_closed_won)`
+   over the joined rows counts call-pairs, not deals, and overstates badly
+   (288+417=705 "outcomes" across 376 actual deals). Aggregate to one row per
+   deal first with `max(iff(is_closed_won,1,0))`, then count.
+3. **`CONVERSATION_CONTEXTS` covers emails too, not just calls.** Counting
+   `distinct c.conversation_key` counts conversations; only some have
+   transcripts. Join through `CALL_TRANSCRIPTS` and count *that* key to get
+   calls. Measured on the subscription pipeline: 671 closed deals have a Gong
+   conversation, but only 341 have a transcribed call.
+
+```sql
+with ctx as (
+  select distinct to_varchar(object_id) oid, conversation_key
+  from gong.gong_data_cloud.conversation_contexts
+  where object_type = 'opportunity'
+),
+tx as (select distinct conversation_key from gong.gong_data_cloud.call_transcripts)
+select to_varchar(d.deal_id) did,
+       max(iff(d.is_closed_won, 1, 0))    as won,
+       count(distinct tx.conversation_key) as n_calls   -- tx, not c
+from pear_db.hubspot.hubspot__deals_subscription_pipeline d
+left join ctx c on c.oid = to_varchar(d.deal_id)
+left join tx    on tx.conversation_key = c.conversation_key
+group by 1
+```
+
+**Baselines worth knowing before modelling anything on this data** (subscription
+pipeline, closed deals 2023–2026): 1,048 closed, 215 won, base win rate 20.5%.
+Win rate rises steeply with transcribed call count — 1 call 10.4% (n=154),
+2–3 34.0% (n=144), 4–6 61.5% (n=39). Call count alone is therefore a strong
+predictor, and any coverage or qualification score built here must be shown to
+beat it before it is worth anything. The `0 calls` bucket (707 deals, 17.3%)
+mixes genuine no-call closes with unlinked calls — do not read it as "deals
+with no meetings."
+
 ## Cost of the naive path
 
 Roughly seven minutes of wall clock and four 504s to get one transcript, most
