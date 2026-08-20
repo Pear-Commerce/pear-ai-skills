@@ -49,7 +49,7 @@ Default posture:
 - summarize findings instead of dumping large tables
 - prefer `TEST` or the safest environment that still answers the question
 
-Common patterns (all need the split-tunnel Client VPN active — run `devops/vpn.sh` in a second terminal, or pass `--start-vpn` to let `db.sh` open and close it with the mysql session — then resolve the current private target and connect with TLS):
+Common patterns (all need the split-tunnel Client VPN active — run `devops/vpn.sh` in a second terminal and leave it running; if it is not running, start `vpn.sh`, never `--start-vpn` — then resolve the current private target and connect with TLS):
 
 - `devops/db.sh --dev "<SQL>"`
 - `devops/db.sh --prod "<SQL>"`
@@ -101,7 +101,7 @@ If following a broad or noisy environment, focus on the smallest useful time win
 
 ## JSP Guidance
 
-Use `api.pearcommerce.com/devops/jsp.sh` only when the answer requires live Java behavior rather than just data or saved logs. It uploads/compiles through SSM, requires an active Client VPN (`devops/vpn.sh`, or `--start-vpn` which holds it until Ctrl-C), prints a private instance-IP URL, and exits; load and follow `$pear-prod-jsp` for the full browser and cleanup workflow.
+Use `api.pearcommerce.com/devops/jsp.sh` only when the answer requires live Java behavior rather than just data or saved logs. It uploads/compiles through SSM, requires an active Client VPN (`devops/vpn.sh` — start it if it is not running, never `--start-vpn`), prints a private instance-IP URL, and exits; load and follow `$pear-prod-jsp` for the full browser and cleanup workflow.
 
 Good fits:
 

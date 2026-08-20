@@ -74,7 +74,7 @@ Use `browser` for landing-page and click verification. Open the JSP preview URL 
 6. Run any needed server-side JSP on TEST and watch logs.
    - TEST points at the production database. Use TEST for JSP/log execution when server context is needed, but keep the same production-data caution and idempotency guards you would use on PROD.
    - Keep JSPs as small execution bridges. Do not move browser/site exploration, broad candidate interpretation, or landing-page verification into JSPs.
-   - Start `devops/vpn.sh` in a second terminal and leave it running, then deploy with an explicit env (or pass `--start-vpn` to have `jsp.sh` hold the VPN itself):
+   - Start `devops/vpn.sh` in a second terminal and leave it running, then deploy with an explicit env (never pass `--start-vpn` — `vpn.sh` owns the VPN):
      ```bash
      PATH=/opt/homebrew/bin:$PATH devops/jsp.sh -j /tmp/retailer-verify-thing.jsp -e TEST
      ```
@@ -84,7 +84,7 @@ Use `browser` for landing-page and click verification. Open the JSP preview URL 
      PATH=/opt/homebrew/bin:$PATH devops/logs.sh -e TEST 2>&1 | grep -F --line-buffered '[retailer-verify-prefix]'
      ```
    - Click the visible `Run` button. If the browser request times out or 504s, keep using the log prefix as the output channel.
-   - After verification or failure, Ctrl-C the `vpn.sh` terminal (or the `jsp.sh --start-vpn` session) and confirm `Closing AWS Client VPN...`.
+   - After verification or failure, Ctrl-C (or kill) the `vpn.sh` session and confirm `Closing AWS Client VPN...`.
 
 7. Save and report the winner.
    - The JSP should output/log JSON with at least:
