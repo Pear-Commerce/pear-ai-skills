@@ -78,7 +78,7 @@ Verify identity first:
 aws sts get-caller-identity --output json
 ```
 
-Use AWS Secrets Manager for shared service credentials:
+Use AWS Secrets Manager for shared service credentials. For MySQL/Aurora from a workstation, the sanctioned path is `devops/db.sh` from the api repo: it opens split-tunnel AWS Client VPN, pulls `prod-db-10-2025`-style credentials from Secrets Manager, resolves the target through VPC DNS, and connects with RDS-CA-verified TLS. Targets: `--prod` (database.pearcommerce.com), `--dev`/`--analytics` (dev-database.pearcommerce.com), `--read` (Aurora prod reader), `--maria` (pear-mariadb-6). Note `analytics-database.pearcommerce.com:3306` is still TCP-reachable publicly, but `db.sh` deliberately refuses non-VPC resolutions for RDS hosts — use the helper rather than a direct mysql connection unless you are already inside the VPC. Snowflake CLI credentials come from the same pattern (`snowflake-2025-12-01` secret; see the `$snowflake-jdbc` skill). The raw secret-fetch shape, for in-VPC or scripted use:
 
 ```bash
 set +x
