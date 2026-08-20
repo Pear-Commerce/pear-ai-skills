@@ -251,14 +251,40 @@ left join tx    on tx.conversation_key = c.conversation_key
 group by 1
 ```
 
-**Baselines worth knowing before modelling anything on this data** (subscription
-pipeline, closed deals 2023–2026): 1,048 closed, 215 won, base win rate 20.5%.
-Win rate rises steeply with transcribed call count — 1 call 10.4% (n=154),
-2–3 34.0% (n=144), 4–6 61.5% (n=39). Call count alone is therefore a strong
-predictor, and any coverage or qualification score built here must be shown to
-beat it before it is worth anything. The `0 calls` bucket (707 deals, 17.3%)
-mixes genuine no-call closes with unlinked calls — do not read it as "deals
-with no meetings."
+**Gong only went live in Sales at the start of 2025 — scope every historical
+analysis to 2025+.** Transcript coverage of closed subscription-pipeline deals
+by close year: 2023 **0%** (0/256), 2024 **4.8%** (14/293), 2025 **59.5%**
+(204/343), 2026 **78.8%** (123/156). Pooling across those years puts every
+pre-2025 deal in the "no calls" bucket by construction and silently corrupts
+any coverage metric. 2025 is a ramp year, not a clean one — prefer 2026 if the
+sample allows.
+
+Baselines on the correctly-scoped window (closed 2025-01-01 onward, 499 deals):
+base win rate **19.8%** (99 won). Of those, **327 have at least one transcribed
+call** and win at 25.1% — so the scoreable population is modestly
+win-enriched, fine for within-population comparison, not for absolute
+probability claims.
+
+Win rate by transcribed call count, same window:
+
+| Calls | Deals | Won | Win rate |
+|---|---|---|---|
+| 0 | 172 | 17 | 9.9% |
+| 1 | 144 | 8 | 5.6% |
+| 2-3 | 141 | 47 | 33.3% |
+| 4-6 | 38 | 23 | 60.5% |
+| 7+ | 4 | 4 | 100% |
+
+**Call count alone spans 5.6% to 60.5%.** Any qualification, coverage, or
+close-probability score built on this data must be shown to beat call count
+before it means anything — it is a far stronger baseline than deal stage and a
+trivial one to accidentally reinvent.
+
+Column notes: there is **no `IS_CLOSED_LOST`** on this table — the lost flag is
+`DEAL_LOST` (a real BOOLEAN). `IS_CLOSED_WON` and `DEAL_LOST` are disjoint and
+sum to the closed population. Do not trust `IS_OPEN`: `count_if(is_open=0)`
+returns 70, which is exactly the number of *open* deals, so its polarity does
+not match its name. `amount` is unusable on this pipeline (see `pear-metabase`).
 
 ## Cost of the naive path
 
