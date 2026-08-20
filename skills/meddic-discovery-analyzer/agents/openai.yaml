@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEDDIC Discovery Analyzer"
+  short_description: "Score a discovery call against MEDDIC and draft the MAP email"
+  default_prompt: "Use $meddic-discovery-analyzer to score this discovery call against MEDDIC, give me next steps, and draft the mutual action plan email."
