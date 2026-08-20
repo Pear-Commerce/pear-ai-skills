@@ -120,11 +120,11 @@ Do NOT use Metabase for this number — it will be stale.
 ### 4. Deploy, preview, get approval, run
 ```bash
 export AWS_PROFILE=<prod-capable-profile> AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1
-devops/jsp.sh -j /tmp/<job>.jsp -e PROD        # no --single; preview is side-effect-free
+devops/jsp.sh -j /tmp/<job>.jsp -e PROD        # no --single; preview is side-effect-free; exits when done
 ```
-Keep the command running so Client VPN remains active. Open the printed private-IP URL (no params), confirm the plan + exact offerId list, and
+Start `devops/vpn.sh` in a second terminal first (or pass `--start-vpn`) and keep it running so the private URL stays reachable. Open the printed private-IP URL (no params), confirm the plan + exact offerId list, and
 **stop for the user to click Run** (or to explicitly approve you clicking it).
-Never navigate to `?run=true` to bypass approval. Ctrl-C after verification and confirm the VPN closes.
+Never navigate to `?run=true` to bypass approval. After verification, Ctrl-C `vpn.sh` and confirm the VPN closes.
 
 ### 5. Verify against the primary
 Re-run the step-2 count JSP; confirm the targeted `offerType` is now fully

@@ -74,17 +74,17 @@ Use `browser` for landing-page and click verification. Open the JSP preview URL 
 6. Run any needed server-side JSP on TEST and watch logs.
    - TEST points at the production database. Use TEST for JSP/log execution when server context is needed, but keep the same production-data caution and idempotency guards you would use on PROD.
    - Keep JSPs as small execution bridges. Do not move browser/site exploration, broad candidate interpretation, or landing-page verification into JSPs.
-   - Deploy with an explicit env:
+   - Start `devops/vpn.sh` in a second terminal and leave it running, then deploy with an explicit env (or pass `--start-vpn` to have `jsp.sh` hold the VPN itself):
      ```bash
      PATH=/opt/homebrew/bin:$PATH devops/jsp.sh -j /tmp/retailer-verify-thing.jsp -e TEST
      ```
-   - Keep that command running: it holds split-tunnel AWS Client VPN open. Open its printed private-IP URL in the browser with no query params and verify the preview. On the first workstation run, relay any `./devops/setup-client-vpn.sh` instruction to the user rather than bypassing the guarded setup.
+   - `jsp.sh` exits after printing the URL and compile-check output; the VPN stays up in its own terminal. Open the printed private-IP URL in the browser with no query params and verify the preview. On the first workstation run, relay any `./devops/setup-client-vpn.sh` instruction to the user rather than bypassing the guarded setup.
    - For long-running scans, start logs before clicking `Run`:
      ```bash
      PATH=/opt/homebrew/bin:$PATH devops/logs.sh -e TEST 2>&1 | grep -F --line-buffered '[retailer-verify-prefix]'
      ```
    - Click the visible `Run` button. If the browser request times out or 504s, keep using the log prefix as the output channel.
-   - After verification or failure, Ctrl-C the persistent `jsp.sh` command and confirm `Closing AWS Client VPN...`.
+   - After verification or failure, Ctrl-C the `vpn.sh` terminal (or the `jsp.sh --start-vpn` session) and confirm `Closing AWS Client VPN...`.
 
 7. Save and report the winner.
    - The JSP should output/log JSON with at least:

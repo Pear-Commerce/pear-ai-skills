@@ -30,12 +30,12 @@ Do not print secret values. It is okay to print secret key names or identity met
 - `devops/logs.sh -e PROD|TEST|dashboard|jobs|upc-resolution|availabilities`: live logs. Uses AppRunner for the availabilities env, otherwise EB EC2 over SSM.
 - `devops/ec2-exec.sh -e ENV script.sh`: upload and run a script on EB instances through SSM. Add `--single` when only one instance should run it. Automation must add `--non-interactive`, which uses Run Command, prints captured remote stdout/stderr, and propagates the remote failure; omit it only for intentional interactive shell sessions.
 - `devops/ec2-shell.sh` / `devops/shell.sh`: interactive shell wrappers over SSM. Use a TTY.
-- `devops/db.sh`: direct private DB helper. It opens split-tunnel AWS Client VPN, resolves the current private RDS/RDS Proxy target through VPC DNS, fetches `prod-db-10-2025` from Secrets Manager, connects with TLS, and closes the VPN when MySQL exits. Use `--dev`/`--analytics`, `--prod`, or `--read`; normal SQL quoting is preserved because there is no SSM/eval hop.
+- `devops/db.sh`: direct private DB helper. Requires an active split-tunnel AWS Client VPN (see `vpn.sh`); with `--start-vpn` it opens the VPN itself and closes it when MySQL exits. Resolves the current private RDS/RDS Proxy target through VPC DNS, fetches `prod-db-10-2025` from Secrets Manager, and connects with TLS. Use `--dev`/`--analytics`, `--prod`, or `--read`; normal SQL quoting is preserved because there is no SSM/eval hop.
 - `devops/dump-db.sh`: dumps selected remote tables through VPN-aware `db.sh` and imports them into local MySQL; it no longer uses an EC2 helper or temporary S3 object.
-- `devops/db-tunnel.sh --dev|--prod`: compatibility localhost relay over Client VPN plus `socat`; it no longer uses an SSM bastion.
-- `devops/vpn.sh`: keeps the split-tunnel VPN open until Ctrl-C for local applications that need continuous private VPC access.
+- `devops/db-tunnel.sh --dev|--prod`: compatibility localhost relay over Client VPN plus `socat`; it no longer uses an SSM bastion. Requires an active VPN, or pass `--start-vpn`.
+- `devops/vpn.sh`: keeps the split-tunnel VPN open until Ctrl-C. This is the default way to hold private VPC access for `jsp.sh`, `db.sh`, `db-tunnel.sh`, and other local applications — run it in a second terminal while those tools are in use.
 - `devops/ip.sh`: prints private instance IPs by default. `--public` is an explicit inventory-only compatibility view.
-- `devops/jsp.sh`: uploads/compiles through SSM, opens Client VPN, prints a private instance-IP URL on port 8080, and remains open until Ctrl-C. Also load `$pear-prod-jsp` for the detailed safety and browser pattern.
+- `devops/jsp.sh`: uploads/compiles through SSM, prints a private instance-IP URL on port 8080 plus the compile-check output, then exits. Requires an active VPN, or pass `--start-vpn` to have it open and hold the VPN until Ctrl-C. Also load `$pear-prod-jsp` for the detailed safety and browser pattern.
 - `devops/jspx`: retained-JSP compatibility runner using SSM upload/execution, not public-IP SSH/rsync.
 - `devops/env.mjs` and `devops/environments.json`: source of truth for env aliases, EB CNAMEs, Copilot env names, Datadog services, and domains.
 
@@ -51,7 +51,7 @@ Use the plugin check before interactive helpers:
 PATH=/opt/homebrew/bin:/usr/local/bin:$PATH command -v session-manager-plugin aws jq
 ```
 
-Run interactive helpers with a TTY. Without a TTY, `devops/logs.sh`, interactive `devops/db.sh` MySQL sessions, persistent `devops/jsp.sh` VPN sessions, and intentional `aws ssm start-session` shells may close with `EOF` or hang without useful output. `jsp.sh` and `jspx` execute their remote helper through non-interactive Run Command and must print its captured stdout/stderr; do not route them back through `start-session`. The first `db.sh`, `jsp.sh`, or `vpn.sh` invocation may require the user to run `./devops/setup-client-vpn.sh` once in their own terminal; do not bypass its guarded sudo helper or fall back to public access.
+Run interactive helpers with a TTY. Without a TTY, `devops/logs.sh`, interactive `devops/db.sh` MySQL sessions, `devops/vpn.sh` (or `jsp.sh --start-vpn`) VPN keeper sessions, and intentional `aws ssm start-session` shells may close with `EOF` or hang without useful output. `jsp.sh` and `jspx` execute their remote helper through non-interactive Run Command and must print its captured stdout/stderr; do not route them back through `start-session`. The first `db.sh`, `jsp.sh`, or `vpn.sh` invocation may require the user to run `./devops/setup-client-vpn.sh` once in their own terminal; do not bypass its guarded sudo helper or fall back to public access.
 
 For reliable non-interactive fleet diagnostics, prefer `send-command`, then wait/list invocations:
 
@@ -78,7 +78,7 @@ Verify identity first:
 aws sts get-caller-identity --output json
 ```
 
-Use AWS Secrets Manager for shared service credentials. For MySQL/Aurora from a workstation, the sanctioned path is `devops/db.sh` from the api repo: it opens split-tunnel AWS Client VPN, pulls `prod-db-10-2025`-style credentials from Secrets Manager, resolves the target through VPC DNS, and connects with RDS-CA-verified TLS. Targets: `--prod` (database.pearcommerce.com), `--dev`/`--analytics` (dev-database.pearcommerce.com), `--read` (Aurora prod reader), `--maria` (pear-mariadb-6). Note `analytics-database.pearcommerce.com:3306` is still TCP-reachable publicly, but `db.sh` deliberately refuses non-VPC resolutions for RDS hosts — use the helper rather than a direct mysql connection unless you are already inside the VPC. Snowflake CLI credentials come from the same pattern (`snowflake-2025-12-01` secret; see the `$snowflake-jdbc` skill). The raw secret-fetch shape, for in-VPC or scripted use:
+Use AWS Secrets Manager for shared service credentials. For MySQL/Aurora from a workstation, the sanctioned path is `devops/db.sh` from the api repo: with the split-tunnel AWS Client VPN active (`vpn.sh`, or `db.sh --start-vpn`), it pulls `prod-db-10-2025`-style credentials from Secrets Manager, resolves the target through VPC DNS, and connects with RDS-CA-verified TLS. Targets: `--prod` (database.pearcommerce.com), `--dev`/`--analytics` (dev-database.pearcommerce.com), `--read` (Aurora prod reader), `--maria` (pear-mariadb-6). Note `analytics-database.pearcommerce.com:3306` is still TCP-reachable publicly, but `db.sh` deliberately refuses non-VPC resolutions for RDS hosts — use the helper rather than a direct mysql connection unless you are already inside the VPC. Snowflake CLI credentials come from the same pattern (`snowflake-2025-12-01` secret; see the `$snowflake-jdbc` skill). The raw secret-fetch shape, for in-VPC or scripted use:
 
 ```bash
 set +x

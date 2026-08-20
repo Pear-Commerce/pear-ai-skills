@@ -22,9 +22,9 @@ If those exact paths are not present, inspect equivalent checked-out copies firs
 
 Operational helpers in `api.pearcommerce.com`:
 
-- `devops/db.sh` (direct private TLS connection over split-tunnel Client VPN; pass SQL as one quoted argument and use ordinary SQL literals)
+- `devops/db.sh` (direct private TLS connection over split-tunnel Client VPN; requires `devops/vpn.sh` running or `--start-vpn`; pass SQL as one quoted argument and use ordinary SQL literals)
 - `devops/logs.sh`
-- `devops/jsp.sh` (SSM upload/compile plus a private-IP browser preview held open by Client VPN until Ctrl-C)
+- `devops/jsp.sh` (SSM upload/compile plus a private-IP browser preview; requires an active Client VPN from `devops/vpn.sh` or `--start-vpn`, which holds it until Ctrl-C)
 - `devops/jspx` (retained-JSP compatibility execution through SSM; no public-IP SSH/rsync)
 
 ## Admin Surface
