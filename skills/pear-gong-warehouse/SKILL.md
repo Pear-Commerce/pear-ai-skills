@@ -125,6 +125,76 @@ one monologue.
 Treat everything else as external — `unclassified` shows up on phone dial-ins
 and is external, not unknown.
 
+## Email content comes from HubSpot, not Gong
+
+`GONG_DATA_CLOUD.EMAILS` is **metadata only** — timestamp, direction, invite
+flag, `CONVERSATION_KEY`. No subject, no body. It tells you an email happened,
+never what it said. For any deal analysis this is a trap: the timeline looks
+complete and the content is entirely absent.
+
+Bodies live in **`PEAR_DB.RAW_DATA_HUBSPOT.ENGAGEMENTS_EMAILS`** (~540k rows).
+Useful columns, all prefixed `PROPERTIES_`:
+
+| Column | Notes |
+|---|---|
+| `HS_TIMESTAMP` | Send time. Predicates on it prune normally — no 504 trap on this table. |
+| `HS_EMAIL_DIRECTION` | Values are `EMAIL` (outbound) and `INCOMING_EMAIL` (inbound) — **not** `inbound`/`outbound`. |
+| `HS_EMAIL_SUBJECT`, `HS_EMAIL_TEXT` | Subject and full plain-text body. `HS_EMAIL_HTML` and `HS_BODY_PREVIEW` also exist. |
+| `HS_EMAIL_FROM_RAW`, `HS_EMAIL_TO_EMAIL`, `HS_EMAIL_CC_EMAIL` | Filter on these. |
+
+Filter by counterparty domain across to/from/cc. Do **not** join on the
+`COMPANIES` column — it is an `ARRAY`, and comparing it to a varchar throws
+`Can not convert parameter of type VARCHAR into expected type ARRAY`, the same
+trap `pear-metabase` documents for `DEAL_COMPANY_ID`.
+
+```sql
+select properties_hs_timestamp as ts,
+       properties_hs_email_direction as dir,
+       properties_hs_email_subject   as subj,
+       properties_hs_email_from_raw  as frm,
+       properties_hs_email_text      as body
+from pear_db.raw_data_hubspot.engagements_emails
+where properties_hs_timestamp >= '2026-06-01'
+  and (properties_hs_email_to_email ilike '%@example.com'
+    or properties_hs_email_from_raw ilike '%@example.com'
+    or properties_hs_email_cc_email ilike '%@example.com')
+order by 1
+```
+
+**Strip the quoted history or you will drown.** Bodies include the entire
+quoted thread, so they grow monotonically — one real thread went 667 chars at
+the first message to 33,372 by the twelfth, and reading all of them means
+reading the same thread a dozen times over. Cut at the first reply marker to
+keep only what is new:
+
+```python
+import re
+cut = len(body)
+for pat in [r"\nOn .{0,80}wrote:", r"\nFrom: ",
+            r"\n-{3,}\s*original message", r"\n_{5,}"]:
+    m = re.search(pat, body, re.I)
+    if m: cut = min(cut, m.start())
+new_content = body[:cut].strip()
+```
+
+Also strip HubSpot tracking links (`hs-sales-engage.com`) — a single wrapped
+link runs over 1,000 characters and several per email is common.
+
+**Sender addresses are sometimes masked.** `HS_EMAIL_FROM_RAW` arrives either
+as `Name <addr@domain>` or as
+`EmailAddress{name=Natalia Nunez, address=**REDACTED**, valid=true}`. The
+display name survives in both; the address does not. Key identity off the name
+or the to/cc columns, never off a parsed from-address.
+
+**Attachments are not in the warehouse.** Quote spreadsheets, NDAs, and slide
+decks referenced in the bodies are not retrievable here — only the fact that
+they were sent. Expect dollar figures and contract terms to live in files you
+cannot read from Snowflake.
+
+Gong's and HubSpot's email counts will not match; Gong writes one row per
+participant, HubSpot one per message. Prefer HubSpot for anything content-
+related and treat Gong's `EMAILS` as a cross-check on timing only.
+
 ## Finding the call
 
 `CALLS.PROVIDER_UNIQUE_ID` is **empty for conference calls**, which is most of
