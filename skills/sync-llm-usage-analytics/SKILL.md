@@ -30,6 +30,19 @@ node scripts/upload-snapshot.mjs /absolute/path/anthropic.json
 
 For backfills, repeat one UTC day at a time so uploads are idempotent and daily graphs remain correct.
 
+## Code edits to the dashboard or attribution logic
+
+The app is a Cloudflare Worker (`llm-usage`) whose source lives at `~/openrouter-fireworks-usage` (GitHub: `Pear-Commerce/openrouter-fireworks-usage`). Code changes — model bucket mappings in `FIREWORKS_BUCKET_TO_MODEL`, dashboard rendering, API aggregation, names.json, tests — are **not live until deployed**. After any source edit:
+
+1. Run `node --test` in the app directory. All tests must pass.
+2. `git add` the changed files, commit with a terse message, and `git push` to `main`.
+3. Run `npx wrangler deploy` (or `npm run deploy`) in the app directory to push the new Worker version.
+4. Verify the live app responds: `curl -sI https://llm-usage.intern.pearcommerce.com` (expect `302` to `/login`).
+
+Never leave code edits uncommitted or undeployed. A local-only change to a bucket mapping or attribution function is invisible to the dashboard until the Worker is redeployed.
+
+Note: Fireworks daily rows are cached in KV for 6 hours (`FIREWORKS_DAILY_CACHE_TTL_SECONDS`). After deploying a mapping fix, previously-cached days will not re-attribute until the cache expires. To force immediate re-attribution, clear the affected KV keys (`v1:fireworks-daily:YYYY-MM-DD`) via `npx wrangler kv:key delete --namespace-id d79da0a2948e41b896bb7b4dbef57dfe "v1:fireworks-daily:YYYY-MM-DD"`.
+
 ## Boundaries
 
 - OpenAI Business browser analytics is the source of truth for OpenAI snapshots. Claude Enterprise Analytics API is preferred for Anthropic; its authenticated browser analytics is the fallback until the Primary Owner provides the scoped key.
