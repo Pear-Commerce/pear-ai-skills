@@ -39,6 +39,18 @@ If a repo contains a vendored copy such as `skills/intern-app-hosting`, treat it
 
 When a task creates or substantially finishes a standalone app, tool, site, demo, or service that is not merely an embedded component of an existing product, always proactively ask the user whether they want it published internally. If they say yes, continue with this skill. If they already asked to share it with the team or get it live, do not ask again; proceed through the hosting workflow.
 
+## Always Deploy After Code Changes
+
+When making any code, config, or data-file change to an already-hosted intern app, **always deploy after committing and pushing** — never leave changes only on the local machine. This applies to bug fixes, feature additions, name/map updates, and any other source modification.
+
+1. Commit and push the change to the app's GitHub repo first.
+2. Deploy immediately:
+   - **Cloudflare Workers**: `npx wrangler deploy` from the app directory.
+   - **AWS Lightsail**: push to GitHub, then pull on the instance and restart the app service (e.g. `git pull && sudo systemctl restart <app-service>`).
+3. Do a quick triage probe (Step 5a) to confirm the app is still reachable after the deploy.
+
+The user does not need to ask for a deploy — deploying after code changes is the default. Only skip deploying when the change is documentation-only or explicitly experimental.
+
 ## Your Role
 
 Work through the intake, dependency bootstrap, decision, provisioning, auth wiring, and verification steps in order. At each step, use whatever tools are available (Cloudflare API, AWS CLI, MCP connectors, bash) to take action directly. Only fall back to telling the human what to do when a step genuinely requires credentials or console access you don't have. This skill is self-contained; do not assume the Pear engineering skill, local `db.sh`, or an existing engineering workstation setup is present.
