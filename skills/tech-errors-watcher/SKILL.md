@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when asked to start, restart, re-enable, inspect, or recreate the Slack watcher for Pear tech error alerts.
 
-For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
+For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. If an alert ties to a specific vendor/brand experience, `$front-api` can confirm whether the customer has already emailed CS about the same symptom.
 
 ## Defaults
 

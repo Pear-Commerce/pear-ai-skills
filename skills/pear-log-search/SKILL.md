@@ -13,6 +13,7 @@ Use VictoriaLogs as Pear's primary searchable log store. The human UI is [logs.i
 - Use `scripts/query-victorialogs.sh` for read-only agent searches, exact evidence, counts, field discovery, or automation. It resolves the current `victorialogs-intern` EC2 instance and queries VictoriaLogs locally through SSM.
 - Use `api.pearcommerce.com/devops/logs.sh -e <env>` only for an immediate live tail from one instance, such as watching startup or a reproduction. It is not the default for historical or fleet-wide searches.
 - Scalyr has been canceled and is no longer available. VictoriaLogs is the sole log search system. For agent-accessible queries from a terminal, use `$fetch-pear-logs` (session-cookie CLI) or the `scripts/query-victorialogs.sh` helper below (SSM-based).
+- When the investigation started from a customer complaint, pair the log search with `$front-api`: search the brand in Front to get the customer's exact symptom description and timestamps, then use those to bound the LogsQL time range.
 
 ## Query Safely
 

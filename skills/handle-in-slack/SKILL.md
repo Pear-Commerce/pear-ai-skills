@@ -19,6 +19,7 @@ Not every "handle this" request is an action request. Sometimes the right handli
 - Use `$slack-prod-jsp-approval` when a JSP, live ORM/data change, vendor or retailer reimport, resolver run, availability scan, or similar operational action may be needed.
 - Use `$pear-prod-jsp` for JSP preview/run safety after approval.
 - Use `$pear-engineering-workflow` for any Pear `api.pearcommerce.com`, `test.api.pearcommerce.com`, Admin, Offers, or repo debugging, including read-only answer-only investigations. Use `$pear-pr-review-flow` for PRs, reviewer/Copilot flow, CI fixes, and auto-merge/watch behavior.
+- Use `$front-api` when the thread is about a customer/brand and email context may exist — Front holds the success@pearcommerce.com implementation threads, ticket notifications, and meeting recaps. Searching the brand name in Front before answering often surfaces the original complaint and every prior escalation.
 
 ## Handle A Slack Link
 
@@ -33,7 +34,7 @@ Not every "handle this" request is an action request. Sometimes the right handli
 
 3. Do a comprehensive read-only source sweep.
    - For every handle request, check every available source-of-truth category that could bear on the thread before deciding the outcome. Treat each check as lightweight when the signal is low, but do not stop after Slack or one alert when other sources are available.
-   - Available sources normally include Slack thread/surrounding context, Datadog monitors/events/metrics/logs, local repo/code/git history, GitHub PRs/issues/actions, environment health, app/server logs, DB/reporting/analytics data, browser/API probes, linked docs/pages, and relevant external vendor/status/docs sources.
+   - Available sources normally include Slack thread/surrounding context, Front customer email history (`$front-api`), Datadog monitors/events/metrics/logs, local repo/code/git history, GitHub PRs/issues/actions, environment health, app/server logs, DB/reporting/analytics data, browser/API probes, linked docs/pages, and relevant external vendor/status/docs sources.
    - If a source is unavailable, rate-limited, forbidden, unsafe, or would require a side effect or approval, record that limitation and continue with the remaining sources.
    - Keep DB/reporting checks narrow, indexed, and read-only. Avoid broad URZA/table scans; if a query starts running long or risks undo-log growth, kill that query and report the limitation instead of letting it continue.
    - Keep commands and queries read-only until there is explicit approval.

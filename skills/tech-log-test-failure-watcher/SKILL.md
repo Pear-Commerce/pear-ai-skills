@@ -18,6 +18,7 @@ Use this skill when asked to start, restart, re-enable, inspect, or recreate the
 - Off-hours quiet window: in America/Chicago, skip Slack/GitHub/escalation work after 7:00 PM or before 8:00 AM unless the user explicitly asks for around-the-clock monitoring.
 - Use the automation tool to create or update automations; do not hand-edit automation TOML unless the tool is unavailable.
 - Use `$slack:slack`, `$handle-in-slack`, `$pear-engineering-workflow`, and `$pear-pr-review-flow` while carrying out the watcher task.
+- When a failure touches a named vendor/brand flow, `$front-api` is a useful extra source — check Front for related customer email before proposing a fix so the reply can account for commitments CS already made.
 - Architecture: keep the recurring watcher as a lightweight sentinel. Escalate real failures to a run-specific deep worker/automation before doing GitHub log analysis, culprit attribution, code edits, PR creation, PR watching, or merging.
 
 ## Start Or Repair

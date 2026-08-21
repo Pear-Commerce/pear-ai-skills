@@ -9,7 +9,7 @@ metadata:
 
 Use this skill when asked to start, restart, re-enable, inspect, recreate, modify, or push the Slack watcher that answers explicit Pear technical questions or bug reports from shared Slack channels.
 
-For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work after explicit approval, always use `$pear-engineering-workflow` and `$pear-pr-review-flow`.
+For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work after explicit approval, always use `$pear-engineering-workflow` and `$pear-pr-review-flow`. When a question mentions a customer or brand (common in `#customer-success`), use `$front-api` to search Front for that brand's email history before answering — recurring complaints and prior CS commitments often live there, not in Slack.
 
 ## Defaults
 
