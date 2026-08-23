@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="chrome-bridge — let opencode drive your real Chrome browser through a Chrome extension. Your tabs, your logins, no sandbox.">
+<meta name="description" content="chrome-bridge — an opencode plugin and Chrome extension that let opencode read and operate your real Chrome browser over a local bridge. Install instructions.">
 <title>chrome-bridge — Pear Commerce</title>
 <style>
   :root {
@@ -472,8 +472,8 @@
   <!-- ============ HERO ============ -->
   <header class="hero">
     <h1>chrome-bridge<span class="dot">.</span></h1>
-    <p class="pitch">Let opencode drive your <strong>real Chrome</strong> &mdash; your tabs, your logins, no sandbox.</p>
-    <p class="subtools">16 native browser_* tools &middot; snapshot, click, type, screenshot, console, network &amp; more</p>
+    <p class="pitch">An opencode plugin and a Chrome extension that let opencode read and operate your real Chrome browser. The extension uses the DevTools Protocol to snapshot pages, click, type, scroll, take screenshots, and read console/network activity in your actual tabs, with your existing profile and sessions.</p>
+    <p class="subtools">16 tools: snapshot &middot; click &middot; type &middot; press_key &middot; scroll &middot; wait_for &middot; screenshot &middot; evaluate &middot; console &middot; network &middot; tab management</p>
 
     <div class="install">
       <div class="install-bar">
@@ -483,15 +483,15 @@
       <pre><code id="installCmd"><span class="tok-cmd">curl</span> -fsSL <span class="tok-url">https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/skills/chrome-bridge/install.sh</span> <span class="tok-pipe">|</span> <span class="tok-cmd">bash</span></code></pre>
       <div class="scroll-hint" id="scrollHint" aria-hidden="true"></div>
     </div>
-    <p class="post-install">Restart opencode after install. Then enable the extension in Chrome (two steps, below).</p>
+    <p class="post-install">Then restart opencode and enable the extension in Chrome (below).</p>
   </header>
 
   <!-- ============ HOW IT WORKS ============ -->
   <section id="how">
     <div class="sec-head">
       <p class="kicker">how it works</p>
-      <h2>Three pieces, one localhost bridge</h2>
-      <p class="sec-lede">No cloud relay. The opencode process hosts a WebSocket server on <code style="font-family:var(--mono);font-size:.84rem;color:var(--code-text);background:var(--code-bg);border:1px solid var(--code-border);border-radius:4px;padding:.04rem .32rem">127.0.0.1:8823</code>; a Chrome extension dials in; commands flow as trusted CDP input to your actual tabs.</p>
+      <h2>Three components</h2>
+      <p class="sec-lede">The opencode process hosts a WebSocket server on <code style="font-family:var(--mono);font-size:.84rem;color:var(--code-text);background:var(--code-bg);border:1px solid var(--code-border);border-radius:4px;padding:.04rem .32rem">127.0.0.1:8823</code>. The Chrome extension connects to it. Commands are executed as CDP input in your tabs. There is no cloud component.</p>
     </div>
 
     <div class="flow">
@@ -504,7 +504,7 @@
           <path d="M12 14h4"/>
         </svg>
         <h3>opencode plugin</h3>
-        <p>Hosts a localhost bridge inside the opencode server process. Registers the native <code>browser_*</code> tools.</p>
+        <p>Hosts the bridge inside the opencode server process and registers the <code>browser_*</code> tools.</p>
       </div>
 
       <div class="connector" aria-hidden="true">
@@ -542,8 +542,8 @@
           <circle cx="9" cy="6.5" r="0.6" fill="currentColor"/>
           <path d="M8 14l3 3 5-5"/>
         </svg>
-        <h3>real CDP &rarr; your tabs</h3>
-        <p>Trusted input drives your actual Chrome tabs &mdash; real profile, real logins, real sessions.</p>
+        <h3>CDP input in your tabs</h3>
+        <p>The extension attaches <code>chrome.debugger</code> to a tab and dispatches input and navigation through the DevTools Protocol. It operates in your real profile, so it can act on pages you are signed in to.</p>
       </div>
     </div>
   </section>
@@ -552,15 +552,15 @@
   <section id="installer">
     <div class="sec-head">
       <p class="kicker">what the installer does</p>
-      <h2>Honest about every step</h2>
-      <p class="sec-lede">A single shell script. Nothing leaves the machine; pairing is a token-based, localhost-only handshake.</p>
+      <h2>What the installer does</h2>
+      <p class="sec-lede">A single shell script. Everything stays on the machine.</p>
     </div>
     <ul class="bullets">
       <li><strong>Clones or updates</strong> the canonical skills repo to <code>~/pear-ai-skills</code> (idempotent on re-run).</li>
       <li><strong>Installs the skill</strong> into your assistant skill folders &mdash; opencode, codex, and claude.</li>
       <li><strong>Copies the opencode plugin</strong> (a single self-contained file) to <code>~/.config/opencode/plugins/</code>.</li>
       <li><strong>Prints the two Chrome steps</strong> &mdash; load the unpacked extension, then run <code>pair</code>.</li>
-      <li><strong>Nothing is transmitted off-host.</strong> The pairing token travels in a URL fragment and is stored in a <code>0600</code> file.</li>
+      <li><strong>Nothing is transmitted off-host.</strong> Pairing is a token handshake over the loopback interface; the token travels in a URL fragment and is stored in a <code>0600</code> file.</li>
     </ul>
   </section>
 
@@ -568,7 +568,7 @@
   <section id="chrome">
     <div class="sec-head">
       <p class="kicker">enable it in chrome</p>
-      <h2>Two steps, no token typing</h2>
+      <h2>Enable the extension</h2>
     </div>
     <ol class="steps">
       <li>
@@ -576,8 +576,8 @@
         <span class="step-body">Open <code>chrome://extensions</code>, toggle <strong>Developer mode</strong> on, click <strong>Load unpacked</strong>, and select <code>~/pear-ai-skills/skills/chrome-bridge/bridge/extension</code>.</span>
       </li>
       <li>
-        <span class="step-title">Pair &mdash; no typing</span>
-        <span class="step-body">Run <code>node ~/pear-ai-skills/skills/chrome-bridge/bridge/bin/chrome-bridge.js pair</code>. It finds the Chrome profile that has the extension and opens a self-pairing page there; the token is saved automatically. Restart opencode after install.</span>
+        <span class="step-title">Pair</span>
+        <span class="step-body">Run <code>node ~/pear-ai-skills/skills/chrome-bridge/bridge/bin/chrome-bridge.js pair</code>. It finds the Chrome profile that has the extension and opens a self-pairing page there; the token is saved automatically. Then restart opencode so the plugin loads.</span>
       </li>
     </ol>
   </section>
@@ -586,7 +586,7 @@
   <section id="verify">
     <div class="sec-head">
       <p class="kicker">verify</p>
-      <h2>Confirm the bridge is live</h2>
+      <h2>Verify</h2>
     </div>
     <div class="codeblock">
 <pre><code><span class="c-prompt">$</span> chrome-bridge health
@@ -599,20 +599,20 @@
 <span class="c-comment">#   ...</span>
 <span class="c-comment"># }</span></code></pre>
     </div>
-    <p class="verify-note">Then in opencode, ask: <code>list my Chrome tabs</code>. If the bridge is connected you will get back ids, titles, urls, and tab groups.</p>
+    <p class="verify-note">Then in opencode, ask: <code>list my Chrome tabs</code>. If the bridge is connected you get back ids, titles, urls, and tab groups.</p>
   </section>
 
   <!-- ============ SAFETY MODEL ============ -->
   <aside class="callout">
     <div class="sec-head" style="margin-bottom:0">
-      <p class="kicker">safety model</p>
-      <h2>What keeps this from being a footgun</h2>
+      <p class="kicker">security notes</p>
+      <h2>Security notes</h2>
     </div>
     <ul>
-      <li><strong>Localhost only.</strong> The bridge binds <code>127.0.0.1:8823</code>; no remote host can reach it.</li>
-      <li><strong>0600 token file.</strong> The pairing token lives in <code>~/.opencode-chrome-bridge/config.json</code> with mode <code>0600</code>.</li>
-      <li><strong>Visible when driven.</strong> Trusted CDP input makes Chrome show its <em>&ldquo;started debugging this browser&rdquo;</em> infobar on every tab the agent drives &mdash; you can always see it happening.</li>
-      <li><strong>Why the broad permissions.</strong> The extension needs <code>&lt;all_urls&gt;</code> + <code>debugger</code> so it can snapshot, click, type, and evaluate JS on any real page you are signed into &mdash; that is the entire point of using your real browser.</li>
+      <li><strong>Localhost only.</strong> The bridge binds <code>127.0.0.1:8823</code>; it is not reachable from other hosts.</li>
+      <li><strong>Token file.</strong> The pairing token lives in <code>~/.opencode-chrome-bridge/config.json</code> with mode <code>0600</code>. Any local process that can read that file can drive the browser.</li>
+      <li><strong>Visible when driven.</strong> Chrome shows its <em>&ldquo;started debugging this browser&rdquo;</em> infobar on every tab the agent drives.</li>
+      <li><strong>Permissions.</strong> The extension requests <code>&lt;all_urls&gt;</code> and <code>debugger</code> because it must be able to inject and act on any page. It has the same access to driven tabs that you do, including authenticated pages.</li>
     </ul>
   </aside>
 
