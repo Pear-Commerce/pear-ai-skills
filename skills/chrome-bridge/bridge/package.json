@@ -1,0 +1,19 @@
+{
+  "name": "opencode-chrome-bridge",
+  "version": "1.0.0",
+  "description": "Drive a real Chrome browser from opencode. MV3 extension + local WebSocket bridge. Ships as a native opencode plugin (default) or as a standalone MCP daemon for multi-instance setups.",
+  "type": "module",
+  "bin": {
+    "chrome-bridge": "bin/chrome-bridge.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node bin/chrome-bridge.js start",
+    "token": "node bin/chrome-bridge.js token",
+    "smoke": "node test/smoke.mjs",
+    "smoke:plugin": "bun test/plugin-smoke.mjs"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "OpenCode Chrome Bridge",
+  "version": "1.0.0",
+  "description": "Connects Chrome to opencode via the local chrome-bridge host (opencode plugin or standalone daemon).",
+  "permissions": [
+    "tabs",
+    "tabGroups",
+    "scripting",
+    "storage",
+    "alarms",
+    "debugger"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Chrome Bridge"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxmKFf8q6JrtTk8viHLP/dlzkvnJblDX4Mjml+Nv9HvZFi5YDGzGKgCej3V2lbCqAYWiSYc+ptm9260vg7VemUBdmT2ONYEQPRB06t7Jt4Vb0HTS1FtBv7fWCr2d2zJHopWiPRo+TgU2GEPDGOU8kHkib8GR9FgjVYDXsRIrhDennbbEvavn3OTYH551WlixO++bCc4NneYVHSicBWKbf97ShL3tnOChdeW6Cv6HyCyb0Rj2DaAANy/jMYcSTsUu+lz4neW3O33tzMySqWRSXy+NrrsqFvPj6RB6Du2Ksk7g9rVEwLqgKczpb0NQCe/OYYvo4bdMGcu4M3+J+nbZg9wIDAQAB"
+}
