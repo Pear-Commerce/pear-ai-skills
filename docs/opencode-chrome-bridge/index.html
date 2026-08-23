@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="chrome-bridge — let opencode drive your real Chrome browser through a Chrome extension. Your tabs, your logins, no sandbox.">
+<title>chrome-bridge — Pear Commerce</title>
+<style>
+  :root {
+    --bg:        #0a0c10;
+    --bg-grad-1: #0c1014;
+    --bg-grad-2: #0a0c10;
+    --surface:   #12161d;
+    --surface-2: #161b23;
+    --border:    #232a34;
+    --border-soft:#1b212a;
+    --text:      #e7edf3;
+    --text-dim:  #9aa6b2;
+    --text-mute: #697481;
+    --accent:    #5ec8b5;
+    --accent-2:  #4fb0a0;
+    --accent-soft: rgba(94, 200, 181, 0.12);
+    --accent-line: rgba(94, 200, 181, 0.32);
+    --code-bg:   #0c0f14;
+    --code-text: #d7e3df;
+    --code-border:#1e2530;
+    --warn:      #d8a657;
+    --warn-soft: rgba(216, 166, 87, 0.10);
+    --warn-line: rgba(216, 166, 87, 0.34);
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", "Roboto Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    --radius: 10px;
+    --radius-sm: 7px;
+    --maxw: 920px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    background-image:
+      radial-gradient(1200px 540px at 78% -8%, rgba(94,200,181,0.07), transparent 60%),
+      radial-gradient(900px 500px at 8% 4%, rgba(120,160,220,0.05), transparent 55%),
+      linear-gradient(180deg, var(--bg-grad-1), var(--bg-grad-2) 38%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* thin top accent rule */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-line) 18%, var(--accent) 50%, var(--accent-line) 82%, transparent);
+    z-index: 20;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  ::selection { background: var(--accent-soft); color: var(--text); }
+
+  .wrap {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 0 clamp(1.1rem, 4vw, 2rem);
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    padding-top: clamp(2.4rem, 6vw, 3.6rem);
+  }
+  .crumbs {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--text-mute);
+    margin: 0 0 2.4rem;
+  }
+  .crumbs .sep { color: var(--border); padding: 0 0.5ch; }
+  .crumbs .here { color: var(--text-dim); }
+
+  /* ---------- hero ---------- */
+  .hero { padding-bottom: clamp(3rem, 8vw, 5rem); }
+  .hero h1 {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 7vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 1rem;
+    color: var(--text);
+  }
+  .hero h1 .dot { color: var(--accent); }
+  .pitch {
+    font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--text-dim);
+    max-width: 46ch;
+    margin: 0 0 0.6rem;
+  }
+  .pitch strong { color: var(--text); font-weight: 600; }
+  .hero .subtools {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text-mute);
+    margin: 0 0 2.2rem;
+  }
+
+  /* install block */
+  .install {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: var(--radius);
+  }
+  /* right-edge fade hint: signals the one-liner continues (scroll right) */
+  .install .scroll-hint {
+    position: absolute;
+    top: 2.05rem; /* below the install-bar */
+    right: 0;
+    bottom: 0;
+    width: 64px;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(90deg, rgba(12,15,20,0) 0%, rgba(12,15,20,0.85) 55%, var(--code-bg) 100%);
+    opacity: 1;
+    transition: opacity .2s;
+  }
+  .install .scroll-hint.hidden { opacity: 0; }
+  .install .install-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.5rem 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--code-border);
+    background: linear-gradient(180deg, rgba(255,255,255,0.018), transparent);
+  }
+  .install .install-bar .label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+  }
+  .copy-btn {
+    appearance: none;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.32rem 0.7rem;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s, transform .05s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent-line); }
+  .copy-btn:active { transform: translateY(1px); }
+  .copy-btn.copied { color: #0a0c10; background: var(--accent); border-color: var(--accent); }
+  .install pre {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+  }
+  .install code {
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--code-text);
+    white-space: pre;
+  }
+  .install code .tok-cmd { color: var(--accent); }
+  .install code .tok-url { color: #9cc4e0; }
+  .install code .tok-pipe { color: var(--text-mute); }
+
+  .hero .post-install {
+    font-size: 0.86rem;
+    color: var(--text-mute);
+    margin: 0.9rem 0 0;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding: clamp(2.6rem, 7vw, 4rem) 0; border-top: 1px solid var(--border-soft); }
+  .sec-head { margin-bottom: 1.8rem; }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 0.6rem;
+  }
+  h2 {
+    font-size: clamp(1.4rem, 3.4vw, 1.75rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--text);
+  }
+  .sec-lede {
+    color: var(--text-dim);
+    max-width: 60ch;
+    margin: 0.7rem 0 0;
+    font-size: 1rem;
+  }
+
+  /* ---------- how it works diagram ---------- */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 0.4rem;
+  }
+  .node {
+    flex: 1 1 0;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.3rem 1.2rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .node .num {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--text-mute);
+  }
+  .node .glyph {
+    width: 30px; height: 30px;
+    color: var(--accent);
+  }
+  .node h3 {
+    font-size: 0.98rem;
+    line-height: 1.3;
+    margin: 0;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .node p {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+  .node p code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--code-text);
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 0.05rem 0.32rem;
+  }
+  .connector {
+    flex: 0 0 auto;
+    align-self: center;
+    padding: 0 0.55rem;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .connector svg { width: 34px; height: 18px; display: block; }
+
+  /* ---------- lists / steps ---------- */
+  ul.bullets {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.85rem;
+  }
+  ul.bullets li {
+    position: relative;
+    padding-left: 1.5rem;
+    color: var(--text-dim);
+    font-size: 0.97rem;
+    line-height: 1.55;
+  }
+  ul.bullets li::before {
+    content: "";
+    position: absolute;
+    left: 0.1rem; top: 0.62em;
+    width: 6px; height: 6px;
+    border-radius: 2px;
+    background: var(--accent);
+    transform: rotate(45deg);
+  }
+  ul.bullets li strong { color: var(--text); font-weight: 600; }
+  ul.bullets li code {
+    font-family: var(--mono);
+    font-size: 0.84rem;
+    color: var(--code-text);
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 0.04rem 0.32rem;
+  }
+
+  ol.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 1.3rem; }
+  ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 3.1rem;
+    min-height: 2.2rem;
+  }
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 0;
+    width: 2.1rem; height: 2.1rem;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  ol.steps .step-title { color: var(--text); font-weight: 600; font-size: 0.98rem; display: block; margin-bottom: 0.35rem; }
+  ol.steps .step-body { color: var(--text-dim); font-size: 0.93rem; line-height: 1.55; }
+  ol.steps .step-body code {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--code-text);
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 0.04rem 0.32rem;
+    word-break: break-word;
+  }
+
+  /* code block (verify) */
+  .codeblock {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .codeblock pre {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+  }
+  .codeblock code {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--code-text);
+    white-space: pre;
+  }
+  .codeblock .c-prompt { color: var(--accent); }
+  .codeblock .c-comment { color: var(--text-mute); }
+  .codeblock .c-key { color: #9cc4e0; }
+  .codeblock .c-str { color: #c9b88a; }
+  .codeblock .c-bool { color: var(--accent); }
+  .verify-note {
+    margin: 1rem 0 0;
+    font-size: 0.93rem;
+    color: var(--text-dim);
+  }
+  .verify-note code {
+    font-family: var(--mono);
+    font-size: 0.84rem;
+    color: var(--code-text);
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 0.04rem 0.34rem;
+  }
+
+  /* safety callout */
+  .callout {
+    margin: clamp(2.6rem, 7vw, 4rem) 0 0;
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-line);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.4rem;
+  }
+  .callout .kicker { color: var(--warn); }
+  .callout h2 { font-size: 1.15rem; }
+  .callout ul { margin: 0.8rem 0 0; padding-left: 1.1rem; }
+  .callout li { color: var(--text-dim); font-size: 0.9rem; line-height: 1.55; margin-bottom: 0.35rem; }
+  .callout li:last-child { margin-bottom: 0; }
+  .callout li code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--code-text);
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 0.03rem 0.3rem;
+  }
+
+  /* footer */
+  footer {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    padding: 2.2rem 0 3rem;
+    border-top: 1px solid var(--border-soft);
+  }
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem 2rem;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .foot .repo {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+  }
+  .foot .repo svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 0.4rem; color: var(--text-dim); }
+  .foot .note {
+    font-size: 0.82rem;
+    color: var(--text-mute);
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 720px) {
+    .flow { flex-direction: column; gap: 0.7rem; }
+    .connector { padding: 0.2rem 0; transform: rotate(90deg); }
+    .node { padding: 1.1rem 1.05rem; }
+  }
+  @media (max-width: 480px) {
+    .install pre { padding: 0.85rem 0.9rem; }
+    .install code { font-size: 0.84rem; }
+    ol.steps li { padding-left: 2.7rem; }
+    ol.steps li::before { width: 1.85rem; height: 1.85rem; font-size: 0.82rem; }
+  }
+
+  /* subtle scrollbar for code areas */
+  pre::-webkit-scrollbar { height: 8px; }
+  pre::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+  pre::-webkit-scrollbar-thumb:hover { background: #2c343f; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <p class="crumbs">Pear Commerce<span class="sep">/</span>internal tool<span class="sep">/</span><span class="here">chrome-bridge</span></p>
+  </div>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <h1>chrome-bridge<span class="dot">.</span></h1>
+    <p class="pitch">Let opencode drive your <strong>real Chrome</strong> &mdash; your tabs, your logins, no sandbox.</p>
+    <p class="subtools">16 native browser_* tools &middot; snapshot, click, type, screenshot, console, network &amp; more</p>
+
+    <div class="install">
+      <div class="install-bar">
+        <span class="label">install</span>
+        <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy install command">copy</button>
+      </div>
+      <pre><code id="installCmd"><span class="tok-cmd">curl</span> -fsSL <span class="tok-url">https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/skills/chrome-bridge/install.sh</span> <span class="tok-pipe">|</span> <span class="tok-cmd">bash</span></code></pre>
+      <div class="scroll-hint" id="scrollHint" aria-hidden="true"></div>
+    </div>
+    <p class="post-install">Restart opencode after install. Then enable the extension in Chrome (two steps, below).</p>
+  </header>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how">
+    <div class="sec-head">
+      <p class="kicker">how it works</p>
+      <h2>Three pieces, one localhost bridge</h2>
+      <p class="sec-lede">No cloud relay. The opencode process hosts a WebSocket server on <code style="font-family:var(--mono);font-size:.84rem;color:var(--code-text);background:var(--code-bg);border:1px solid var(--code-border);border-radius:4px;padding:.04rem .32rem">127.0.0.1:8823</code>; a Chrome extension dials in; commands flow as trusted CDP input to your actual tabs.</p>
+    </div>
+
+    <div class="flow">
+      <div class="node">
+        <span class="num">01</span>
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="14" rx="2"/>
+          <path d="M3 8h18"/>
+          <path d="M7 12l2 2-2 2"/>
+          <path d="M12 14h4"/>
+        </svg>
+        <h3>opencode plugin</h3>
+        <p>Hosts a localhost bridge inside the opencode server process. Registers the native <code>browser_*</code> tools.</p>
+      </div>
+
+      <div class="connector" aria-hidden="true">
+        <svg viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9h28"/>
+          <path d="M27 5l4 4-4 4"/>
+          <path d="M7 5l-4 4 4 4"/>
+        </svg>
+      </div>
+
+      <div class="node">
+        <span class="num">02</span>
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 7h-3V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+          <path d="M10 5h4v2h-4z"/>
+        </svg>
+        <h3>Chrome extension</h3>
+        <p>Connects to the bridge over WebSocket. Token-paired, <code>chrome-extension://</code> origin auth, 20s ping.</p>
+      </div>
+
+      <div class="connector" aria-hidden="true">
+        <svg viewBox="0 0 34 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9h28"/>
+          <path d="M27 5l4 4-4 4"/>
+          <path d="M7 5l-4 4 4 4"/>
+        </svg>
+      </div>
+
+      <div class="node">
+        <span class="num">03</span>
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <path d="M3 9h18"/>
+          <circle cx="6.5" cy="6.5" r="0.6" fill="currentColor"/>
+          <circle cx="9" cy="6.5" r="0.6" fill="currentColor"/>
+          <path d="M8 14l3 3 5-5"/>
+        </svg>
+        <h3>real CDP &rarr; your tabs</h3>
+        <p>Trusted input drives your actual Chrome tabs &mdash; real profile, real logins, real sessions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WHAT THE INSTALLER DOES ============ -->
+  <section id="installer">
+    <div class="sec-head">
+      <p class="kicker">what the installer does</p>
+      <h2>Honest about every step</h2>
+      <p class="sec-lede">A single shell script. Nothing leaves the machine; pairing is a token-based, localhost-only handshake.</p>
+    </div>
+    <ul class="bullets">
+      <li><strong>Clones or updates</strong> the canonical skills repo to <code>~/pear-ai-skills</code> (idempotent on re-run).</li>
+      <li><strong>Installs the skill</strong> into your assistant skill folders &mdash; opencode, codex, and claude.</li>
+      <li><strong>Copies the opencode plugin</strong> (a single self-contained file) to <code>~/.config/opencode/plugins/</code>.</li>
+      <li><strong>Prints the two Chrome steps</strong> &mdash; load the unpacked extension, then run <code>pair</code>.</li>
+      <li><strong>Nothing is transmitted off-host.</strong> The pairing token travels in a URL fragment and is stored in a <code>0600</code> file.</li>
+    </ul>
+  </section>
+
+  <!-- ============ ENABLE IN CHROME ============ -->
+  <section id="chrome">
+    <div class="sec-head">
+      <p class="kicker">enable it in chrome</p>
+      <h2>Two steps, no token typing</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <span class="step-title">Load the unpacked extension</span>
+        <span class="step-body">Open <code>chrome://extensions</code>, toggle <strong>Developer mode</strong> on, click <strong>Load unpacked</strong>, and select <code>~/pear-ai-skills/skills/chrome-bridge/bridge/extension</code>.</span>
+      </li>
+      <li>
+        <span class="step-title">Pair &mdash; no typing</span>
+        <span class="step-body">Run <code>node ~/pear-ai-skills/skills/chrome-bridge/bridge/bin/chrome-bridge.js pair</code>. It finds the Chrome profile that has the extension and opens a self-pairing page there; the token is saved automatically. Restart opencode after install.</span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ VERIFY ============ -->
+  <section id="verify">
+    <div class="sec-head">
+      <p class="kicker">verify</p>
+      <h2>Confirm the bridge is live</h2>
+    </div>
+    <div class="codeblock">
+<pre><code><span class="c-prompt">$</span> chrome-bridge health
+<span class="c-comment"># {</span>
+<span class="c-comment">#   "ok": true,</span>
+<span class="c-comment">#   "service": "chrome-bridge",</span>
+<span class="c-comment">#   "mode": "plugin",</span>
+<span class="c-comment">#   "port": 8823,</span>
+<span class="c-comment">#   "connected": <span class="c-bool">true</span>,</span>
+<span class="c-comment">#   ...</span>
+<span class="c-comment"># }</span></code></pre>
+    </div>
+    <p class="verify-note">Then in opencode, ask: <code>list my Chrome tabs</code>. If the bridge is connected you will get back ids, titles, urls, and tab groups.</p>
+  </section>
+
+  <!-- ============ SAFETY MODEL ============ -->
+  <aside class="callout">
+    <div class="sec-head" style="margin-bottom:0">
+      <p class="kicker">safety model</p>
+      <h2>What keeps this from being a footgun</h2>
+    </div>
+    <ul>
+      <li><strong>Localhost only.</strong> The bridge binds <code>127.0.0.1:8823</code>; no remote host can reach it.</li>
+      <li><strong>0600 token file.</strong> The pairing token lives in <code>~/.opencode-chrome-bridge/config.json</code> with mode <code>0600</code>.</li>
+      <li><strong>Visible when driven.</strong> Trusted CDP input makes Chrome show its <em>&ldquo;started debugging this browser&rdquo;</em> infobar on every tab the agent drives &mdash; you can always see it happening.</li>
+      <li><strong>Why the broad permissions.</strong> The extension needs <code>&lt;all_urls&gt;</code> + <code>debugger</code> so it can snapshot, click, type, and evaluate JS on any real page you are signed into &mdash; that is the entire point of using your real browser.</li>
+    </ul>
+  </aside>
+
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div class="foot">
+      <a class="repo" href="https://github.com/Pear-Commerce/pear-ai-skills" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        github.com/Pear-Commerce/pear-ai-skills
+      </a>
+      <span class="note">Pear Commerce &mdash; internal engineering tool.</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById('copyBtn');
+    var cmd = document.getElementById('installCmd');
+    var pre = cmd ? cmd.parentElement : null;
+    var hint = document.getElementById('scrollHint');
+    // The exact string to copy: textContent with surrounding whitespace trimmed.
+    function exactText() {
+      return cmd.textContent.replace(/\s+/g, ' ').trim();
+    }
+    // Show/hide the right-edge fade based on whether the line overflows.
+    function updateHint() {
+      if (!pre || !hint) return;
+      var overflows = pre.scrollWidth > pre.clientWidth + 1;
+      var atEnd = pre.scrollLeft + pre.clientWidth >= pre.scrollWidth - 1;
+      hint.classList.toggle('hidden', !overflows || atEnd);
+    }
+    if (pre) {
+      pre.addEventListener('scroll', updateHint);
+      window.addEventListener('resize', updateHint);
+      // initial check after layout
+      requestAnimationFrame(updateHint);
+    }
+    var resetTimer = null;
+    btn.addEventListener('click', function () {
+      var text = exactText();
+      var done = function () {
+        btn.textContent = 'copied';
+        btn.classList.add('copied');
+        if (resetTimer) clearTimeout(resetTimer);
+        resetTimer = setTimeout(function () {
+          btn.textContent = 'copy';
+          btn.classList.remove('copied');
+        }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+      function fallback() {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.top = '-1000px';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          done();
+        } catch (e) {
+          btn.textContent = 'press Ctrl+C';
+          if (resetTimer) clearTimeout(resetTimer);
+          resetTimer = setTimeout(function () {
+            btn.textContent = 'copy';
+            btn.classList.remove('copied');
+          }, 1800);
+        }
+      }
+    });
+  })();
+</script>
+</body>
+</html>
