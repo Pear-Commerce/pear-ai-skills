@@ -10,7 +10,7 @@ description: Pear-specific AWS infrastructure, tooling, credentials, SSM, OAuth,
 Prefer Pear's repo helpers over raw AWS commands when they exist. From the api.pearcommerce.com repo root, every agent-facing helper is self-describing via `-h`/`--help` (prints usage and exits 0 before any AWS calls; unknown flags are rejected with usage):
 
 ```bash
-PATH=/opt/homebrew/bin:/usr/local/bin:$PATH command -v aws jq session-manager-plugin copilot || true
+PATH=/opt/homebrew/bin:/usr/local/bin:$PATH command -v aws jq session-manager-plugin || true
 PATH=/opt/homebrew/bin:/usr/local/bin:$PATH aws sts get-caller-identity --output json
 devops/logs.sh --help
 devops/ec2-exec.sh --help
@@ -37,9 +37,7 @@ Do not print secret values. It is okay to print secret key names or identity met
 - `devops/ip.sh`: prints private instance IPs by default. `--public` is an explicit inventory-only compatibility view.
 - `devops/jsp.sh`: uploads/compiles through SSM, prints a private instance-IP URL on port 8080 plus the compile-check output, then exits. Requires an active VPN — start `devops/vpn.sh` if it is not running; never `--start-vpn`. Also load `$pear-prod-jsp` for the detailed safety and browser pattern.
 - `devops/jspx`: retained-JSP compatibility runner using SSM upload/execution, not public-IP SSH/rsync.
-- `devops/env.mjs` and `devops/environments.json`: source of truth for env aliases, EB CNAMEs, Copilot env names, Datadog services, and domains.
-
-If the Copilot CLI is not installed, do not stall. Use EB, EC2, SSM, CloudWatch Logs, or `aws elasticbeanstalk` APIs directly for read-only diagnosis, and mention that Copilot-specific actions need the CLI.
+- `devops/env.mjs` and `devops/environments.json`: source of truth for env aliases, EB CNAMEs, Datadog services, and domains.
 
 ## SSM Patterns
 
@@ -158,7 +156,7 @@ GROUP BY service, env, version, state
 ORDER BY cnt DESC, max_time DESC;
 ```
 
-If live SQL comments are missing from `PROCESSLIST`, use PI SQL fingerprints, app logs, EB/Copilot deploy versions, and GitHub workflow timing together. Do not attribute a DB spike to a code path solely because it is top-ranked during the incident; check whether that fingerprint actually increased relative to the baseline.
+If live SQL comments are missing from `PROCESSLIST`, use PI SQL fingerprints, app logs, EB deploy versions, and GitHub workflow timing together. Do not attribute a DB spike to a code path solely because it is top-ranked during the incident; check whether that fingerprint actually increased relative to the baseline.
 
 ## S3, CloudFront, And Deploy Safety
 
