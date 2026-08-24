@@ -11,6 +11,14 @@ The canonical Pear skills repository is `https://github.com/Pear-Commerce/pear-a
 
 When asked to update this skill from any in-repository or locally installed copy, first read the canonical copy at `skills/pear-pr-review-flow/SKILL.md`, make the canonical repo change, and push it. Then update any vendored or installed copy that should stay in sync. For app repos other than `api.pearcommerce.com`, commit and push directly after verification. For `api.pearcommerce.com`, use a `codex/` branch and open a pull request instead of pushing directly to `master`.
 
+## CRITICAL: Review vs Merge — Never Merge Without Explicit Instruction
+
+Merging a pull request is an **irreversible action** with **external side effects** (pushing to production, changing shared branches). The following words mean **approve a GitHub PR review only** — they do NOT mean merge:
+
+- "review", "approve", "accept", "accept-if-reasonable", "look at", "check", "evaluate"
+
+NEVER merge or land a PR unless the user **explicitly** says "merge", "land", "ship", "close when ready", or words that **unambiguously** request merging. When in doubt, approve the review and ask. Never assume merge intent from review-language requests. This guard overrides any other section in this skill that might imply merging is a default or automatic action.
+
 ## Overview
 
 Use this skill whenever the user mentions a PR or asks to create, update, review, monitor, or land a PR. Before opening a Pear code PR, make sure `$pear-engineering-workflow` has run its cleanup/review-rules pass. Request the right PR reviewers without relying on broad teams, request GitHub Copilot in the way GitHub actually records, ask which autonomous review-loop actions the user wants, create the review-watch loop for Codex-authored PRs, and keep the PR review loop visible in Slack when the user wants that.
@@ -263,7 +271,9 @@ The recurring task should:
 
 ## Landing Green PRs
 
-Only close eligible Codex-authored PRs by merging them when the user has asked to land, merge, close when ready, or opted into auto-land for the watcher. Without that approval, stop after proving readiness and ask the user whether to merge. "Ready" means:
+**STOP. Read the CRITICAL guard at the top of this skill before proceeding.** "Review", "approve", and "accept" do NOT mean merge. Only merge when the user has **explicitly** said "merge", "land", "ship", or "close when ready", or has opted into auto-land for a watcher. Without that explicit approval, stop after proving readiness and ask the user whether to merge. Do not assume merge intent from any review-language request.
+
+"Ready" means:
 
 - the PR is open, not draft, and still points to the expected branch
 - the branch has been rebased onto the latest base branch without merge commits
