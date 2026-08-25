@@ -38,15 +38,21 @@ case "$WORKER_NAME" in
 esac
 
 printf '%s' "<secret-value>" | npx wrangler secret put AUTH_SHARED_SECRET --name "$WORKER_NAME"
+printf '%s' "<current-secret-value>" | npx wrangler secret put AUTH_SHARED_SECRET_PREVIOUS --name "$WORKER_NAME"
 ```
 
 Set all required auth secrets:
 ```bash
 npx wrangler secret put AUTH_SHARED_SECRET --name "$WORKER_NAME"
+npx wrangler secret put AUTH_SHARED_SECRET_PREVIOUS --name "$WORKER_NAME" # optional, additive overlap binding
 npx wrangler secret put COOKIE_SECRET --name "$WORKER_NAME"
 ```
 
 `AUTH_BASE_URL`, `AUTH_CALLBACK_URL`, and `GOOGLE_HOSTED_DOMAIN` are normally plain Wrangler vars in `wrangler.toml`, not secrets. If an existing app stores them as secrets, keep using explicit `--name "$WORKER_NAME"` and re-check the protected-worker guard first.
+
+Never overwrite `AUTH_SHARED_SECRET` when preparing a rotation. First add
+`AUTH_SHARED_SECRET_PREVIOUS` with the existing current value and deploy code that
+verifies both while signing only with current.
 
 ---
 
