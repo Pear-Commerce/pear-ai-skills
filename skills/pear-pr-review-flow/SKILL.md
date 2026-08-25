@@ -89,6 +89,7 @@ Before creating a PR for Pear code changes, load `$pear-engineering-workflow` an
 - read the PR-improvement guide from the engineering workflow skill, preferably `/Users/alexwyler/pear-ai-skills/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md` or `https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md`
 - apply it as a final cleanup checklist before calling implementation done or opening the PR
 - run the relevant focused checks after cleanup
+- when reviewing Java code, prefer imported class names over fully-qualified names (e.g. `List` not `java.util.List` inline); the PR-improvement guide enforces this as a terseness/readability rule
 - mention in the PR summary or final response that the Pear engineering cleanup pass was completed, or state plainly if the guide/checks could not be run
 
 For an existing PR, repeat this gate before marking the PR ready for review or re-requesting reviewers when Codex has materially changed code.

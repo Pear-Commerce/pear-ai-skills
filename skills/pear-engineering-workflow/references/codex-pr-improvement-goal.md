@@ -170,6 +170,7 @@ public class PulseReportGenerationJob extends PearScheduledJob {
 - Prefer narrow hooks/template methods over broad strategy rewrites for tiny variations.
 - Remove stale fields, dead assignments, old-behavior comments, and contradictory code touched by the PR. Do not apply this as a blanket rule to serialized external JSON DTO fields; see the DTO guidance below.
 - Be terse, not cryptic. Domain names should say what they mean.
+- Prefer imports over fully-qualified class names. Add `import java.util.List;` at the top of the file and use `List` in the body, not `java.util.List<...>` inline. Fully-qualified names in expressions make lines longer and harder to scan; the only exception is genuine ambiguity (two classes with the same simple name from different packages, where an import plus a qualifier is unavoidable).
 - Choose behavior path before doing work; avoid "correction after old path" logic.
 - Validate null/empty once at boundaries.
 - Pass concrete values when known; do not add mapping/deferred functions just to look generic.
