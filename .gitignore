@@ -3,3 +3,5 @@ node_modules/
 .env
 .codex/
 .claude/
+# Ignore oh my open code dirtying up this folder by running opencode in it
+.omo
