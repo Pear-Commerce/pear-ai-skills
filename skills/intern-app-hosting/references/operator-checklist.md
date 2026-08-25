@@ -51,7 +51,8 @@ Quick checklist for tracking progress on each hosted app. Use this to stay organ
 - [ ] App has a `/login` route that generates `state` + `nonce` and redirects to shared auth start URL
 - [ ] App has an `/auth/google/callback` route that validates `state`, `session_token`, nonce, hosted domain
 - [ ] Local session created after successful validation
-- [ ] Env vars set: `AUTH_BASE_URL`, `AUTH_CALLBACK_URL`, `AUTH_SHARED_SECRET`, `GOOGLE_HOSTED_DOMAIN`
+- [ ] Env vars set: `AUTH_BASE_URL`, `AUTH_CALLBACK_URL`, `AUTH_SHARED_SECRET`, optional `AUTH_SHARED_SECRET_PREVIOUS`, `GOOGLE_HOSTED_DOMAIN`
+- [ ] App signs only with current and verifies current/previous for OAuth state, callback tokens, and local sessions
 - [ ] New app `AUTH_SHARED_SECRET` synced from `intern-app-hosting-auth-v2-shared-secret` in `us-east-1`
 - [ ] New app includes an auth verification helper equivalent to `scripts/auth-lane.mjs verify-app`
 - [ ] `SESSION_SECRET` set (Lightsail only)

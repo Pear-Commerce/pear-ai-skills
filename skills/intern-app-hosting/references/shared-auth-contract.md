@@ -8,6 +8,13 @@ Existing apps that already use `auth.intern.pearcommerce.com` stay on that legac
 
 Never rotate or replace `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` while fixing a single app. Those credentials belong to the shared auth service for its lane and changing them is a lane-wide auth change that can break every app using that login lane. For app-specific auth failures, debug callback routing, cookies/state, hosted domain checks, and `AUTH_SHARED_SECRET` first. Only perform a Google OAuth client rotation when explicitly requested as a coordinated lane-wide auth operation.
 
+Shared-HMAC rotation is also lane-wide. New app code must sign with
+`AUTH_SHARED_SECRET` and verify with both it and optional
+`AUTH_SHARED_SECRET_PREVIOUS`. Before the first rotation, add the previous binding
+to every app using the current AWS value; this is additive and must not overwrite
+the current binding. Only after all dual-verifier code is deployed may the current
+binding change.
+
 `auth-intern` and `auth-intern-v2` are protected shared auth Workers. During normal app hosting or auth repair, never set secrets or deploy against those Workers. Set `AUTH_SHARED_SECRET` only on the affected app Worker, using the AWS secret for that app's lane. If evidence points to shared-auth lane drift, stop and report the lane-wide risk before touching the auth Worker.
 
 ---
@@ -58,7 +65,7 @@ The shared service:
 
 The hosted app:
 1. Validates the returned `state` matches what it stored
-2. Validates the `session_token` signature using `AUTH_SHARED_SECRET`
+2. Validates the `session_token` signature using current or previous, while signing new app state with current
 3. Validates the nonce and `hosted_domain` claims inside the token
 4. Creates a local session (signed cookie for Workers, `express-session` for Lightsail)
 5. Clears temporary auth state (state + nonce)
@@ -72,10 +79,17 @@ The hosted app:
 AUTH_BASE_URL=https://auth-v2.intern.pearcommerce.com
 AUTH_CALLBACK_URL=https://<app-hostname>/auth/google/callback
 AUTH_SHARED_SECRET=<retrieve from Pear secrets store>
+AUTH_SHARED_SECRET_PREVIOUS=<optional overlap verifier>
 GOOGLE_HOSTED_DOMAIN=pearcommerce.com
 ```
 
 For v2 apps, use the exact raw `SecretString` from AWS Secrets Manager secret `intern-app-hosting-auth-v2-shared-secret` in `us-east-1` for `AUTH_SHARED_SECRET`. Do not parse the SecretString as JSON, select an inner field, trim quotes, or rotate the shared token secret while fixing a single app. If a callback reports `Bad shared auth token signature`, identify the app's lane from `AUTH_BASE_URL` and update only the affected app's Worker secret from that lane's AWS secret.
+
+The additive bootstrap command is:
+
+```bash
+node scripts/auth-lane.mjs sync-app-secret --worker <app-worker> --binding previous --source-stage current
+```
 
 Before running a Worker secret command, verify the target:
 

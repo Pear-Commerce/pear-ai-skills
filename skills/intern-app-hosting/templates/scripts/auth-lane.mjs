@@ -18,7 +18,9 @@ const config = {
   secretId: args.secretId || args["secret-id"] || DEFAULT_SECRET_ID,
   workerName: args.worker || args.workerName || "",
   oauthCookie: args.oauthCookie || args["oauth-cookie"] || "",
-  sessionCookie: args.sessionCookie || args["session-cookie"] || ""
+  sessionCookie: args.sessionCookie || args["session-cookie"] || "",
+  targetBinding: args.binding || "current",
+  sourceStage: args.sourceStage || args["source-stage"] || "current"
 };
 
 try {
@@ -35,16 +37,23 @@ try {
   fail(error instanceof Error ? error.message : String(error));
 }
 
-function syncAppSecret({ region, secretId, workerName }) {
+function syncAppSecret({ region, secretId, workerName, targetBinding, sourceStage }) {
   if (!workerName) fail("Pass --worker <worker-name>.");
   assertAppWorkerName(workerName);
 
-  const secret = readAwsSecret({ region, secretId });
+  if (!["current", "previous"].includes(targetBinding)) fail("--binding must be current or previous.");
+  if (!["current", "previous"].includes(sourceStage)) fail("--source-stage must be current or previous.");
+  const binding = targetBinding === "previous" ? "AUTH_SHARED_SECRET_PREVIOUS" : "AUTH_SHARED_SECRET";
+  const secret = readAwsSecret({
+    region,
+    secretId,
+    versionStage: sourceStage === "previous" ? "AWSPREVIOUS" : "AWSCURRENT"
+  });
   const result = spawnSync("npx", [
     "wrangler",
     "secret",
     "put",
-    "AUTH_SHARED_SECRET",
+    binding,
     "--name",
     workerName
   ], {
@@ -55,10 +64,10 @@ function syncAppSecret({ region, secretId, workerName }) {
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.status !== 0) {
-    fail(`Wrangler failed to update AUTH_SHARED_SECRET for ${workerName}.`);
+    fail(`Wrangler failed to update ${binding} for ${workerName}.`);
   }
 
-  console.log(`AUTH_SHARED_SECRET for ${workerName} now mirrors ${secretId} in ${region}.`);
+  console.log(`${binding} for ${workerName} now mirrors ${sourceStage} ${secretId} in ${region}.`);
 }
 
 function assertAppWorkerName(workerName) {
@@ -164,7 +173,7 @@ async function verifyAppSecret({ appUrl, authUrl, region, secretId, oauthCookie,
   fail(`Auth callback did not create a session. HTTP ${callback.statusCode}: ${excerpt(callback.body)}`);
 }
 
-function readAwsSecret({ region, secretId }) {
+function readAwsSecret({ region, secretId, versionStage = "AWSCURRENT" }) {
   const result = spawnSync("aws", [
     "secretsmanager",
     "get-secret-value",
@@ -172,6 +181,8 @@ function readAwsSecret({ region, secretId }) {
     secretId,
     "--region",
     region,
+    "--version-stage",
+    versionStage,
     "--query",
     "SecretString",
     "--output",
