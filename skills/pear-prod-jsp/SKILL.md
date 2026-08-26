@@ -53,6 +53,70 @@ devops/jsp.sh -j /tmp/probe.jsp -e PROD > /tmp/jsp-run.log 2>&1
 # process exit = run complete; /tmp/jsp-run.log holds the URL and compile-check output
 ```
 
+## Silent JSP Compilation Failures (404 Masking)
+
+On the current Spring Boot JAR deployment, dynamically uploaded JSPs that `@page import` certain Pear classes silently fail to compile. The Tomcat Jasper compiler cannot resolve some classes from its classloader even though they exist in the running JAR. The compilation exception is routed through Tomcat's error dispatch, caught by `GlobalExceptionHandler`, and returned as:
+
+```json
+{"error":"Request could not be completed","code":404}
+```
+
+This looks identical to a JSP capability denial (the `JspAccessFilter` 404), so it is easy to misdiagnose as an access/infrastructure problem. The real cause is a JSP compilation failure.
+
+### How to distinguish
+
+- A simple JSP with no Pear imports (or only trivial ones like `com.pear.config.Resources`) returns **HTTP 200** — compilation succeeds.
+- A JSP that imports `com.pear.spring.SpringApplicationContextProvider` or `com.pear.entities.inventory.UPC` (and other SimpleORMObject entities / Spring providers) returns **HTTP 404** with the JSON error body — compilation failed silently.
+- The `jsp.sh` compile-check curl shows the same 404 JSON for both capability denial and compilation failure; there is no `Unable to compile class for JSP` message in the output because the error handler intercepts it first.
+
+### Workaround: reflection + WebApplicationContextUtils
+
+Instead of importing Pear classes directly, use `WebApplicationContextUtils` (available via the servlet context) and pure reflection:
+
+```jsp
+<%@ page contentType="text/plain" %>
+<%@ page import="org.springframework.web.context.support.WebApplicationContextUtils" %>
+<%
+var ctx = WebApplicationContextUtils.getRequiredWebApplicationContext(application);
+
+// Load ORM entities by reflection — do NOT import com.pear.entities.inventory.UPC
+Class<?> upcClass = Class.forName("com.pear.entities.inventory.UPC");
+Object upc = upcClass.getMethod("fetchFuzzy", String.class).invoke(null, "3179140213964");
+if (upc == null) {
+    upc = upcClass.getDeclaredConstructor().newInstance();
+    upcClass.getField("UPC").set(upc, "3179140213964");
+}
+
+// Get Spring beans by reflection — do NOT import SpringApplicationContextProvider
+Class<?> resolverClass = Class.forName("com.pear.upcresolution.fr.CarrefourItemIdInfoResolver");
+Object resolver = ctx.getBean(resolverClass);
+
+// Invoke resolver methods by reflection
+Class<?> partnerClass = Class.forName("com.pear.entities.inventory.RetailPartner");
+Object partner = partnerClass.getMethod("forEnumName", String.class).invoke(null, "carrefourfr");
+Class<?> goalClass = Class.forName("com.pear.upcresolution.ItemIdInfoResolver$Goal");
+Object goal = Enum.valueOf((Class<Enum>) goalClass, "FIND_ITEM_ID");
+var method = resolverClass.getDeclaredMethod("_resolveItemIdInfo",
+    partnerClass, upcClass, goalClass, String.class, String.class);
+method.setAccessible(true);
+Object result = method.invoke(resolver, partner, upc, goal, null, null);
+%>
+```
+
+Key points:
+- `WebApplicationContextUtils.getRequiredWebApplicationContext(application)` works; `SpringApplicationContextProvider.getApplicationContext()` does not — different classloader visibility.
+- SimpleORMObject entities (`UPC`, `RetailPartner`, etc.) must be loaded by reflection. `UPC` has no `String` constructor; use `fetchFuzzy(String)` to load from the DB, or `getDeclaredConstructor().newInstance()` + set the public `UPC` field for a transient instance.
+- The `Goal` enum is `ItemIdInfoResolver.Goal` with constants `FIND_ITEM_ID`, `FIND_ITEM_ID_DEPENDENT`, `IN_STOCK_CHECK`, `UPC_DETAILS`, `FIND_UPC` — not `DIRECT_RESOLUTION`.
+- Read `SRetailerItemData` fields by reflection too: `sridClass.getField("itemId").get(result)`, etc.
+
+### Classes known to trigger silent compilation failure
+
+- `com.pear.spring.SpringApplicationContextProvider` — use `WebApplicationContextUtils` instead
+- `com.pear.entities.inventory.UPC` and other SimpleORMObject entities — use reflection
+- Any class with complex Lombok-processed or ORM-dependent type hierarchies that the Jasper classloader cannot fully resolve
+
+If a JSP returns 404 with `{"error":"Request could not be completed","code":404}` and you have Pear imports, strip all Pear imports and test with just the servlet-context approach above. If it then returns 200, you have confirmed a compilation failure, not a capability denial.
+
 ## Pear API Curl Header
 
 When you curl `https://api.pearcommerce.com` or `https://test.api.pearcommerce.com` directly for JSP previews, raw JSP output, controller probes, cache invalidation, or API verification, include the trusted-edge header used by the Admin/Offers Cloudflare invalidation scripts before interpreting a Cloudflare 403/block page:
