@@ -70,20 +70,22 @@ For multi-instance outages, do not rely on the first log stream. Resolve all run
 
 ## Credentials
 
-**Proactively run SSO login before any AWS command — do not wait for a failure.** The command opens the user's Chrome browser for authentication and blocks until approved, so allow a few minutes of timeout:
-
-```bash
-aws sso login --profile pear-sso   # opens browser, waits for approval
-```
-
-After login, verify identity and check which credential source is winning:
+**Verify identity before choosing an auth fix — do not blindly run `aws sso login` first.** `aws sso login` only fixes an expired SSO session; it is a slow interactive step that does nothing when the real problem is stale static keys shadowing the profile. Probe first, then branch on the actual failure:
 
 ```bash
 aws sts get-caller-identity --output json
 aws configure list
+
+# on failure, classify it in one shot (exit 0 = ok, 2 = fixed, 3 = needs login, 4 = other)
+scripts/aws-auth-probe.sh
 ```
 
-Stale `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_SESSION_TOKEN` environment variables shadow the SSO profile (`Location: env`): unset them and export `AWS_PROFILE=pear-sso`, then re-verify with `aws sts get-caller-identity`. If you see `UnrecognizedClientException` or `Token has expired` at any point, run `aws sso login --profile pear-sso` again and retry — never report an auth blocker until you have attempted a fresh SSO login. Only report an auth blocker if the SSO login itself fails or the browser approval is not completed.
+Two visually-similar failures have opposite fixes. The `Type` column from `aws configure list` tells you which case you are in without guessing:
+
+- **Stale static keys** (`InvalidAccessKeyId` or `InvalidClientTokenId`, with `Type: env` on the `access_key` row): invalid `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_SESSION_TOKEN` environment variables shadow the SSO profile, because AWS checks env vars before the profile. Do NOT run `aws sso login` — it will not help. Fix by clearing them: `unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN`, remove any hardcoded `export AWS_ACCESS_KEY_ID=...` lines from `~/.bash_profile`/`~/.zshrc`, set `export AWS_PROFILE=pear-sso`, then re-verify with `aws sts get-caller-identity`.
+- **Expired/missing SSO session** (`ExpiredTokenException`, "is expired", "Your SSO session has expired", or `UnrecognizedClientException` with no env keys): run `aws sso login --profile pear-sso` (add `--no-browser` for a device-code flow) and retry. This one step opens the browser and waits for approval, so reserve it for this case only.
+
+Only report an auth blocker after both branches are exhausted (env keys are clear and a fresh `aws sso login` has failed or been declined). Never loop between the two fixes or re-run `aws sso login` as a first resort.
 
 Use AWS Secrets Manager for shared service credentials. For MySQL/Aurora from a workstation, the sanctioned path is `devops/db.sh` from the api repo: with the split-tunnel AWS Client VPN active (`vpn.sh` — start it if it is not running; never `db.sh --start-vpn`), it pulls `prod-db-10-2025`-style credentials from Secrets Manager, resolves the target through VPC DNS, and connects with RDS-CA-verified TLS. Targets: `--prod` (database.pearcommerce.com), `--dev`/`--analytics` (dev-database.pearcommerce.com), `--read` (Aurora prod reader), `--maria` (pear-mariadb-6). Note `analytics-database.pearcommerce.com:3306` is still TCP-reachable publicly, but `db.sh` deliberately refuses non-VPC resolutions for RDS hosts — use the helper rather than a direct mysql connection unless you are already inside the VPC. Snowflake CLI credentials come from the same pattern (`snowflake-2025-12-01` secret; see the `$snowflake-jdbc` skill). The raw secret-fetch shape, for in-VPC or scripted use:
 
