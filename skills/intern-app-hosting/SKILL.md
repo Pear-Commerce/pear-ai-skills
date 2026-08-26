@@ -13,6 +13,16 @@ When asked to update this skill from any in-repository copy, first read the cano
 
 This skill takes an already-built app and hosts it on a Pear-managed subdomain like `sample.intern.pearcommerce.com`. It acts — using available tools — rather than just advising.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill (Lightsail, CloudFront, ACM, Route53), proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Protected Shared Auth Infrastructure
 
 `auth-intern` and `auth-intern-v2` are shared infrastructure Workers, not app Workers. A normal intern app hosting, update, or auth repair task must never run `wrangler secret put`, `wrangler deploy`, dashboard secret edits, or API writes against either shared auth Worker.

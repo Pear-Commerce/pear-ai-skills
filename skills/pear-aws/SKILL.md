@@ -70,19 +70,20 @@ For multi-instance outages, do not rely on the first log stream. Resolve all run
 
 ## Credentials
 
-Verify identity first:
-
-```bash
-aws sts get-caller-identity --output json
-```
-
-If that fails with `InvalidClientTokenId` or `Error ... Token has expired and refresh failed`, automatically run the SSO login yourself — do not stop and ask the user first. It opens a browser authorization page and blocks until approved, so allow a few minutes of timeout:
+**Proactively run SSO login before any AWS command — do not wait for a failure.** The command opens the user's Chrome browser for authentication and blocks until approved, so allow a few minutes of timeout:
 
 ```bash
 aws sso login --profile pear-sso   # opens browser, waits for approval
 ```
 
-After login, check which credential source is winning with `aws configure list`. Stale `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_SESSION_TOKEN` environment variables shadow the SSO profile (`Location: env`): unset them and export `AWS_PROFILE=pear-sso`, then re-verify with `aws sts get-caller-identity`. Only report an auth blocker if the SSO login itself fails or the browser approval is not completed.
+After login, verify identity and check which credential source is winning:
+
+```bash
+aws sts get-caller-identity --output json
+aws configure list
+```
+
+Stale `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_SESSION_TOKEN` environment variables shadow the SSO profile (`Location: env`): unset them and export `AWS_PROFILE=pear-sso`, then re-verify with `aws sts get-caller-identity`. If you see `UnrecognizedClientException` or `Token has expired` at any point, run `aws sso login --profile pear-sso` again and retry — never report an auth blocker until you have attempted a fresh SSO login. Only report an auth blocker if the SSO login itself fails or the browser approval is not completed.
 
 Use AWS Secrets Manager for shared service credentials. For MySQL/Aurora from a workstation, the sanctioned path is `devops/db.sh` from the api repo: with the split-tunnel AWS Client VPN active (`vpn.sh` — start it if it is not running; never `db.sh --start-vpn`), it pulls `prod-db-10-2025`-style credentials from Secrets Manager, resolves the target through VPC DNS, and connects with RDS-CA-verified TLS. Targets: `--prod` (database.pearcommerce.com), `--dev`/`--analytics` (dev-database.pearcommerce.com), `--read` (Aurora prod reader), `--maria` (pear-mariadb-6). Note `analytics-database.pearcommerce.com:3306` is still TCP-reachable publicly, but `db.sh` deliberately refuses non-VPC resolutions for RDS hosts — use the helper rather than a direct mysql connection unless you are already inside the VPC. Snowflake CLI credentials come from the same pattern (`snowflake-2025-12-01` secret; see the `$snowflake-jdbc` skill). The raw secret-fetch shape, for in-VPC or scripted use:
 

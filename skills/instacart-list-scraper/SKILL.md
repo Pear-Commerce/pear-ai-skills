@@ -9,6 +9,16 @@ description: Operate and tune Pear's Instacart prewarm/list-scraper subsystem.
 
 Working with anything that touches `InstacartBatchInventoryList` processing, `InstacartPrewarmer`, the prewarm Quartz job, the no-recipes prewarm dashboard, or AppConfig knobs in the `instacart-prewarm-pool` namespace. Use for tuning, dashboard interpretation, code review of changes near the prewarm path, or onboarding new engineers to the subsystem.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill (e.g. AppConfig lookups), proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## The system in one page
 
 `InstacartBatchInventoryList` is the unit of work. Each row represents a list of UPCs to be scraped against an Instacart retailer's zones. A scheduled job picks the oldest expired lists and refreshes them by calling Instacart's GraphQL, then writing `UPCRetailerZipAvailability` (URZA) rows for each (UPC × zone) tuple.

@@ -15,6 +15,16 @@ Use VictoriaLogs as Pear's primary searchable log store. The human UI is [logs.i
 - Scalyr has been canceled and is no longer available. VictoriaLogs is the sole log search system. For agent-accessible queries from a terminal, use `$fetch-pear-logs` (session-cookie CLI) or the `scripts/query-victorialogs.sh` helper below (SSM-based).
 - When the investigation started from a customer complaint, pair the log search with `$front-api`: search the brand in Front to get the customer's exact symptom description and timestamps, then use those to bound the LogsQL time range.
 
+## AWS SSO Prerequisite
+
+The `query-victorialogs.sh` helper and `devops/logs.sh` both use SSM, which requires valid AWS credentials. Before running any AWS CLI or SSM command in this skill, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Query Safely
 
 Always bound the time range and result size. Start narrow, inspect field names/facets, then widen only if necessary. Avoid returning broad `responseBody`, `jurl_responseBody`, headers, or stack fields unless the investigation needs them.

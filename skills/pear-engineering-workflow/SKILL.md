@@ -19,6 +19,16 @@ Avoid switching to non-login Bash, especially `shell=/bin/bash` with `login=fals
 
 For CloudWatch, RDS, or other AWS-backed investigations, also check the login shell before deciding tools are missing: `zsh -lc 'command -v aws python3 pip3'`. Use `$pear-log-search` for saved or cross-environment application logs, `db.sh` for data, and `pear-prod-jsp` for live JVM state. Reserve `devops/logs.sh` for immediate single-instance tailing. If direct AWS API access is genuinely needed and `aws`/`boto3` is unavailable, keep any temporary Python dependency install in a temp venv/path outside the repo, avoid changing repo dependency files, and describe that as a local tooling workaround rather than a production or application finding.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill (AppConfig, SSM, CloudWatch, db.sh, logs.sh, JSP via SSM), proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## AppConfig Changes And Publishing
 
 Use the bundled [`scripts/appconfig-set-value.sh`](scripts/appconfig-set-value.sh) for Pear API `Base (All)` AppConfig changes. It encodes the production IDs, preserves JSON types, uses optimistic version locking, creates the hosted version with `fileb://`, deploys it, and verifies both the value and deployment state.

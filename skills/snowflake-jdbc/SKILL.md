@@ -5,6 +5,16 @@ description: Snowflake JDBC gotchas for Pear Java code. Use when writing Java co
 
 # Snowflake JDBC Gotchas
 
+## AWS SSO Prerequisite
+
+Snowflake CLI credentials come from AWS Secrets Manager (`snowflake-2025-12-01` secret). Before running any AWS CLI command in this skill, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Column Names Are Uppercase
 
 Snowflake normalizes unquoted column aliases to **uppercase**. A query like:

@@ -13,6 +13,16 @@ When asked to update this skill from any in-repository copy, first read the cano
 
 You are creating standalone Pear dashboard modules from public S3 authoring files. Treat the public S3 files as the complete source of truth.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill (S3 reads/writes for module publishing), proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Public Sources
 
 Read these public files before creating or editing a module:

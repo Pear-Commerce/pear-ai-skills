@@ -9,6 +9,16 @@ description: Run one-off JSPs on live Pear api.pearcommerce.com servers for prod
 
 Use a temporary JSP when the useful execution context is the live Pear server: production classpath, IAM role, AppConfig/secrets, live `Resources`, live `Persistence`, and the same caches a deployed request sees. Every production one-off JSP must default to a no-parameter preview page with a user-visible plan and a `Run` button; the button is the approval mechanism, and real work belongs behind `run=true`. The normal run page should be a useful execution report: title, summary, steps, timings, context, errors, stack traces, and verification details. When the JSP has a formal output contract such as JSON, CSV, or very particular HTML, render that formal output at the top of the normal run page and offer `output=raw` for the artifact alone.
 
+## AWS SSO Prerequisite
+
+`devops/jsp.sh` uses SSM Session Manager to reach production servers. Before running any AWS CLI or SSM command in this skill, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Required Safety
 
 - Every one-off production JSP must render a no-parameter preview with exactly what will happen and a `Run` button that reloads with `run=true`. The no-parameter path must have zero side effects.

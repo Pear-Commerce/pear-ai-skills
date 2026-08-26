@@ -7,6 +7,16 @@ description: Query Pear production logs (logs.intern.pearcommerce.com, VictoriaL
 
 Query Pear's internal production logs at `https://logs.intern.pearcommerce.com` (VictoriaLogs + Grafana) from the terminal. Acquire a session once via browser OAuth, then run LogsQL queries with a saved cookie. Hot retention is 7 days; older partitions live in S3 Glacier Deep Archive and need a 9-12h restore.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Prerequisites
 
 - Node 18+ (for global `fetch`)

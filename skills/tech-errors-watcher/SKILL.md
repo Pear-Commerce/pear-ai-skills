@@ -11,6 +11,16 @@ Use this skill when asked to start, restart, re-enable, inspect, or recreate the
 
 For Slack analyze/gate/execute behavior, use `$handle-in-slack` as the canonical source of truth. For automation architecture and prompt style, follow `$slack-approval-pr-automation`. For code/PR work, use `$pear-engineering-workflow` and `$pear-pr-review-flow`. If an alert ties to a specific vendor/brand experience, `$front-api` can confirm whether the customer has already emailed CS about the same symptom.
 
+## AWS SSO Prerequisite
+
+This skill uses `devops/logs.sh` (SSM) for log investigation and Datadog/GitHub for alert analysis. Before running any AWS CLI or SSM command, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Defaults
 
 - Slack channels:

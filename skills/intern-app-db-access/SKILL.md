@@ -9,6 +9,16 @@ description: Give a Pear intern app its own database on the shared intern MySQL 
 
 The canonical Pear skills repository is `https://github.com/Pear-Commerce/pear-ai-skills`. Skill edits go here first, then are synced into installed targets. See `$canonical-skills` for the full edit/push workflow.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill (RDS, Secrets Manager, security groups), proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Relationship to $intern-app-hosting
 
 This is a **companion** to `$intern-app-hosting`, not a replacement. `$intern-app-hosting` puts the app on a Pear subdomain with shared Google OAuth. This skill gives the same app a database. Run `$intern-app-hosting` for the hosting/auth lane and this skill for the DB lane. An app can have either, or both.

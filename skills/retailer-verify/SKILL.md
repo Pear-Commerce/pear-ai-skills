@@ -13,6 +13,16 @@ If Pear has no usable UPC with retailer ids yet, discover an in-stock product on
 
 For JSP execution, prefer TEST first when possible because TEST targets the production database and is convenient for app logs. Treat TEST JSP writes as production DB writes. For the shopper-facing proof, still check production Offers (`https://offers.pearcommerce.com`) and the production API/read path unless the user explicitly asks to inspect the test frontend.
 
+## AWS SSO Prerequisite
+
+Verification in this skill uses JSPs via SSM (`devops/jsp.sh`) and log searches (`$pear-log-search`). Before running any AWS CLI or SSM command, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 When curling Pear API hosts during verification, include the trusted-edge header used by the Admin/Offers Cloudflare invalidation scripts before treating a Cloudflare 403/block page as real API behavior:
 
 ```bash

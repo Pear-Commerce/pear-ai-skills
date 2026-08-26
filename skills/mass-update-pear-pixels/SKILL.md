@@ -23,6 +23,16 @@ This skill builds on [pear-prod-jsp](../pear-prod-jsp/SKILL.md) (read the
 prereqs + preview→Run rules there) and assumes changes touch live production
 data, so scope tightly and verify against the primary.
 
+## AWS SSO Prerequisite
+
+Before running any AWS CLI command in this skill (S3 change-logs, JSP via SSM), proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## The data model
 
 `com.pear.entities.inventory.OfferDOMInsertions` — one row per offer (usually),

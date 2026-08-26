@@ -8,6 +8,16 @@ description: Step9 browser-agent infrastructure operations — capture sessions,
 Operational knowledge for the Step9 browser-agent capture + deterministic codegen pipeline.
 This skill exists so you don't rediscover infrastructure setup from scratch every session.
 
+## AWS SSO Prerequisite
+
+Step9 infra ops uses SSM to connect to the dev database and EC2 instances. Before running any AWS CLI or SSM command in this skill, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Architecture (3 boxes)
 
 ```

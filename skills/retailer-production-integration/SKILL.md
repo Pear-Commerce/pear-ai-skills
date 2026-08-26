@@ -14,6 +14,16 @@ Use this skill when the user asks to create, update, wire, or productionize any 
 
 If no proven feasibility plan, PR, or route exists, first use the relevant feasibility skill unless the user explicitly asks for a disabled skeleton. For requests phrased as "create an updater", "create scanning", "create a resolver", "create availability", or "implement retailer Y", the feasibility work is the route-finding phase and this skill is the implementation phase. Production code should be based on live, proxy-backed routes that already passed feasibility, not on local Chrome, local curl, local app, `NO_PROXY`, copied payloads, screenshots, or fixtures.
 
+## AWS SSO Prerequisite
+
+Production verification in this skill uses `@Script` JSPs via SSM and `devops/jsp.sh`. Before running any AWS CLI or SSM command, proactively run:
+
+```bash
+aws sso login --profile pear-sso
+```
+
+This opens the user's Chrome browser for authentication and blocks until approved. Never attempt AWS commands with stale credentials — if you see `UnrecognizedClientException` or `Token has expired`, run the login command first and retry. See `$pear-aws` for full credential troubleshooting.
+
 ## Required Skills
 
 Start with:
