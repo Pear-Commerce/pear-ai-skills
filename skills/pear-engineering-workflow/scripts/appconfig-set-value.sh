@@ -71,7 +71,8 @@ task_tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/pear-appconfig-set.XXXXXX")"
 base_file="$task_tmp_dir/base.json"
 updated_file="$task_tmp_dir/updated.json"
 verify_file="$task_tmp_dir/verify.json"
-trap 'rm -f -- "$base_file" "$updated_file" "$verify_file"; rmdir "$task_tmp_dir" 2>/dev/null || true' EXIT
+created_file="$task_tmp_dir/created.json"
+trap 'rm -f -- "$base_file" "$updated_file" "$verify_file" "$created_file"; rmdir "$task_tmp_dir" 2>/dev/null || true' EXIT
 
 latest_version="$(aws appconfig list-hosted-configuration-versions \
   --region "$REGION" \
@@ -186,6 +187,9 @@ if [[ -z "$description" ]]; then
   description="Set $namespace/$key via pear-engineering-workflow"
 fi
 
+# AWS CLI v2 streams the new version's content back, so this call needs an outfile
+# positional like the get-hosted-configuration-version calls above; without it the CLI
+# exits with "the following arguments are required: outfile" and nothing is published.
 new_version="$(aws appconfig create-hosted-configuration-version \
   --region "$REGION" \
   --application-id "$APPLICATION_ID" \
@@ -196,7 +200,8 @@ new_version="$(aws appconfig create-hosted-configuration-version \
   --version-label "$label" \
   --description "$description" \
   --query VersionNumber \
-  --output text)"
+  --output text \
+  "$created_file")"
 
 deployment_number="$(aws appconfig start-deployment \
   --region "$REGION" \
