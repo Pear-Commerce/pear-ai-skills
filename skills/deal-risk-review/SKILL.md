@@ -52,7 +52,7 @@ These are computed, not judged. Each is a fact you can put in front of a rep.
 
 | Signal | How to compute | Flag when |
 |---|---|---|
-| **Silence** | Days since last *inbound* message | > 7 days, or past a date the buyer themselves promised |
+| **Silence** | Days since last *inbound* message, computed against today's real date | > 7 days, or past a date the buyer themselves promised |
 | **Promise overdue** | Buyer said "I'll come back by X" — is X past? | Any overdue promise |
 | **No next meeting** | Any future-dated meeting on the account | None scheduled |
 | **Single-threaded** | Distinct external people who actually spoke across calls | Only 1–2, or all inbound email from one person |
@@ -107,9 +107,15 @@ Every risk gets exactly one action. Rules:
   to them" is.
 - **Prefer the cheapest test.** One email that resolves an unknown beats a
   deck. Sequence so the answer to step 1 determines step 2.
-- **Do not invent urgency the deal does not have.** If the contract expires in
-  20 months, say so; manufacturing a deadline the buyer never stated is how
-  reps lose credibility.
+- **Compute every date interval; never eyeball one.** Get today's real date
+  (`date`) and subtract — do not estimate "about N months" by inspection. This
+  is the single easiest way to invert a deal's urgency, and it is silent: a
+  wrong interval reads as fluent analysis. On one review an expiry 7 months out
+  was described as 20 months, turning a live deadline into a non-issue.
+- **Report both directions of urgency honestly.** Do not manufacture a deadline
+  the buyer never stated — and do not miss a real one. A proposed signature
+  date the buyer has not answered is a live clock even when the contract end
+  is far off.
 - **Close the buyer's open asks first.** A buyer request left unmet outranks
   any seller-initiated next step. It is the cheapest trust you will ever buy
   back.
