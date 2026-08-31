@@ -146,6 +146,17 @@ whether Pear can give Katie a defensible ROI story for a 3x increase, and if
 not, what to offer instead."* Escalating an open question beats fabricating an
 answer.
 
+**When in doubt, choose C.** The bar for type-A is high: a human on the deal
+has confirmed the artifact exists and Pear can produce it. Nothing else clears
+it — not a case study you found, not language in an RFP response, not a
+capability that seems obviously within reach. Written collateral describes what
+Pear has said before, not what this rep can put in front of this buyer this
+week, and treating it as authority is how a type-C silently becomes a type-A.
+
+The cost of the two errors is asymmetric. A wrongly-C action wastes a short
+internal conversation. A wrongly-A action sends a rep to a customer promising
+something that does not exist. Prefer the cheap error.
+
 Never convert a type-C into a type-A by inventing a plausible deliverable. If
 you find yourself naming a document you have not confirmed exists, stop.
 
