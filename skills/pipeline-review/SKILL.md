@@ -5,6 +5,14 @@ description: Prepare and run a sales pipeline review. Generates a per-rep prep p
 
 # Pipeline review
 
+> **Status: unvalidated.** This workflow has never been run end to end. It was
+> authored from a design discussion while Snowflake access was unavailable, so
+> the prep-pack format, the commitment carry-forward, and the per-rep scoping
+> have not been exercised against a real pipeline. Treat the first run as a
+> test of this file, not as a review the team should rely on. `deal-risk-review`,
+> which this depends on, *has* been exercised against a live deal.
+
+
 Turns pipeline review from a status readout into a decision meeting. Risks are
 found **before** the meeting; the meeting is spent on why the rep is forecasting
 what they are forecasting, and what they will do about it before next time.
