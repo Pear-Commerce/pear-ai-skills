@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deal Risk Review"
+  short_description: "Flag deal risks and recommend next actions"
+  default_prompt: "Use $deal-risk-review to review this deal: what's at risk and what should I do next?"
