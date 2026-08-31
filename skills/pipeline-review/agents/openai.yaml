@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pipeline Review"
+  short_description: "Prep packs, forecast deltas, and commitment tracking"
+  default_prompt: "Use $pipeline-review to prep this week's pipeline review — risks per deal and what each rep committed to last cycle."
