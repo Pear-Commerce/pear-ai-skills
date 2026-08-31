@@ -79,6 +79,34 @@ Two rules that change the answer:
   before grading anything Missing. Decision Process in particular is usually
   established in writing.
 
+## Grounding: separate the risk from the remedy
+
+The most common failure of this skill is letting uncertainty about the *fix*
+contaminate the statement of the *problem*. They are independent.
+
+**A risk is a fact about the deal.** It is observable: a quote, a computed
+date, a request with no reply, a person never met. It stands whether or not
+Pear can do anything about it. Never soften, drop, or hedge a risk because the
+remedy is unclear or because addressing it would be hard.
+
+**Every risk statement must be traceable.** Quote the words with a date, or
+show the computation. Label anything else:
+
+- **Observed** — quoted or computed from the record. Default; everything in the
+  register should be this.
+- **Inferred** — a reading of the evidence. Say so, and give the evidence.
+- **Unknown** — you could not see it (attachment, dropped number, unlinked
+  call). Name the gap rather than filling it.
+
+**Never assert a Pear capability you have not verified.** Do not describe a
+deliverable, dataset, discount, or claim as available unless you have confirmed
+it exists. Inventing a plausible artifact is worse than saying the approach is
+undetermined — the rep will discover it doesn't exist in front of the customer.
+
+**An unaddressed risk does not go away.** If nobody decides how to handle it,
+it stays on the register and keeps costing the deal. Say that explicitly rather
+than quietly dropping it between reviews.
+
 ## Step 4: Rank and write the register
 
 Rank by **what would kill the deal**, not by how many elements are gapped. One
@@ -100,7 +128,26 @@ this skill exists to avoid.
 
 ## Step 5: Actions
 
-Every risk gets exactly one action. Rules:
+Every risk gets exactly one action, and one of exactly three shapes. Picking
+the wrong shape is how this skill produces confident nonsense.
+
+**A. Do the thing** — only when you have verified the artifact exists and Pear
+can produce it. Name it precisely.
+
+**B. Get the missing input** — when the blocker is information the buyer holds.
+Name the specific inputs and who to ask. Often the strongest move: building the
+case *with* the champion from their numbers makes it a model they can defend
+internally, rather than a vendor assertion they have to relay.
+
+**C. Determine the approach** — when a real gap exists and you cannot verify
+how Pear addresses it. This is a legitimate action, not a cop-out. Write it as
+a decision someone owns with a date: *"Shannon + Eric to determine by Thu
+whether Pear can give Katie a defensible ROI story for a 3x increase, and if
+not, what to offer instead."* Escalating an open question beats fabricating an
+answer.
+
+Never convert a type-C into a type-A by inventing a plausible deliverable. If
+you find yourself naming a document you have not confirmed exists, stop.
 
 - **Name the person.** "Get to the economic buyer" is not an action. "Ask
   Natalia who in IT approves software spend, and whether Pear should present
