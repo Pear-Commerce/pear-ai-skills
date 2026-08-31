@@ -273,6 +273,19 @@ try {
 
 Inside loops, catch expected per-item `RuntimeException`s only when continuing is intentional; log the item identity and keep a consecutive-error guard for broad scans. At the outer boundary, catch `Throwable`, log through `Resources.global().logger.error("message", e)`, and print `ExceptionUtils.getStackTrace(e)`.
 
+## Long-Running Calls: Dispatch And Return, Don't Block The Response
+
+A synchronous service/job/orchestrator call that takes minutes (`PulseOrchestrator.runSingle(...)`, a batch updater sweep, a resolver loop, a migration) will hold the HTTP request open and can exceed the request/load-balancer timeout, so the browser never gets a report and the run-output disappears even though the work keeps running server-side. Prefer the background-toggle pattern for those:
+
+- No-parameter preview page + `Run` button stays mandatory; the button is still the approval.
+- On `run=true`, resolve the bean/class, submit the work to an async executor or a named non-daemon `Thread`, log the dispatch, and return immediately with "dispatched — monitor logs".
+- Give the background task its own stable `LOG` prefix (e.g. `[run-absco-bau]`) and log `run start` / phase milestones / `run completed in N ms` / `run failed` through `Resources.global().logger` and `System.out`, so `devops/logs.sh` or `docker logs | grep '<prefix>'` tracks it independently of the HTTP response.
+- Mark the work thread non-daemon (or submit to `Parallel`) so it survives the request thread; a bare daemon thread can be terminated when the JVM/container reaps idle request threads.
+- Two classloader constraints:
+  - A dynamically-uploaded JSP (`devops/jsp.sh`) cannot `@page import` most Pear classes (see the silent-404 section), so write the background lambda with reflection + `WebApplicationContextUtils`, not imported Pear types.
+  - A committed `WebContent/*.jsp` has the full classpath and can import Pear classes directly; that is the better home for a durable, reusable trigger.
+- Decide up front whether the trigger must be durable or is a one-off: a repeatable ops trigger should land as a committed `WebContent/*.jsp` (admin + CSRF + preview/Run), while a scratch `devops/jsp.sh` upload is fine for a single investigation.
+
 ## Workflow
 
 1. Decide the run purpose, target scope, and whether a formal `output=raw` artifact is needed.
