@@ -328,3 +328,31 @@ Before browser checks, reuse already-running API/admin processes when available;
 - repeat after small fixes until the specific flow is clean, or clearly state what was not re-tested
 
 If the user cancels or defers E2E, continue with focused static/unit checks.
+
+## AngularJS DI Parameter Validation
+
+Pear's AngularJS apps (the offers.pearcommerce.com picker, the /product-locator/ AngularJS app, admin UIs, and any other app using ui-router resolves or Angular factory/controller/service/directive definitions) receive dependencies via implicit dependency injection — parameter names are matched to Angular services by string at runtime. Unlike TypeScript or Java, there is no compile-time check that every referenced service is actually declared in the function's parameter list.
+
+This caused a production-wide PDP outage (PR #1395 / commit ed1658e8): a `$rootScope` reference was added inside a resolve's `.then()` callback without adding `$rootScope` to the resolve's DI parameter list. The resulting `ReferenceError: $rootScope is not defined` rejected the resolve on every page view, aborted the ui-router transition, and left `#pear-app-content` empty — blanking every picker-served PDP and landing page. Neither Copilot nor human reviewers caught it because the diff looked syntactically correct.
+
+### Review-Time Guard
+
+When reviewing or creating a PR that touches any file containing ui-router resolves (`resolve: { ... }`) or Angular factory/controller/service/directive definitions — in any Pear AngularJS app, not just the offers picker — apply these checks. Common hot spots include `static/js/offers/picker.js`, `static/js/offers/offers_app.js`, `static/js/offers/productLocatorController.js`, and `static/js/offers/landingPageController.js` in offers.pearcommerce.com, but the same failure mode exists anywhere implicit DI is used.
+
+1. For every function inside a `resolve:` block, check that each Angular service referenced in the function body (`$rootScope`, `$scope`, `$api`, `$stateParams`, `$timeout`, `$q`, `$state`, `$injector`, `$window`, `$document`, `$location`, `$config`, `$async`, etc.) appears in that function's parameter list. Resolves do not inherit the controller's injected services — each resolve function is independently injected.
+
+2. For `.then()` or `.catch()` callbacks inside resolves, check that any Angular service referenced inside the callback is also in the outer resolve function's parameter list. Closures capture the parameters of the resolve function, not the controller's injections.
+
+3. For shared resolve objects (e.g. `pickerResolves`, `pickerResolvesForModification`, `demoResolves`) that are spread via `Object.assign({}, pickerResolves, { ... })` into multiple states, a DI bug in the shared object affects every state that inherits it. A single missing parameter can blank dozens of routes simultaneously.
+
+4. Run `rg 'function \$[a-zA-Z]+' --type js` (scoped to the changed app's JS tree, e.g. `static/js/offers/`) to surface all DI-parameter-shaped names and cross-reference them against the functions that reference those services in their bodies but don't declare them as parameters.
+
+### E2E Guard
+
+offers.pearcommerce.com has Playwright E2E tests in `test/locator-e2e/`. The test `angularjs-pdp-boot.spec.cjs` boots the real AngularJS app through the `/agnostic-pdp/{offerId}` and `/agnostic-pdp-label/{offerId}/{label}` routes, mocks backend APIs, and asserts that `#pear-app-content` renders visible content with no `ReferenceError` in the console. This test would have caught the `ed1658e8` bug. When changing resolve logic in offers, confirm this test still passes:
+
+```bash
+npx playwright test -c playwright.locator.config.cjs test/locator-e2e/angularjs-pdp-boot.spec.cjs
+```
+
+If adding a new ui-router state with a resolve that references Angular services, add a corresponding E2E test that boots that route and asserts the widget renders.
