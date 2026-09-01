@@ -440,6 +440,10 @@ Use these while scanning:
 
 Ask on each PR: what data loads, who owns behavior, what happens on failure, what gets cached, what work runs concurrently, who applies backpressure, and how will production tell us?
 
+### AngularJS DI Parameter Check (offers.pearcommerce.com)
+
+When a PR touches `static/js/offers/picker.js` or any file with ui-router `resolve:` blocks or Angular factory/controller/service/directive definitions, verify that every Angular service referenced in a function body (`$rootScope`, `$scope`, `$api`, `$stateParams`, `$timeout`, `$q`, `$state`, `$async`, etc.) is declared in that function's parameter list. Resolves are independently injected — they do not inherit the controller's injections. A `.then()` closure inside a resolve captures the resolve function's parameters, not the controller's. A missing DI parameter causes a runtime `ReferenceError` that rejects the resolve, aborts the ui-router transition, and blanks the page. This exact bug caused a production-wide PDP outage in PR #1395. Cross-check with `rg 'function \$[a-zA-Z]+' --type js static/js/offers/` and run the `angularjs-pdp-boot.spec.cjs` E2E test when resolve logic changes.
+
 ## Output
 
 End by reporting:
