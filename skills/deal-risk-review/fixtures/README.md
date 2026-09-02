@@ -168,8 +168,13 @@ Metabase's Snowflake connection resolves to `PEAR_DASHBOARD_ROLE`, which cannot
 reach the `GONG` database, `PEAR_DB.HUBSPOT`, `HUBSPOT_STAGING`,
 `HUBSPOT_ANALYTICS`, `RAW_DATA_GONG`, or most of `RAW_DATA_HUBSPOT` (only the
 `*_ANALYTICS_*_REPORT` tables remain). MySQL and Maxio schemas are unaffected.
-Confirmed org-wide, not specific to one API key. See `snowflake-jdbc` for the
-double-`role`-parameter hazard that matches this signature.
+**Root cause:** the Metabase Snowflake connection has `details.role` set to
+`PEAR_DASHBOARD_ROLE` (visible via `GET /api/database/13371339`). That applies
+to every query through the connection, not just one API key. Note that Metabase
+still *lists* the blocked tables in its data browser from a cached schema sync —
+seeing a table in the UI is not evidence of access; running a query is. See
+`snowflake-jdbc`, which warns against forcing this role before an admin grants
+it.
 
 Until it is restored, these fixtures are the only available input for
 developing these skills.
