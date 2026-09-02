@@ -16,9 +16,28 @@ anything involving what was actually *said* comes from the warehouse.
 
 ## Schema
 
-Use `GONG.GONG_DATA_CLOUD.*`. `PEAR_DB.RAW_DATA_GONG.*` mirrors it but some of
-its views declare fewer columns than the upstream share returns and fail to
-compile.
+Two paths exist and **which one works depends on the current Snowflake grants** —
+test before assuming:
+
+- `GONG.GONG_DATA_CLOUD.*` — the share directly. Full column sets.
+- `PEAR_DB.RAW_DATA_GONG.*` — a mirror. Note the table is `CALL` (singular)
+  here. Two of its views (`CONVERSATION_PARTICIPANTS`, `USERS`) are broken at
+  the definition level: *"declared 16 column(s), but view query produces 17"*.
+  Any select fails, including a single named column — there is no workaround
+  from the query side.
+
+As of 2026-08-31, a least-privilege migration granted `PEAR_DASHBOARD_ROLE`
+SELECT on all 24 `RAW_DATA_GONG` views while the `GONG` database itself remained
+ungranted — so **the mirror was the only working path**, broken participants
+view included. Get speaker attribution from the Gong MCP `get_call_participants`
+tool instead, which works and returns names, emails, titles, and speaker ids.
+
+Check access before planning a pull:
+
+```sql
+select count(*) from pear_db.raw_data_gong.call_transcripts   -- mirror
+select count(*) from gong.gong_data_cloud.call_transcripts    -- share
+```
 
 The table is **`CALLS`, not `CALL`.** `RAW_DATA_GONG` uses the singular, so a
 query copied from there fails with `Object 'GONG.GONG_DATA_CLOUD.CALL' does not
