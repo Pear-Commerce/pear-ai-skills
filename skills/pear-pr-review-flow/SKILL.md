@@ -89,10 +89,73 @@ Before creating a PR for Pear code changes, load `$pear-engineering-workflow` an
 - read the PR-improvement guide from the engineering workflow skill, preferably `/Users/alexwyler/pear-ai-skills/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md` or `https://raw.githubusercontent.com/Pear-Commerce/pear-ai-skills/main/skills/pear-engineering-workflow/references/codex-pr-improvement-goal.md`
 - apply it as a final cleanup checklist before calling implementation done or opening the PR
 - run the relevant focused checks after cleanup
-- when reviewing Java code, prefer imported class names over fully-qualified names (e.g. `List` not `java.util.List` inline); the PR-improvement guide enforces this as a terseness/readability rule
+- when reviewing Java code, prefer imported class names over fully-qualified names (e.g. `List` not `java.util.List` inline); the PR-improvement guide enforces this as a terseness/readability rule. See the Import Hygiene gate below for the mandatory mechanical scan that prevents inline fully-qualified names from reaching review
 - mention in the PR summary or final response that the Pear engineering cleanup pass was completed, or state plainly if the guide/checks could not be run
 
 For an existing PR, repeat this gate before marking the PR ready for review or re-requesting reviewers when Codex has materially changed code.
+
+### Import Hygiene — No Inline Fully-Qualified Names
+
+This is the single most common review rejection Codex-authored Pear PRs receive, and it is fully preventable. Treat it as a hard, mechanical gate, not a style preference. PR #6225 shipped ~40 inline fully-qualified class names and received 17 separate review comments from Levi, all the same fix. Do not let this repeat.
+
+**Rule:** In Java and JSP code, never use a fully-qualified class name inline in an expression. Add an `import` statement at the top of the file and use the simple class name in the body.
+
+Wrong (verbatim from PR #6225):
+
+```java
+private static final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.Semaphore> SESSION_PERMITS = new java.util.concurrent.ConcurrentHashMap<>();
+return "itm" + java.util.UUID.randomUUID().toString().replace("-", "");
+java.util.regex.Matcher m = java.util.regex.Pattern.compile("datadome=([^;]+)").matcher(setCookie);
+java.io.StringWriter sw = new java.io.StringWriter();
+paths.put("web-search", BASE_URL + "/recherche?text=" + java.net.URLEncoder.encode(keyword, java.nio.charset.StandardCharsets.UTF_8));
+```
+
+Right:
+
+```java
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.io.StringWriter;
+import java.io.PrintWriter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+private static final ConcurrentHashMap<String, Semaphore> SESSION_PERMITS = new ConcurrentHashMap<>();
+return "itm" + UUID.randomUUID().toString().replace("-", "");
+Matcher m = Pattern.compile("datadome=([^;]+)").matcher(setCookie);
+StringWriter sw = new StringWriter();
+paths.put("web-search", BASE_URL + "/recherche?text=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8));
+```
+
+This applies to every inline fully-qualified reference, including: `java.util.*` (`UUID`, `Date`, `List`, `Map`, `LinkedHashMap`, `LinkedHashSet`, `Iterator`, `Collection`), `java.util.concurrent.*` (`ConcurrentHashMap`, `Semaphore`, `atomic.AtomicBoolean`), `java.util.regex.*` (`Pattern`, `Matcher`), `java.io.*` (`StringWriter`, `PrintWriter`), `java.net.*` (`URLEncoder`), `java.nio.charset.*` (`StandardCharsets`), `java.time.*`, and any other package-qualified class used in an expression, cast, `instanceof`, or `.class` literal.
+
+**The only exception** is genuine ambiguity: two classes with the same simple name from different packages, where an import plus a one-time qualifier is unavoidable. This is rare. When it happens, import one and fully-qualify the other only at the ambiguous call site, not everywhere.
+
+**JSP files follow the same rule** using the page import directive. Do not inline `java.util.Date`, `java.io.StringWriter`, etc. in scriptlets when you can add `<%@ page import="java.util.Date" %>` and use the simple name. This was Levi's exact complaint on `itm-macmini-mint.jsp`.
+
+**Mechanical scan — run this before opening any Java/JSP PR, and before marking a follow-up PR ready:**
+
+Scan only the lines you are adding (the `+` side of the diff), not the whole file, so pre-existing violations in untouched code do not block your PR or balloon its scope:
+
+```bash
+BASE="$(gh pr view PR_NUMBER --json baseRefName --jq .baseRefName 2>/dev/null || echo master)"
+git fetch origin "$BASE" --prune
+git diff "origin/$BASE...HEAD" -- '*.java' '*.jsp' | rg '^\+.*\bjava\.(util|concurrent|regex|nio|io|net|time|lang)\.[A-Z]' | rg -v '^\+\+\+|page import'
+```
+
+If that prints anything, each line is a violation to fix before the PR is ready:
+
+1. For each fully-qualified class the line references, add a normal `import` at the top of the file (alphabetized within its group, matching the file's existing import ordering). For JSPs, add a `<%@ page import="..." %>` directive near the other page imports.
+2. Replace every inline fully-qualified name with the simple class name.
+3. Re-run the scan until it is clean.
+4. Run `compileJava` or the repo's focused compile check so a missing or ambiguous import surfaces locally instead of in review.
+
+Do not commit a Java/JSP change that still shows output from the scan. If you intentionally left a fully-qualified name for the ambiguity exception, leave a one-line comment at the call site naming the colliding classes, and note it in the PR body. A clean scan is a completion-gate item (see New PR Completion Gate).
+
+This gate is separate from and in addition to the general cleanup pass. It must pass on its own before the PR is opened or marked ready, even when the broader improvement-guide pass could not be run.
 
 ## Reviewer Workflow
 
@@ -291,6 +354,7 @@ Before sending the final response after creating, materially updating, marking r
 
 - the PR exists, is on the intended branch, and the final response includes the PR URL
 - the Pear engineering cleanup pass was run or the reason it was skipped is stated
+- for any Java or JSP code in the diff, the Import Hygiene mechanical scan was run and is clean (no inline fully-qualified class names in added lines), or each remaining inline FQN is explicitly justified by the ambiguity exception and noted in the PR body
 - the intended engineering reviewers are requested; for new non-draft Codex PRs in Pear engineering repos, this means the known Pear engineering reviewer set unless the user asked for a narrower set
 - Copilot was requested and verified through the PR timeline, not only `gh pr view`
 - after any material PR update, the PR branch was rebased against the latest base branch, or the final response states why it was unsafe or unnecessary
