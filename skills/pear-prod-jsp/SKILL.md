@@ -286,6 +286,17 @@ A synchronous service/job/orchestrator call that takes minutes (`PulseOrchestrat
   - A committed `WebContent/*.jsp` has the full classpath and can import Pear classes directly; that is the better home for a durable, reusable trigger.
 - Decide up front whether the trigger must be durable or is a one-off: a repeatable ops trigger should land as a committed `WebContent/*.jsp` (admin + CSRF + preview/Run), while a scratch `devops/jsp.sh` upload is fine for a single investigation.
 
+Provenance (ABSCO single-BAU, 2026-08): this section came from driving
+`PulseOrchestrator.runSingle(AbscoBatchUpdater_October2025.class)` on TEST to
+verify the reese84 → `products-by-bpn` fix. The first attempt called `runSingle`
+synchronously in the JSP request: it re-minted reese84 and drove by-bpn
+correctly in the server logs, but the HTTP response sat open past the 5-minute
+timeout and the browser never received a completion report. Re-running with the
+work on a named non-daemon thread returned `dispatched — monitor logs` in 0s
+while `[run-absco-bau]` progress stayed observable via `docker logs`. The
+fixed build's logs are the evidence that the underlying run had not regressed —
+only the request/response delivery was wrong.
+
 ## Workflow
 
 1. Decide the run purpose, target scope, and whether a formal `output=raw` artifact is needed.
